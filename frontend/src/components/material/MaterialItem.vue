@@ -9,6 +9,7 @@
       <p><strong>审核点:</strong> {{ material.reviewPoints || '无' }}</p>
       <p><strong>自动审批标准:</strong> {{ material.autoApprovalCriteria || '无' }}</p>
       <p><strong>共享:</strong> {{ material.isShared ? '是' : '否' }}</p>
+      <p><strong>承诺资格:</strong> {{ material.isEligibleForPromise ? '是' : '否' }}</p>
       <p><strong>材料来源:</strong> {{ material.materialSource || '未指定' }}</p>
       <p><strong>处理方式:</strong> {{ material.processingMethodAndInfoAccess || '未指定' }}</p>
       <p><strong>承诺资格:</strong> {{ material.isEligibleForPromise ? '是' : '否' }}</p>
