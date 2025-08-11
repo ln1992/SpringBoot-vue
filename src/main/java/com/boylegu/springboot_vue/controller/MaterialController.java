@@ -52,6 +52,10 @@ public class MaterialController {
     @PostMapping
     public ResponseEntity<Material> createMaterial(@RequestBody Material material) {
         try {
+            // 设置默认状态为上线
+            if (material.getIsValid() == null) {
+                material.setIsValid(true);
+            }
             Material savedMaterial = materialService.saveMaterial(material);
             return ResponseEntity.ok(savedMaterial);
         } catch (Exception e) {
@@ -73,6 +77,7 @@ public class MaterialController {
                 material.setMaterialSource(materialDetails.getMaterialSource());
                 material.setProcessingMethodAndInfoAccess(materialDetails.getProcessingMethodAndInfoAccess());
                 material.setEligibleForPromise(materialDetails.getEligibleForPromise());
+                material.setIsValid(materialDetails.getIsValid());
 
                 Material updatedMaterial = materialService.saveMaterial(material);
                 return ResponseEntity.ok(updatedMaterial);
@@ -98,6 +103,38 @@ public class MaterialController {
             }
         } catch (Exception e) {
             logger.severe("Error deleting material with id " + id + ": " + e.getMessage());
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    // 上线材料
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<Void> activateMaterial(@PathVariable Long id) {
+        try {
+            boolean success = materialService.activateMaterial(id);
+            if (success) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            logger.severe("Error activating material with id " + id + ": " + e.getMessage());
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    // 下线材料
+    @PutMapping("/{id}/deactivate")
+    public ResponseEntity<Void> deactivateMaterial(@PathVariable Long id) {
+        try {
+            boolean success = materialService.deactivateMaterial(id);
+            if (success) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            logger.severe("Error deactivating material with id " + id + ": " + e.getMessage());
             return ResponseEntity.status(500).build();
         }
     }

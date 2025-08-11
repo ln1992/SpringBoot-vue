@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class MaterialService {
@@ -32,6 +33,7 @@ public class MaterialService {
         material1.setMaterialSource(MaterialSource.PERSONAL_SUBMISSION);
         material1.setProcessingMethodAndInfoAccess("在线提交");
         material1.setEligibleForPromise(true);
+        material1.setIsValid(true); // 设置默认状态为上线
 
         Material material2 = new Material();
         material2.setMaterialDetails("户口本复印件");
@@ -41,6 +43,7 @@ public class MaterialService {
         material2.setMaterialSource(MaterialSource.SYSTEM_AUTO_SHARED);
         material2.setProcessingMethodAndInfoAccess("系统自动获取");
         material2.setEligibleForPromise(false);
+        material2.setIsValid(true); // 设置默认状态为上线
 
         materialRepository.save(material1);
         materialRepository.save(material2);
@@ -60,5 +63,29 @@ public class MaterialService {
 
     public void deleteMaterial(Long id) {
         materialRepository.deleteById(id);
+    }
+
+    // 上线材料
+    public boolean activateMaterial(Long id) {
+        Optional<Material> materialOptional = materialRepository.findById(id);
+        if (materialOptional.isPresent()) {
+            Material material = materialOptional.get();
+            material.setIsValid(true);
+            materialRepository.save(material);
+            return true;
+        }
+        return false;
+    }
+
+    // 下线材料
+    public boolean deactivateMaterial(Long id) {
+        Optional<Material> materialOptional = materialRepository.findById(id);
+        if (materialOptional.isPresent()) {
+            Material material = materialOptional.get();
+            material.setIsValid(false);
+            materialRepository.save(material);
+            return true;
+        }
+        return false;
     }
 }

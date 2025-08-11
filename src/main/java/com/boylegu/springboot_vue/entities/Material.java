@@ -41,6 +41,10 @@ public class Material {
     @Column(name = "is_eligible_for_promise")
     private Boolean isEligibleForPromise;
 
+    // 是否有效（默认为true）
+    @Column(name = "is_valid")
+    private Boolean isValid = true;
+
     // 默认构造函数
     public Material() {}
 
@@ -55,6 +59,7 @@ public class Material {
         this.materialSource = materialSource;
         this.processingMethodAndInfoAccess = processingMethodAndInfoAccess;
         this.isEligibleForPromise = isEligibleForPromise;
+        this.isValid = true; // 设置默认值为true
     }
 
     // getter和setter方法
@@ -122,6 +127,14 @@ public class Material {
         isEligibleForPromise = eligibleForPromise;
     }
 
+    public Boolean getIsValid() {
+        return isValid;
+    }
+
+    public void setIsValid(Boolean valid) {
+        isValid = valid;
+    }
+
     @Override
     public String toString() {
         return "Material{" +
@@ -133,6 +146,7 @@ public class Material {
                 ", materialSource=" + materialSource +
                 ", processingMethodAndInfoAccess='" + processingMethodAndInfoAccess + '\'' +
                 ", isEligibleForPromise=" + isEligibleForPromise +
+                ", isValid=" + isValid +
                 '}';
     }
 
