@@ -13,7 +13,7 @@ public class Material {
     private Long id;
 
     // 材料明细
-    @Column(name = "material_details")
+    @Column(name = "material_details", unique = true)
     private String materialDetails;
 
     // 审核要点

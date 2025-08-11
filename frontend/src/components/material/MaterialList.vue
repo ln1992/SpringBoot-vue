@@ -41,10 +41,11 @@
         class="table-row"
         v-for="material in materials"
         :key="material.id"
-        @click="viewMaterialDetail(material)"
       >
         <div class="table-cell">{{ material.id }}</div>
-        <div class="table-cell">{{ material.materialDetails || '-' }}</div>
+        <div class="table-cell material-name" @click="editMaterial(material)">
+          {{ material.materialDetails || '-' }}
+        </div>
         <div class="table-cell">{{ material.reviewPoints || '-' }}</div>
         <div class="table-cell">{{ material.autoApprovalCriteria || '-' }}</div>
         <div class="table-cell">{{ material.isShared ? '是' : '否' }}</div>
@@ -105,6 +106,7 @@
           </p>
         </div>
         <div class="modal-actions">
+          <button @click="editMaterial(selectedMaterial)">编辑</button>
           <button @click="closeModal">关闭</button>
         </div>
       </div>
@@ -276,6 +278,23 @@ export default {
     closeForm() {
       this.showMaterialForm = false;
       this.editingMaterial = null;
+    },
+
+    editMaterial(material) {
+      this.editingMaterial = material;
+      // 将选中的材料数据填充到表单中
+      this.form = {
+        id: material.id,
+        materialDetails: material.materialDetails,
+        reviewPoints: material.reviewPoints,
+        autoApprovalCriteria: material.autoApprovalCriteria,
+        isShared: material.isShared,
+        materialSource: material.materialSource,
+        processingMethodAndInfoAccess: material.processingMethodAndInfoAccess,
+        isEligibleForPromise: material.isEligibleForPromise,
+        isValid: material.isValid
+      };
+      this.showMaterialForm = true;
     },
 
     async saveMaterial() {
@@ -453,8 +472,6 @@ export default {
 .table-row {
   display: flex;
   border-bottom: 1px solid #dcdfe6;
-  transition: background-color 0.2s;
-  cursor: pointer;
 }
 
 .table-row:hover {
@@ -482,6 +499,14 @@ export default {
 
 .table-cell:nth-child(2) {
   flex: 2;
+  cursor: pointer;
+  color: #409eff;
+  font-weight: 500;
+}
+
+.table-cell:nth-child(2):hover {
+  color: #66b1ff;
+  text-decoration: underline;
 }
 
 .table-cell:nth-child(3),
@@ -605,12 +630,17 @@ export default {
 }
 
 .modal-actions button {
+  margin-left: 10px;
   background-color: #409eff;
   color: white;
   border: none;
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
+}
+
+.modal-actions button:hover {
+  background-color: #66b1ff;
 }
 
 /* 表单样式 */
