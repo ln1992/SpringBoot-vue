@@ -4,6 +4,7 @@ import com.boylegu.springboot_vue.entities.Material;
 import com.boylegu.springboot_vue.entities.Material.MaterialSource;
 import com.boylegu.springboot_vue.repository.MaterialRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@DependsOn("materialRepository")
 public class MaterialService {
 
     @Autowired
