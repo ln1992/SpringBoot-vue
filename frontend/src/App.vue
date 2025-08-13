@@ -1,3 +1,4 @@
+<!-- src/App.vue -->
 <template>
   <div class="wrapper">
     <db-header></db-header>
@@ -12,6 +13,10 @@
         </div>
         <div v-else-if="selectedMenu === 'material'">
           <material-list></material-list>
+        </div>
+        <!-- 添加事项管理视图 -->
+        <div v-else-if="selectedMenu === 'matter'">
+          <matter-list></matter-list>
         </div>
       </el-col>
     </el-row>
@@ -33,6 +38,8 @@ import DbFilterinput from './components/DbFilterinput.vue'
 import DbTable from './components/DbTable.vue'
 import DbFooter from './components/DbFooter.vue'
 import MaterialList from './components/material/MaterialList.vue'
+// 导入事项管理组件
+import MatterList from './components/matter/MatterList.vue'
 import ElRow from "element-ui/packages/row/src/row";
 
 export default {
@@ -43,7 +50,9 @@ export default {
     DbFilterinput,
     DbTable,
     DbFooter,
-    MaterialList
+    MaterialList,
+    // 注册事项管理组件
+    MatterList
   },
   data() {
     return {

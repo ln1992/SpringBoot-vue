@@ -1,3 +1,4 @@
+<!-- src/components/DbSidebar.vue -->
 <template>
   <div class="sidebar-container">
     <div
@@ -12,7 +13,14 @@
       :class="{ active: activeItem === 'material' }"
       @click="selectItem('material')"
     >
-      Material
+      材料管理
+    </div>
+    <div
+      class="menu-item"
+      :class="{ active: activeItem === 'matter' }"
+      @click="selectItem('matter')"
+    >
+      事项管理
     </div>
   </div>
 </template>
@@ -22,7 +30,7 @@ export default {
   name: 'db-sidebar',
   data() {
     return {
-      msg: 'Dashboard',
+      msg: '仪表盘',
       activeItem: 'dashboard'
     }
   },
@@ -36,9 +44,13 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .sidebar-container {
   display: block;
+  width: 200px;
+  height: 100%;
+  background-color: #f5f7fa;
+  border-right: 1px solid #d1d5da;
 }
 
 .menu-item {
@@ -47,14 +59,35 @@ export default {
   line-height: 50px;
   cursor: pointer;
   border-bottom: 1px solid #d1d5da;
+  transition: all 0.3s;
 }
 
 .menu-item.active {
-  background-color: #3a8ee6;
+  background-color: #409eff;
   color: white;
+  font-weight: bold;
 }
 
 .menu-item:hover {
   background-color: #ecf5ff;
+}
+
+@media (max-width: 768px) {
+  .sidebar-container {
+    width: 100%;
+    height: auto;
+  }
+
+  .menu-item {
+    display: inline-block;
+    width: calc(33.33% - 1px);
+    text-align: center;
+    padding-left: 0;
+    border-right: 1px solid #d1d5da;
+  }
+
+  .menu-item:last-child {
+    border-right: none;
+  }
 }
 </style>

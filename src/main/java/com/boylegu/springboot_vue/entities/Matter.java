@@ -58,6 +58,10 @@ public class Matter {
     @Enumerated(EnumType.STRING)
     private ProvincialDepartmentOffice provincialDepartmentOffice;
 
+    // 是否有效（默认为true）
+    @Column(name = "is_valid")
+    private Boolean isValid = true;
+
     // 默认构造函数
     public Matter() {}
 
@@ -140,6 +144,14 @@ public class Matter {
 
     public void setProvincialDepartmentOffice(ProvincialDepartmentOffice provincialDepartmentOffice) {
         this.provincialDepartmentOffice = provincialDepartmentOffice;
+    }
+
+    public Boolean getIsValid() {
+        return isValid;
+    }
+
+    public void setIsValid(Boolean valid) {
+        isValid = valid;
     }
 
     @Override
