@@ -1,4 +1,6 @@
+// src/main/java/com/boylegu/springboot_vue/App.java
 package com.boylegu.springboot_vue;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

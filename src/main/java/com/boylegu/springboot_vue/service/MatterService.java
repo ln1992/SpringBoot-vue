@@ -9,6 +9,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,6 +64,14 @@ public class MatterService {
     }
 
     public Matter saveMatter(Matter matter) {
+        // 创建新的ArrayList避免ConcurrentModificationException
+        if (matter.getBasisList() != null) {
+            matter.setBasisList(new ArrayList<>(matter.getBasisList()));
+        }
+        if (matter.getMaterialIds() != null) {
+            matter.setMaterialIds(new ArrayList<>(matter.getMaterialIds()));
+        }
+
         return matterRepository.save(matter);
     }
 

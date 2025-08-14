@@ -1,3 +1,4 @@
+// src/main/java/com/boylegu/springboot_vue/controller/MatterController.java
 package com.boylegu.springboot_vue.controller;
 
 import com.boylegu.springboot_vue.entities.Matter;
@@ -6,8 +7,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/matters")
@@ -50,22 +56,33 @@ public class MatterController {
 
     // 创建新事项
     @PostMapping
-    public ResponseEntity<Matter> createMatter(@RequestBody Matter matter) {
+    public ResponseEntity<?> createMatter(@RequestBody @Valid Matter matter) {
         try {
             Matter savedMatter = matterService.saveMatter(matter);
             return ResponseEntity.ok(savedMatter);
+        } catch (ConstraintViolationException e) {
+            // 处理验证错误
+            Set<ConstraintViolation<?>> violations = e.getConstraintViolations();
+            String errorMessage = violations.stream()
+                    .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                    .collect(Collectors.joining(", "));
+
+            logger.severe("Validation error creating matter: " + errorMessage);
+            return ResponseEntity.badRequest().body("验证失败: " + errorMessage);
         } catch (Exception e) {
             logger.severe("Error creating matter: " + e.getMessage());
-            return ResponseEntity.status(500).build();
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("创建事项失败: " + e.getMessage());
         }
     }
 
     // 更新事项
     @PutMapping("/{id}")
-    public ResponseEntity<Matter> updateMatter(@PathVariable Long id, @RequestBody Matter matterDetails) {
+    public ResponseEntity<?> updateMatter(@PathVariable Long id, @RequestBody Matter matterDetails) {
         try {
             Matter matter = matterService.getMatterById(id);
             if (matter != null) {
+                // 更新字段
                 matter.setMainItemName(matterDetails.getMainItemName());
                 matter.setSubItemName(matterDetails.getSubItemName());
                 matter.setGrandchildItemName(matterDetails.getGrandchildItemName());
@@ -75,15 +92,26 @@ public class MatterController {
                 matter.setCommittedTimeLimit(matterDetails.getCommittedTimeLimit());
                 matter.setApprovalLevel(matterDetails.getApprovalLevel());
                 matter.setProvincialDepartmentOffice(matterDetails.getProvincialDepartmentOffice());
+                matter.setIsValid(matterDetails.getIsValid());
 
                 Matter updatedMatter = matterService.saveMatter(matter);
                 return ResponseEntity.ok(updatedMatter);
             } else {
                 return ResponseEntity.notFound().build();
             }
+        } catch (ConstraintViolationException e) {
+            // 处理验证错误
+            Set<ConstraintViolation<?>> violations = e.getConstraintViolations();
+            String errorMessage = violations.stream()
+                    .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                    .collect(Collectors.joining(", "));
+
+            logger.severe("Validation error updating matter: " + errorMessage);
+            return ResponseEntity.badRequest().body("验证失败: " + errorMessage);
         } catch (Exception e) {
             logger.severe("Error updating matter with id " + id + ": " + e.getMessage());
-            return ResponseEntity.status(500).build();
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("更新事项失败: " + e.getMessage());
         }
     }
 
@@ -149,8 +177,6 @@ public class MatterController {
         }
     }
 
-    // 在你的控制器类中添加以下方法
-
     /**
      * 激活事项（上线）
      */
@@ -176,5 +202,4 @@ public class MatterController {
             return ResponseEntity.notFound().build();
         }
     }
-
 }

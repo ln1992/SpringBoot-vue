@@ -43,7 +43,9 @@
         :key="matter.id"
       >
         <div class="table-cell">{{ matter.id }}</div>
-        <div class="table-cell">{{ matter.mainItemName || '-' }}</div>
+        <div class="table-cell matter-name" @click="editMatter(matter)">
+          {{ matter.mainItemName || '-' }}
+        </div>
         <div class="table-cell">{{ matter.subItemName || '-' }}</div>
         <div class="table-cell">{{ matter.grandchildItemName || '-' }}</div>
         <div class="table-cell">{{ matter.legalTimeLimit || '-' }}天</div>
@@ -57,18 +59,6 @@
         </div>
         <div class="table-cell">
           <div class="action-buttons">
-            <button
-              class="view-btn"
-              @click.stop="viewMatterDetail(matter)"
-            >
-              查看
-            </button>
-            <button
-              class="edit-btn"
-              @click.stop="editMatter(matter)"
-            >
-              编辑
-            </button>
             <button
               v-if="matter.isValid"
               class="offline-btn"
@@ -161,13 +151,70 @@
           </div>
 
           <div class="form-group">
-            <label>经办依据 (每行一个):</label>
-            <textarea v-model="basisListText" placeholder="每行输入一个经办依据"></textarea>
+            <label>经办依据:</label>
+            <div class="basis-list-container">
+              <div
+                class="basis-item"
+                v-for="(basis, index) in form.basisList"
+                :key="index"
+              >
+                <input
+                  type="text"
+                  v-model="form.basisList[index]"
+                  placeholder="请输入经办依据"
+                >
+                <button
+                  type="button"
+                  class="remove-basis-btn"
+                  @click="removeBasis(index)"
+                >
+                  删除
+                </button>
+              </div>
+              <button
+                type="button"
+                class="add-basis-btn"
+                @click="addBasis"
+              >
+                + 新增法条
+              </button>
+            </div>
           </div>
 
           <div class="form-group">
-            <label>材料ID (逗号分隔):</label>
-            <input type="text" v-model="materialIdsText" placeholder="例如: 1, 2, 3">
+            <label>关联材料:</label>
+            <div class="material-selection-container">
+              <div
+                class="material-item"
+                v-for="(materialId, index) in form.materialIds"
+                :key="index"
+              >
+                <select v-model="form.materialIds[index]">
+                  <option value="">请选择材料</option>
+                  <option
+                    v-for="material in materialsList"
+                    :key="material.id"
+                    :value="material.id"
+                  >
+                    {{ material.id }} - {{ material.materialDetails }}
+                  </option>
+                </select>
+                <button
+                  type="button"
+                  class="remove-material-btn"
+                  @click="removeMaterial(index)"
+                >
+                  删除
+                </button>
+              </div>
+              <button
+                type="button"
+                class="add-material-btn"
+                @click="addMaterial"
+              >
+                + 添加材料
+              </button>
+            </div>
           </div>
 
           <div class="form-group">
@@ -229,6 +276,7 @@
 <script>
 // API端点常量
 const API_BASE_URL = 'http://localhost:8000/api/matters'
+const API_MATERIALS_URL = 'http://localhost:8000/api/materials'
 const API_GET_ALL = API_BASE_URL
 const API_CREATE = API_BASE_URL
 const API_UPDATE = (id) => `${API_BASE_URL}/${id}`
@@ -241,13 +289,12 @@ export default {
   data() {
     return {
       matters: [],
+      materialsList: [], // 存储所有材料列表
       loading: true,
       error: null,
       selectedMatter: null,
       showMatterForm: false,
       editingMatter: null,
-      basisListText: '',
-      materialIdsText: '',
       form: {
         id: null,
         mainItemName: '',
@@ -284,6 +331,7 @@ export default {
   },
   async mounted() {
     await this.fetchMatters()
+    await this.fetchMaterials() // 获取材料列表
   },
   methods: {
     async fetchMatters() {
@@ -308,6 +356,18 @@ export default {
         console.error('获取事项列表出错:', error)
       } finally {
         this.loading = false
+      }
+    },
+
+    // 获取所有材料列表
+    async fetchMaterials() {
+      try {
+        const response = await fetch(API_MATERIALS_URL)
+        if (response.ok) {
+          this.materialsList = await response.json()
+        }
+      } catch (error) {
+        console.error('获取材料列表出错:', error)
       }
     },
 
@@ -353,13 +413,27 @@ export default {
         provincialDepartmentOffice: '',
         isValid: true
       }
-      this.basisListText = ''
-      this.materialIdsText = ''
     },
 
     closeForm() {
       this.showMatterForm = false
       this.editingMatter = null
+    },
+
+    addBasis() {
+      this.form.basisList.push('')
+    },
+
+    removeBasis(index) {
+      this.form.basisList.splice(index, 1)
+    },
+
+    addMaterial() {
+      this.form.materialIds.push('')
+    },
+
+    removeMaterial(index) {
+      this.form.materialIds.splice(index, 1)
     },
 
     editMatter(matter) {
@@ -370,8 +444,8 @@ export default {
         mainItemName: matter.mainItemName || '',
         subItemName: matter.subItemName || '',
         grandchildItemName: matter.grandchildItemName || '',
-        basisList: matter.basisList || [],
-        materialIds: matter.materialIds || [],
+        basisList: [...(matter.basisList || [])],
+        materialIds: [...(matter.materialIds || [])],
         legalTimeLimit: matter.legalTimeLimit,
         committedTimeLimit: matter.committedTimeLimit,
         approvalLevel: matter.approvalLevel || '',
@@ -379,28 +453,38 @@ export default {
         isValid: matter.isValid !== undefined ? matter.isValid : true
       }
 
-      // 处理经办依据列表为文本
-      this.basisListText = this.form.basisList.join('\n')
-
-      // 处理材料ID列表为文本
-      this.materialIdsText = this.form.materialIds.join(', ')
-
       this.showMatterForm = true
     },
 
     async saveMatter() {
       try {
-        // 处理经办依据列表
-        this.form.basisList = this.basisListText.split('\n')
-          .map(item => item.trim())
-          .filter(item => item.length > 0)
+        // 确保 materialIds 是正确的格式
+        const validMaterialIds = this.form.materialIds
+          .filter(id => id !== null && id !== undefined && id !== '')
+          .map(id => {
+            // 确保ID是数字类型
+            return typeof id === 'string' ? parseInt(id, 10) : id;
+          })
+          .filter(id => !isNaN(id));
 
-        // 处理材料ID列表
-        this.form.materialIds = this.materialIdsText.split(',')
-          .map(item => parseInt(item.trim()))
-          .filter(item => !isNaN(item))
+        // 创建要发送的数据对象
+        const matterToSave = {
+          id: this.form.id,
+          mainItemName: this.form.mainItemName,
+          subItemName: this.form.subItemName,
+          grandchildItemName: this.form.grandchildItemName,
+          basisList: this.form.basisList.filter(basis => basis !== ''),
+          materialIds: validMaterialIds,  // 确保这是数字数组
+          legalTimeLimit: this.form.legalTimeLimit ? parseInt(this.form.legalTimeLimit) : null,
+          committedTimeLimit: this.form.committedTimeLimit ? parseInt(this.form.committedTimeLimit) : null,
+          approvalLevel: this.form.approvalLevel,
+          provincialDepartmentOffice: this.form.provincialDepartmentOffice,
+          isValid: this.form.isValid
+        };
 
-        let response
+        console.log('Sending matter data:', JSON.stringify(matterToSave, null, 2));
+
+        let response;
 
         if (this.editingMatter) {
           // 更新事项
@@ -409,8 +493,8 @@ export default {
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(this.form)
-          })
+            body: JSON.stringify(matterToSave)
+          });
         } else {
           // 新增事项
           response = await fetch(API_CREATE, {
@@ -418,21 +502,22 @@ export default {
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(this.form)
-          })
+            body: JSON.stringify(matterToSave)
+          });
         }
 
         if (response.ok) {
-          await this.fetchMatters()
-          this.closeForm()
-          alert(this.editingMatter ? '事项更新成功' : '事项创建成功')
+          await this.fetchMatters();
+          this.closeForm();
+          alert(this.editingMatter ? '事项更新成功' : '事项创建成功');
         } else {
-          const errorText = await response.text()
-          alert((this.editingMatter ? '更新' : '创建') + '失败: ' + response.status + ' - ' + errorText)
+          const errorText = await response.text();
+          console.error('Server error response:', errorText);
+          alert((this.editingMatter ? '更新' : '创建') + '失败: ' + response.status + ' - ' + errorText);
         }
       } catch (error) {
-        console.error('保存事项出错:', error)
-        alert('保存失败: ' + error.message)
+        console.error('保存事项出错:', error);
+        alert('保存失败: ' + error.message);
       }
     },
 
@@ -599,6 +684,18 @@ export default {
   flex: 0 0 60px;
 }
 
+/* 主项名称可点击样式 */
+.matter-name {
+  cursor: pointer;
+  color: #409eff;
+  font-weight: 500;
+}
+
+.matter-name:hover {
+  color: #66b1ff;
+  text-decoration: underline;
+}
+
 /* 状态标签样式 */
 .status-badge {
   padding: 4px 8px;
@@ -626,40 +723,13 @@ export default {
   flex-wrap: wrap;
 }
 
-.view-btn, .edit-btn, .delete-btn, .online-btn, .offline-btn {
+.offline-btn, .online-btn, .delete-btn {
   padding: 4px 8px;
   border-radius: 3px;
   cursor: pointer;
   font-size: 12px;
   border: none;
   white-space: nowrap;
-}
-
-.view-btn {
-  background-color: #409eff;
-  color: white;
-}
-
-.view-btn:hover {
-  background-color: #66b1ff;
-}
-
-.edit-btn {
-  background-color: #67c23a;
-  color: white;
-}
-
-.edit-btn:hover {
-  background-color: #85ce61;
-}
-
-.delete-btn {
-  background-color: #f56c6c;
-  color: white;
-}
-
-.delete-btn:hover {
-  background-color: #f78989;
 }
 
 .offline-btn {
@@ -678,6 +748,15 @@ export default {
 
 .online-btn:hover {
   background-color: #85ce61;
+}
+
+.delete-btn {
+  background-color: #f56c6c;
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: #f78989;
 }
 
 /* 弹窗样式 */
@@ -774,6 +853,92 @@ export default {
   resize: vertical;
 }
 
+/* 经办依据列表样式 */
+.basis-list-container {
+  width: 100%;
+}
+
+.basis-item {
+  display: flex;
+  margin-bottom: 10px;
+  gap: 10px;
+}
+
+.basis-item input {
+  flex: 1;
+}
+
+.remove-basis-btn {
+  background-color: #f56c6c;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.remove-basis-btn:hover {
+  background-color: #f78989;
+}
+
+.add-basis-btn {
+  background-color: #409eff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.add-basis-btn:hover {
+  background-color: #66b1ff;
+}
+
+/* 材料选择样式 */
+.material-selection-container {
+  width: 100%;
+}
+
+.material-item {
+  display: flex;
+  margin-bottom: 10px;
+  gap: 10px;
+}
+
+.material-item select {
+  flex: 1;
+}
+
+.remove-material-btn {
+  background-color: #f56c6c;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.remove-material-btn:hover {
+  background-color: #f78989;
+}
+
+.add-material-btn {
+  background-color: #409eff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.add-material-btn:hover {
+  background-color: #66b1ff;
+}
+
 .form-actions {
   margin-top: 20px;
   text-align: right;
@@ -830,6 +995,11 @@ export default {
   .action-buttons {
     flex-direction: column;
     gap: 3px;
+  }
+
+  .basis-item,
+  .material-item {
+    flex-direction: column;
   }
 }
 </style>

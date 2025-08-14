@@ -1,8 +1,10 @@
+// src/main/java/com/boylegu/springboot_vue/entities/Matter.java
 package com.boylegu.springboot_vue.entities;
 
 import com.boylegu.springboot_vue.validation.MaterialIdsExist;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -37,7 +39,7 @@ public class Matter {
     @ElementCollection
     @CollectionTable(name = "matter_materials", joinColumns = @JoinColumn(name = "matter_id"))
     @Column(name = "material_id")
-    @MaterialIdsExist
+    //@MaterialIdsExist
     private List<Long> materialIds;
 
     // 法定时限
@@ -167,6 +169,7 @@ public class Matter {
                 ", committedTimeLimit='" + committedTimeLimit + '\'' +
                 ", approvalLevel='" + approvalLevel + '\'' +
                 ", provincialDepartmentOffice='" + provincialDepartmentOffice + '\'' +
+                ", isValid=" + isValid +
                 '}';
     }
 
