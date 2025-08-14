@@ -33,6 +33,7 @@
         <div class="table-cell">承诺时限</div>
         <div class="table-cell">审批层级</div>
         <div class="table-cell">省厅对口指导处室</div>
+        <div class="table-cell">状态</div>
         <div class="table-cell">操作</div>
       </div>
 
@@ -50,6 +51,11 @@
         <div class="table-cell">{{ getApprovalLevelDescription(matter.approvalLevel) || matter.approvalLevel || '-' }}</div>
         <div class="table-cell">{{ getProvincialDepartmentOfficeDescription(matter.provincialDepartmentOffice) || matter.provincialDepartmentOffice || '-' }}</div>
         <div class="table-cell">
+          <span :class="['status-badge', matter.isValid ? 'status-active' : 'status-inactive']">
+            {{ matter.isValid ? '已上线' : '已下线' }}
+          </span>
+        </div>
+        <div class="table-cell">
           <div class="action-buttons">
             <button
               class="view-btn"
@@ -64,11 +70,26 @@
               编辑
             </button>
             <button
-              class="delete-btn"
-              @click.stop="deleteMatter(matter.id)"
+              v-if="matter.isValid"
+              class="offline-btn"
+              @click.stop="toggleMatterStatus(matter.id, false)"
             >
-              删除
+              下线
             </button>
+            <template v-else>
+              <button
+                class="online-btn"
+                @click.stop="toggleMatterStatus(matter.id, true)"
+              >
+                上线
+              </button>
+              <button
+                class="delete-btn"
+                @click.stop="deleteMatter(matter.id)"
+              >
+                删除
+              </button>
+            </template>
           </div>
         </div>
       </div>
@@ -100,6 +121,11 @@
           <p><strong>承诺时限:</strong> {{ selectedMatter.committedTimeLimit || '未设置' }}天</p>
           <p><strong>审批层级:</strong> {{ getApprovalLevelDescription(selectedMatter.approvalLevel) || selectedMatter.approvalLevel || '未设置' }}</p>
           <p><strong>省厅对口指导处室:</strong> {{ getProvincialDepartmentOfficeDescription(selectedMatter.provincialDepartmentOffice) || selectedMatter.provincialDepartmentOffice || '未设置' }}</p>
+          <p><strong>状态:</strong>
+            <span :class="['status-badge', selectedMatter.isValid ? 'status-active' : 'status-inactive']">
+              {{ selectedMatter.isValid ? '已上线' : '已下线' }}
+            </span>
+          </p>
         </div>
         <div class="modal-actions">
           <button @click="editMatter(selectedMatter)">编辑</button>
@@ -182,6 +208,14 @@
             </select>
           </div>
 
+          <div class="form-group">
+            <label>状态:</label>
+            <select v-model="form.isValid">
+              <option :value="true">已上线</option>
+              <option :value="false">已下线</option>
+            </select>
+          </div>
+
           <div class="form-actions">
             <button type="button" @click="closeForm">取消</button>
             <button type="submit" class="save-btn">{{ editingMatter ? '更新' : '创建' }}</button>
@@ -199,6 +233,8 @@ const API_GET_ALL = API_BASE_URL
 const API_CREATE = API_BASE_URL
 const API_UPDATE = (id) => `${API_BASE_URL}/${id}`
 const API_DELETE = (id) => `${API_BASE_URL}/${id}`
+const API_ACTIVATE = (id) => `${API_BASE_URL}/${id}/activate`
+const API_DEACTIVATE = (id) => `${API_BASE_URL}/${id}/deactivate`
 
 export default {
   name: 'MatterList',
@@ -222,7 +258,8 @@ export default {
         legalTimeLimit: null,
         committedTimeLimit: null,
         approvalLevel: '',
-        provincialDepartmentOffice: ''
+        provincialDepartmentOffice: '',
+        isValid: true
       },
       // 审批层级枚举
       approvalLevels: [
@@ -313,7 +350,8 @@ export default {
         legalTimeLimit: null,
         committedTimeLimit: null,
         approvalLevel: '',
-        provincialDepartmentOffice: ''
+        provincialDepartmentOffice: '',
+        isValid: true
       }
       this.basisListText = ''
       this.materialIdsText = ''
@@ -337,7 +375,8 @@ export default {
         legalTimeLimit: matter.legalTimeLimit,
         committedTimeLimit: matter.committedTimeLimit,
         approvalLevel: matter.approvalLevel || '',
-        provincialDepartmentOffice: matter.provincialDepartmentOffice || ''
+        provincialDepartmentOffice: matter.provincialDepartmentOffice || '',
+        isValid: matter.isValid !== undefined ? matter.isValid : true
       }
 
       // 处理经办依据列表为文本
@@ -394,6 +433,37 @@ export default {
       } catch (error) {
         console.error('保存事项出错:', error)
         alert('保存失败: ' + error.message)
+      }
+    },
+
+    async toggleMatterStatus(id, isValid) {
+      try {
+        let response;
+        let action = isValid ? '上线' : '下线';
+
+        if (isValid) {
+          // 上线事项
+          response = await fetch(API_ACTIVATE(id), {
+            method: 'PUT'
+          });
+        } else {
+          // 下线事项
+          response = await fetch(API_DEACTIVATE(id), {
+            method: 'PUT'
+          });
+        }
+
+        if (response.ok) {
+          await this.fetchMatters();
+          alert(`事项已${action}`);
+        } else if (response.status === 404) {
+          alert('事项不存在');
+        } else {
+          alert(`${action}失败: ${response.status}`);
+        }
+      } catch (error) {
+        console.error(`更新事项状态出错:`, error);
+        alert(`${action}失败: ${error.message}`);
       }
     },
 
@@ -529,6 +599,26 @@ export default {
   flex: 0 0 60px;
 }
 
+/* 状态标签样式 */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-active {
+  background-color: #f0f9eb;
+  color: #67c23a;
+  border: 1px solid #c2e7b0;
+}
+
+.status-inactive {
+  background-color: #fef0f0;
+  color: #f56c6c;
+  border: 1px solid #fbc4c4;
+}
+
 /* 操作按钮样式 */
 .action-buttons {
   display: flex;
@@ -536,7 +626,7 @@ export default {
   flex-wrap: wrap;
 }
 
-.view-btn, .edit-btn, .delete-btn {
+.view-btn, .edit-btn, .delete-btn, .online-btn, .offline-btn {
   padding: 4px 8px;
   border-radius: 3px;
   cursor: pointer;
@@ -570,6 +660,24 @@ export default {
 
 .delete-btn:hover {
   background-color: #f78989;
+}
+
+.offline-btn {
+  background-color: #e6a23c;
+  color: white;
+}
+
+.offline-btn:hover {
+  background-color: #ebb563;
+}
+
+.online-btn {
+  background-color: #67c23a;
+  color: white;
+}
+
+.online-btn:hover {
+  background-color: #85ce61;
 }
 
 /* 弹窗样式 */

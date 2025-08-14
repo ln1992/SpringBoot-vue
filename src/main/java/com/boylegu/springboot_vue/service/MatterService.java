@@ -1,3 +1,5 @@
+// src/main/java/com/boylegu/springboot_vue/service/MatterService.java
+
 package com.boylegu.springboot_vue.service;
 
 import com.boylegu.springboot_vue.entities.Matter;
@@ -8,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @DependsOn("materialService")
@@ -92,5 +95,27 @@ public class MatterService {
      */
     public List<Matter> getMattersByProvincialDepartmentOffice(Matter.ProvincialDepartmentOffice provincialDepartmentOffice) {
         return matterRepository.findByProvincialDepartmentOffice(provincialDepartmentOffice);
+    }
+
+    // 新增：激活事项（上线）
+    public Matter activateMatter(Long id) {
+        Optional<Matter> matterOptional = matterRepository.findById(id);
+        if (matterOptional.isPresent()) {
+            Matter matter = matterOptional.get();
+            matter.setIsValid(true);
+            return matterRepository.save(matter);
+        }
+        return null;
+    }
+
+    // 新增：停用事项（下线）
+    public Matter deactivateMatter(Long id) {
+        Optional<Matter> matterOptional = matterRepository.findById(id);
+        if (matterOptional.isPresent()) {
+            Matter matter = matterOptional.get();
+            matter.setIsValid(false);
+            return matterRepository.save(matter);
+        }
+        return null;
     }
 }

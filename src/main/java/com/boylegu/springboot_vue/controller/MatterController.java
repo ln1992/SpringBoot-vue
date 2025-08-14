@@ -148,4 +148,33 @@ public class MatterController {
             return ResponseEntity.status(500).build();
         }
     }
+
+    // 在你的控制器类中添加以下方法
+
+    /**
+     * 激活事项（上线）
+     */
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<?> activateMatter(@PathVariable Long id) {
+        Matter activatedMatter = matterService.activateMatter(id);
+        if (activatedMatter != null) {
+            return ResponseEntity.ok(activatedMatter);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * 停用事项（下线）
+     */
+    @PutMapping("/{id}/deactivate")
+    public ResponseEntity<?> deactivateMatter(@PathVariable Long id) {
+        Matter deactivatedMatter = matterService.deactivateMatter(id);
+        if (deactivatedMatter != null) {
+            return ResponseEntity.ok(deactivatedMatter);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
 }
