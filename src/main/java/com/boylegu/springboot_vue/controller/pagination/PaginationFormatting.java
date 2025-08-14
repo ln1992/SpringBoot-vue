@@ -10,7 +10,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
-import com.boylegu.springboot_vue.dao.PersonsRepository;
+import com.boylegu.springboot_vue.repository.PersonsRepository;
 import com.boylegu.springboot_vue.entities.Persons;
 
 

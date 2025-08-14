@@ -18,7 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.domain.PageRequest;
 
-import com.boylegu.springboot_vue.dao.PersonsRepository;
+import com.boylegu.springboot_vue.repository.PersonsRepository;
 import com.boylegu.springboot_vue.controller.pagination.PaginationMultiTypeValuesHelper;
 import com.boylegu.springboot_vue.controller.pagination.PaginationFormatting;
 

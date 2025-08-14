@@ -6,8 +6,6 @@ import org.junit.Before;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.mock.web.MockServletContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.boylegu.springboot_vue.controller.MainController;
 import com.boylegu.springboot_vue.entities.Persons;
-import com.boylegu.springboot_vue.dao.PersonsRepository;
+import com.boylegu.springboot_vue.repository.PersonsRepository;
 
 
 /**

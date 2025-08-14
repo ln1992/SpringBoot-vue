@@ -4,7 +4,7 @@ package com.boylegu.springboot_vue.exception;
  * Created by gubaoer on 17/7/2.
  */
 
-import com.boylegu.springboot_vue.dao.ErrorInfo;
+import com.boylegu.springboot_vue.entities.ErrorInfo;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
