@@ -18,39 +18,6 @@ public class MaterialServiceImpl implements MaterialService {
     @Autowired
     private MaterialRepository materialRepository;
 
-    @PostConstruct
-    public void init() {
-        // 检查是否已有数据，如果没有则添加测试数据
-        if (materialRepository.count() == 0) {
-            addSampleData();
-        }
-    }
-
-    private void addSampleData() {
-        Material material1 = new Material();
-        material1.setMaterialDetail("身份证复印件");
-        material1.setReviewPoint("检查身份证信息是否清晰");
-        material1.setAutoApprovalCriteria("身份证信息完整且清晰");
-        material1.setShared(true);
-        material1.setMaterialSource(MaterialSource.PERSONAL_SUBMISSION);
-        material1.setProcessingMethodAndInfoAccess("在线提交");
-        material1.setEligibleForPromise(true);
-        material1.setIsValid(true); // 设置默认状态为上线
-
-        Material material2 = new Material();
-        material2.setMaterialDetail("户口本复印件");
-        material2.setReviewPoint("检查户口本信息是否完整");
-        material2.setAutoApprovalCriteria("户口本信息完整");
-        material2.setShared(false);
-        material2.setMaterialSource(MaterialSource.SYSTEM_AUTO_SHARED);
-        material2.setProcessingMethodAndInfoAccess("系统自动获取");
-        material2.setEligibleForPromise(false);
-        material2.setIsValid(true); // 设置默认状态为上线
-
-        materialRepository.save(material1);
-        materialRepository.save(material2);
-    }
-
     @Override
     public List<Material> getAllMaterials() {
         return materialRepository.findAll();

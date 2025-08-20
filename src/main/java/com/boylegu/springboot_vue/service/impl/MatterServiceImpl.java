@@ -19,41 +19,6 @@ public class MatterServiceImpl implements MatterService {
     @Autowired
     private MatterRepository matterRepository;
 
-    @PostConstruct
-    public void init() {
-        // 检查是否已有数据，如果没有则添加测试数据
-        if (matterRepository.count() == 0) {
-            addSampleData();
-        }
-    }
-
-    private void addSampleData() {
-        Matter matter1 = new Matter();
-        matter1.setMainItemName("交通行政许可");
-        matter1.setSubItemName("道路运输经营许可");
-        matter1.setGrandchildItemName("客运经营许可");
-        //matter1.setBasisList(List.of("《中华人民共和国道路运输条例》", "《道路旅客运输及客运站管理规定》"));
-        //matter1.setMaterialIds(List.of(1L, 2L));
-        matter1.setLegalTimeLimit(20L);
-        matter1.setCommittedTimeLimit(10L);
-        matter1.setApprovalLevel(Matter.ApprovalLevel.PROVINCIAL_MUNICIPAL);
-        matter1.setProvincialDepartmentOffice(Matter.ProvincialDepartmentOffice.PROVINCIAL_DEPARTMENT_ADMINISTRATIVE_APPROVAL);
-
-        Matter matter2 = new Matter();
-        matter2.setMainItemName("交通行政许可");
-        matter2.setSubItemName("道路运输经营许可");
-        matter2.setGrandchildItemName("货运经营许可");
-        //matter2.setBasisList(List.of("《中华人民共和国道路运输条例》", "《道路货物运输及站场管理规定》"));
-        //matter2.setMaterialIds(List.of(1L));
-        matter2.setLegalTimeLimit(15L);
-        matter2.setCommittedTimeLimit(7L);
-        matter2.setApprovalLevel(Matter.ApprovalLevel.MUNICIPAL);
-        matter2.setProvincialDepartmentOffice(Matter.ProvincialDepartmentOffice.PROVINCIAL_PORT_CENTER_CONSTRUCTION);
-
-        matterRepository.save(matter1);
-        matterRepository.save(matter2);
-    }
-
     @Override
     public List<Matter> getAllMatters() {
         return matterRepository.findAll();
