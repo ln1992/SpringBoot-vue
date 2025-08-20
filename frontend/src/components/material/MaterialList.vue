@@ -44,9 +44,9 @@
       >
         <div class="table-cell">{{ material.id }}</div>
         <div class="table-cell material-name" @click="editMaterial(material)">
-          {{ material.materialDetails || '-' }}
+          {{ material.materialDetail || '-' }}
         </div>
-        <div class="table-cell">{{ material.reviewPoints || '-' }}</div>
+        <div class="table-cell">{{ material.reviewPoint || '-' }}</div>
         <div class="table-cell">{{ material.autoApprovalCriteria || '-' }}</div>
         <div class="table-cell">{{ material.isShared ? '是' : '否' }}</div>
         <div class="table-cell">{{ material.materialSource || '-' }}</div>
@@ -92,8 +92,8 @@
         <h3>材料详情</h3>
         <div class="material-detail">
           <p><strong>ID:</strong> {{ selectedMaterial.id }}</p>
-          <p><strong>材料明细:</strong> {{ selectedMaterial.materialDetails || '无' }}</p>
-          <p><strong>审核点:</strong> {{ selectedMaterial.reviewPoints || '无' }}</p>
+          <p><strong>材料明细:</strong> {{ selectedMaterial.materialDetail || '无' }}</p>
+          <p><strong>审核点:</strong> {{ selectedMaterial.reviewPoint || '无' }}</p>
           <p><strong>自动审批标准:</strong> {{ selectedMaterial.autoApprovalCriteria || '无' }}</p>
           <p><strong>是否共享:</strong> {{ selectedMaterial.isShared ? '是' : '否' }}</p>
           <p><strong>材料来源:</strong> {{ selectedMaterial.materialSource || '未指定' }}</p>
@@ -125,12 +125,12 @@
 
           <div class="form-group">
             <label>材料明细 *</label>
-            <input type="text" v-model="form.materialDetails" required>
+            <input type="text" v-model="form.materialDetail" required>
           </div>
 
           <div class="form-group">
             <label>审核点:</label>
-            <textarea v-model="form.reviewPoints"></textarea>
+            <textarea v-model="form.reviewPoint"></textarea>
           </div>
 
           <div class="form-group">
@@ -188,13 +188,13 @@
 <script>
 // API端点常量
 const API_BASE_URL = 'http://localhost:8000/api/materials';
-const API_GET_ALL = API_BASE_URL;
-const API_CREATE = API_BASE_URL;
+const API_GET_ALL = `${API_BASE_URL}`;
+const API_CREATE = `${API_BASE_URL}`;
+const API_GET_BY_ID = (id) => `${API_BASE_URL}/${id}`;
 const API_UPDATE = (id) => `${API_BASE_URL}/${id}`;
 const API_DELETE = (id) => `${API_BASE_URL}/${id}`;
 const API_ACTIVATE = (id) => `${API_BASE_URL}/${id}/activate`;
 const API_DEACTIVATE = (id) => `${API_BASE_URL}/${id}/deactivate`;
-
 export default {
   name: 'MaterialList',
   data() {
@@ -207,8 +207,8 @@ export default {
       editingMaterial: null,
       form: {
         id: null,
-        materialDetails: '',
-        reviewPoints: '',
+        materialDetail: '',
+        reviewPoint: '',
         autoApprovalCriteria: '',
         isShared: false,
         materialSource: 'PERSONAL_SUBMISSION',
@@ -264,8 +264,8 @@ export default {
     resetForm() {
       this.form = {
         id: null,
-        materialDetails: '',
-        reviewPoints: '',
+        materialDetail: '',
+        reviewPoint: '',
         autoApprovalCriteria: '',
         isShared: false,
         materialSource: 'PERSONAL_SUBMISSION',
@@ -285,8 +285,8 @@ export default {
       // 将选中的材料数据填充到表单中
       this.form = {
         id: material.id,
-        materialDetails: material.materialDetails,
-        reviewPoints: material.reviewPoints,
+        materialDetail: material.materialDetail,
+        reviewPoint: material.reviewPoint,
         autoApprovalCriteria: material.autoApprovalCriteria,
         isShared: material.isShared,
         materialSource: material.materialSource,

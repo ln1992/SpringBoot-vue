@@ -196,7 +196,7 @@
                     :key="material.id"
                     :value="material.id"
                   >
-                    {{ material.id }} - {{ material.materialDetails }}
+                    {{ material.id }} - {{ material.materialDetail }}
                   </option>
                 </select>
                 <button

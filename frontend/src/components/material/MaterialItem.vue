@@ -2,11 +2,11 @@
 <template>
   <div class="material-item">
     <div class="material-header">
-      <h3>{{ material.materialDetails || '未命名材料' }}</h3>
+      <h3>{{ material.materialDetail || '未命名材料' }}</h3>
       <span class="material-id">ID: {{ material.id }}</span>
     </div>
     <div class="material-details">
-      <p><strong>审核点:</strong> {{ material.reviewPoints || '无' }}</p>
+      <p><strong>审核点:</strong> {{ material.reviewPoint || '无' }}</p>
       <p><strong>自动审批标准:</strong> {{ material.autoApprovalCriteria || '无' }}</p>
       <p><strong>共享:</strong> {{ material.isShared ? '是' : '否' }}</p>
       <p><strong>承诺资格:</strong> {{ material.isEligibleForPromise ? '是' : '否' }}</p>

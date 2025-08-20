@@ -13,12 +13,12 @@ public class Material {
     private Long id;
 
     // 材料明细
-    @Column(name = "material_details", unique = true)
-    private String materialDetails;
+    @Column(name = "material_detail", unique = true)
+    private String materialDetail;
 
     // 审核要点
-    @Column(name = "review_points")
-    private String reviewPoints;
+    @Column(name = "review_point")
+    private String reviewPoint;
 
     // "智能秒批"判断标准
     @Column(name = "auto_approval_criteria")
@@ -49,11 +49,11 @@ public class Material {
     public Material() {}
 
     // 完整参数构造函数
-    public Material(String materialDetails, String reviewPoints, String autoApprovalCriteria,
+    public Material(String materialDetail, String reviewPoint, String autoApprovalCriteria,
                     Boolean isShared, MaterialSource materialSource, String processingMethodAndInfoAccess,
                     Boolean isEligibleForPromise) {
-        this.materialDetails = materialDetails;
-        this.reviewPoints = reviewPoints;
+        this.materialDetail = materialDetail;
+        this.reviewPoint = reviewPoint;
         this.autoApprovalCriteria = autoApprovalCriteria;
         this.isShared = isShared;
         this.materialSource = materialSource;
@@ -71,20 +71,20 @@ public class Material {
         this.id = id;
     }
 
-    public String getMaterialDetails() {
-        return materialDetails;
+    public String getMaterialDetail() {
+        return materialDetail;
     }
 
-    public void setMaterialDetails(String materialDetails) {
-        this.materialDetails = materialDetails;
+    public void setMaterialDetail(String materialDetail) {
+        this.materialDetail = materialDetail;
     }
 
-    public String getReviewPoints() {
-        return reviewPoints;
+    public String getReviewPoint() {
+        return reviewPoint;
     }
 
-    public void setReviewPoints(String reviewPoints) {
-        this.reviewPoints = reviewPoints;
+    public void setReviewPoint(String reviewPoint) {
+        this.reviewPoint = reviewPoint;
     }
 
     public String getAutoApprovalCriteria() {
@@ -139,8 +139,8 @@ public class Material {
     public String toString() {
         return "Material{" +
                 "id=" + id +
-                ", materialDetails='" + materialDetails + '\'' +
-                ", reviewPoints='" + reviewPoints + '\'' +
+                ", materialDetail='" + materialDetail + '\'' +
+                ", reviewPoint='" + reviewPoint + '\'' +
                 ", autoApprovalCriteria='" + autoApprovalCriteria + '\'' +
                 ", isShared=" + isShared +
                 ", materialSource=" + materialSource +

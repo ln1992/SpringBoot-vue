@@ -1,11 +1,9 @@
+// src/main/java/com/boylegu/springboot_vue/controller/MaterialController.java
 package com.boylegu.springboot_vue.controller;
 
 import com.boylegu.springboot_vue.entities.Material;
-import com.boylegu.springboot_vue.entities.Matter;
 import com.boylegu.springboot_vue.service.MaterialService;
-import com.boylegu.springboot_vue.service.MatterService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -13,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/materials")
@@ -24,9 +21,6 @@ public class MaterialController {
 
     @Autowired
     private MaterialService materialService;
-
-    @Autowired
-    private MatterService matterService;
 
     // 获取所有材料
     @GetMapping
@@ -59,59 +53,60 @@ public class MaterialController {
 
     // 创建新材料
     @PostMapping
-    public ResponseEntity<?> createMatter(@RequestBody @Valid Matter matter) {
-        try {
-            logger.info("Creating matter with data: " + matter);
-            if (matter.getMaterialIds() != null) {
-                logger.info("Material IDs to validate: " + matter.getMaterialIds());
-            }
+    public ResponseEntity<?> createMaterial(@RequestBody @Valid Material material, BindingResult bindingResult) {
+        // 处理验证错误
+        if (bindingResult.hasErrors()) {
+            logger.severe("Validation error creating material: " + bindingResult.getAllErrors());
+            return ResponseEntity.badRequest().body("验证失败: " + bindingResult.getAllErrors());
+        }
 
-            Matter savedMatter = matterService.saveMatter(matter);
-            logger.info("Matter created successfully with ID: " + savedMatter.getId());
-            return ResponseEntity.ok(savedMatter);
+        try {
+            logger.info("Creating material with data: " + material);
+            Material savedMaterial = materialService.saveMaterial(material);
+            logger.info("Material created successfully with ID: " + savedMaterial.getId());
+            return ResponseEntity.ok(savedMaterial);
         } catch (Exception e) {
-            logger.severe("Error creating matter: " + e.getMessage());
+            logger.severe("Error creating material: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500).body("创建事项失败: " + e.getMessage());
+            return ResponseEntity.status(500).body("创建材料失败: " + e.getMessage());
         }
     }
 
     // 更新材料
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateMatter(@PathVariable Long id, @RequestBody @Valid Matter matterDetails) {
+    public ResponseEntity<?> updateMaterial(@PathVariable Long id, @RequestBody @Valid Material materialDetails, BindingResult bindingResult) {
+        // 处理验证错误
+        if (bindingResult.hasErrors()) {
+            logger.severe("Validation error updating material: " + bindingResult.getAllErrors());
+            return ResponseEntity.badRequest().body("验证失败: " + bindingResult.getAllErrors());
+        }
+
         try {
-            logger.info("Updating matter ID " + id + " with data: " + matterDetails);
-            if (matterDetails.getMaterialIds() != null) {
-                logger.info("Material IDs to validate: " + matterDetails.getMaterialIds());
-            }
-
-            Matter matter = matterService.getMatterById(id);
-            if (matter != null) {
+            logger.info("Updating material ID " + id + " with data: " + materialDetails);
+            Material material = materialService.getMaterialById(id);
+            if (material != null) {
                 // 更新字段
-                matter.setMainItemName(matterDetails.getMainItemName());
-                matter.setSubItemName(matterDetails.getSubItemName());
-                matter.setGrandchildItemName(matterDetails.getGrandchildItemName());
-                matter.setBasisList(matterDetails.getBasisList());
-                matter.setMaterialIds(matterDetails.getMaterialIds());
-                matter.setLegalTimeLimit(matterDetails.getLegalTimeLimit());
-                matter.setCommittedTimeLimit(matterDetails.getCommittedTimeLimit());
-                matter.setApprovalLevel(matterDetails.getApprovalLevel());
-                matter.setProvincialDepartmentOffice(matterDetails.getProvincialDepartmentOffice());
-                matter.setIsValid(matterDetails.getIsValid());
+                material.setMaterialDetail(materialDetails.getMaterialDetail());
+                material.setReviewPoint(materialDetails.getReviewPoint());
+                material.setAutoApprovalCriteria(materialDetails.getAutoApprovalCriteria());
+                material.setShared(materialDetails.getShared());
+                material.setMaterialSource(materialDetails.getMaterialSource());
+                material.setProcessingMethodAndInfoAccess(materialDetails.getProcessingMethodAndInfoAccess());
+                material.setEligibleForPromise(materialDetails.getEligibleForPromise());
+                material.setIsValid(materialDetails.getIsValid());
 
-                Matter updatedMatter = matterService.saveMatter(matter);
-                logger.info("Matter updated successfully with ID: " + updatedMatter.getId());
-                return ResponseEntity.ok(updatedMatter);
+                Material updatedMaterial = materialService.saveMaterial(material);
+                logger.info("Material updated successfully with ID: " + updatedMaterial.getId());
+                return ResponseEntity.ok(updatedMaterial);
             } else {
                 return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            logger.severe("Error updating matter with id " + id + ": " + e.getMessage());
+            logger.severe("Error updating material with id " + id + ": " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500).body("更新事项失败: " + e.getMessage());
+            return ResponseEntity.status(500).body("更新材料失败: " + e.getMessage());
         }
     }
-
 
     // 删除材料
     @DeleteMapping("/{id}")
@@ -132,7 +127,7 @@ public class MaterialController {
 
     // 上线材料
     @PutMapping("/{id}/activate")
-    public ResponseEntity<Void> activateMaterial(@PathVariable Long id) {
+    public ResponseEntity<?> activateMaterial(@PathVariable Long id) {
         try {
             boolean success = materialService.activateMaterial(id);
             if (success) {
@@ -142,13 +137,13 @@ public class MaterialController {
             }
         } catch (Exception e) {
             logger.severe("Error activating material with id " + id + ": " + e.getMessage());
-            return ResponseEntity.status(500).build();
+            return ResponseEntity.status(500).body("上线材料失败: " + e.getMessage());
         }
     }
 
     // 下线材料
     @PutMapping("/{id}/deactivate")
-    public ResponseEntity<Void> deactivateMaterial(@PathVariable Long id) {
+    public ResponseEntity<?> deactivateMaterial(@PathVariable Long id) {
         try {
             boolean success = materialService.deactivateMaterial(id);
             if (success) {
@@ -158,7 +153,7 @@ public class MaterialController {
             }
         } catch (Exception e) {
             logger.severe("Error deactivating material with id " + id + ": " + e.getMessage());
-            return ResponseEntity.status(500).build();
+            return ResponseEntity.status(500).body("下线材料失败: " + e.getMessage());
         }
     }
 }

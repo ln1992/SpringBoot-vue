@@ -6,7 +6,6 @@ import com.boylegu.springboot_vue.entities.Material.MaterialSource;
 import com.boylegu.springboot_vue.repository.MaterialRepository;
 import com.boylegu.springboot_vue.service.MaterialService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -29,8 +28,8 @@ public class MaterialServiceImpl implements MaterialService {
 
     private void addSampleData() {
         Material material1 = new Material();
-        material1.setMaterialDetails("身份证复印件");
-        material1.setReviewPoints("检查身份证信息是否清晰");
+        material1.setMaterialDetail("身份证复印件");
+        material1.setReviewPoint("检查身份证信息是否清晰");
         material1.setAutoApprovalCriteria("身份证信息完整且清晰");
         material1.setShared(true);
         material1.setMaterialSource(MaterialSource.PERSONAL_SUBMISSION);
@@ -39,8 +38,8 @@ public class MaterialServiceImpl implements MaterialService {
         material1.setIsValid(true); // 设置默认状态为上线
 
         Material material2 = new Material();
-        material2.setMaterialDetails("户口本复印件");
-        material2.setReviewPoints("检查户口本信息是否完整");
+        material2.setMaterialDetail("户口本复印件");
+        material2.setReviewPoint("检查户口本信息是否完整");
         material2.setAutoApprovalCriteria("户口本信息完整");
         material2.setShared(false);
         material2.setMaterialSource(MaterialSource.SYSTEM_AUTO_SHARED);
