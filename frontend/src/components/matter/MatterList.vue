@@ -264,8 +264,27 @@
           </div>
 
           <div class="form-actions">
-            <button type="button" @click="closeForm">取消</button>
-            <button type="submit" class="save-btn">{{ editingMatter ? '更新' : '创建' }}</button>
+            <button
+              v-if="editingMatter ? editingMatter.isValid : true"
+              type="button"
+              @click="closeForm"
+            >
+              取消
+            </button>
+            <button
+              v-if="editingMatter ? editingMatter.isValid : true"
+              type="submit"
+              class="save-btn"
+            >
+              {{ editingMatter ? '更新' : '创建' }}
+            </button>
+            <button
+              v-if="!(editingMatter ? editingMatter.isValid : true)"
+              type="button"
+              @click="closeForm"
+            >
+              关闭
+            </button>
           </div>
         </form>
       </div>
@@ -359,15 +378,15 @@ export default {
       }
     },
 
-    // 获取所有材料列表
+    // 获取所有有效材料列表
     async fetchMaterials() {
       try {
-        const response = await fetch(API_MATERIALS_URL)
+        const response = await fetch(`${API_MATERIALS_URL}/search/valid?isValid=true`);
         if (response.ok) {
-          this.materialsList = await response.json()
+          this.materialsList = await response.json();
         }
       } catch (error) {
-        console.error('获取材料列表出错:', error)
+        console.error('获取材料列表出错:', error);
       }
     },
 
@@ -437,7 +456,7 @@ export default {
     },
 
     editMatter(matter) {
-      this.editingMatter = matter
+      this.editingMatter = matter;
       // 将选中的事项数据填充到表单中
       this.form = {
         id: matter.id,
@@ -451,9 +470,9 @@ export default {
         approvalLevel: matter.approvalLevel || '',
         provincialDepartmentOffice: matter.provincialDepartmentOffice || '',
         isValid: matter.isValid !== undefined ? matter.isValid : true
-      }
+      };
 
-      this.showMatterForm = true
+      this.showMatterForm = true;
     },
 
     async saveMatter() {

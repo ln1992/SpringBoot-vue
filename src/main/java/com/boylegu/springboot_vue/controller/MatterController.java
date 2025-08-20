@@ -5,6 +5,7 @@ import com.boylegu.springboot_vue.entities.Matter;
 import com.boylegu.springboot_vue.service.MatterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -77,9 +78,17 @@ public class MatterController {
     }
 
     // 更新事项
+    // 更新事项
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateMatter(@PathVariable Long id, @RequestBody Matter matterDetails) {
+    public ResponseEntity<?> updateMatter(@PathVariable Long id, @RequestBody @Valid Matter matterDetails, BindingResult bindingResult) {
+        // 处理验证错误
+        if (bindingResult.hasErrors()) {
+            logger.severe("Validation error updating matter: " + bindingResult.getAllErrors());
+            return ResponseEntity.badRequest().body("验证失败: " + bindingResult.getAllErrors());
+        }
+
         try {
+            logger.info("Updating matter ID " + id + " with data: " + matterDetails);
             Matter matter = matterService.getMatterById(id);
             if (matter != null) {
                 // 更新字段
@@ -95,25 +104,18 @@ public class MatterController {
                 matter.setIsValid(matterDetails.getIsValid());
 
                 Matter updatedMatter = matterService.saveMatter(matter);
+                logger.info("Matter updated successfully with ID: " + updatedMatter.getId());
                 return ResponseEntity.ok(updatedMatter);
             } else {
                 return ResponseEntity.notFound().build();
             }
-        } catch (ConstraintViolationException e) {
-            // 处理验证错误
-            Set<ConstraintViolation<?>> violations = e.getConstraintViolations();
-            String errorMessage = violations.stream()
-                    .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
-                    .collect(Collectors.joining(", "));
-
-            logger.severe("Validation error updating matter: " + errorMessage);
-            return ResponseEntity.badRequest().body("验证失败: " + errorMessage);
         } catch (Exception e) {
             logger.severe("Error updating matter with id " + id + ": " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body("更新事项失败: " + e.getMessage());
         }
     }
+
 
     // 删除事项
     @DeleteMapping("/{id}")

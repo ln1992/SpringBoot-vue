@@ -176,8 +176,27 @@
           </div>
 
           <div class="form-actions">
-            <button type="button" @click="closeForm">取消</button>
-            <button type="submit" class="save-btn">{{ editingMaterial ? '更新' : '创建' }}</button>
+            <button
+              v-if="editingMaterial ? editingMaterial.isValid : true"
+              type="button"
+              @click="closeForm"
+            >
+              取消
+            </button>
+            <button
+              v-if="editingMaterial ? editingMaterial.isValid : true"
+              type="submit"
+              class="save-btn"
+            >
+              {{ editingMaterial ? '更新' : '创建' }}
+            </button>
+            <button
+              v-if="!(editingMaterial ? editingMaterial.isValid : true)"
+              type="button"
+              @click="closeForm"
+            >
+              关闭
+            </button>
           </div>
         </form>
       </div>

@@ -156,4 +156,15 @@ public class MaterialController {
             return ResponseEntity.status(500).body("下线材料失败: " + e.getMessage());
         }
     }
+
+    @GetMapping("/search/valid")
+    public ResponseEntity<List<Material>> getValidMaterials(@RequestParam Boolean isValid) {
+        try {
+            List<Material> materials = materialService.getMaterialsByIsValid(isValid);
+            return ResponseEntity.ok(materials);
+        } catch (Exception e) {
+            logger.severe("Error retrieving materials by valid status: " + e.getMessage());
+            return ResponseEntity.status(500).build();
+        }
+    }
 }

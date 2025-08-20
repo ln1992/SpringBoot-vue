@@ -21,4 +21,8 @@ public interface MaterialService {
 
     // 下线材料
     boolean deactivateMaterial(Long id);
+
+    // 添加到接口中
+    List<Material> getMaterialsByIsValid(Boolean isValid);
+
 }

@@ -61,4 +61,9 @@ public class MaterialServiceImpl implements MaterialService {
         }
         return false;
     }
+
+    @Override
+    public List<Material> getMaterialsByIsValid(Boolean isValid) {
+        return materialRepository.findByIsValid(isValid);
+    }
 }
