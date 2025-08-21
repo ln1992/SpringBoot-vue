@@ -92,6 +92,9 @@ public class MatterController {
             Matter matter = matterService.getMatterById(id);
             if (matter != null) {
                 // 更新字段
+                matter.setMainItemCode(matterDetails.getMainItemCode()); // 新增
+                matter.setSubItemCode(matterDetails.getSubItemCode());   // 新增
+                matter.setGrandchildItemCode(matterDetails.getGrandchildItemCode()); // 新增
                 matter.setMainItemName(matterDetails.getMainItemName());
                 matter.setSubItemName(matterDetails.getSubItemName());
                 matter.setGrandchildItemName(matterDetails.getGrandchildItemName());

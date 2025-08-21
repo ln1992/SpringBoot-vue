@@ -44,10 +44,14 @@
       >
         <div class="table-cell">{{ matter.id }}</div>
         <div class="table-cell matter-name" @click="editMatter(matter)">
-          {{ matter.mainItemName || '-' }}
+          {{ formatMainItemName(matter.mainItemCode, matter.mainItemName) }}
         </div>
-        <div class="table-cell">{{ matter.subItemName || '-' }}</div>
-        <div class="table-cell">{{ matter.grandchildItemName || '-' }}</div>
+        <div class="table-cell">
+          {{ formatSubItemName(matter.mainItemCode, matter.subItemCode, matter.subItemName) }}
+        </div>
+        <div class="table-cell">
+          {{ formatGrandchildItemName(matter.mainItemCode, matter.subItemCode, matter.grandchildItemCode, matter.grandchildItemName) }}
+        </div>
         <div class="table-cell">{{ matter.legalTimeLimit || '-' }}天</div>
         <div class="table-cell">{{ matter.committedTimeLimit || '-' }}天</div>
         <div class="table-cell">{{ getApprovalLevelDescription(matter.approvalLevel) || matter.approvalLevel || '-' }}</div>
@@ -92,9 +96,9 @@
         <h3>事项详情</h3>
         <div class="matter-detail">
           <p><strong>ID:</strong> {{ selectedMatter.id }}</p>
-          <p><strong>主项名称:</strong> {{ selectedMatter.mainItemName || '无' }}</p>
-          <p><strong>子项名称:</strong> {{ selectedMatter.subItemName || '无' }}</p>
-          <p><strong>孙项名称:</strong> {{ selectedMatter.grandchildItemName || '无' }}</p>
+          <p><strong>主项:</strong> {{ formatMainItemName(selectedMatter.mainItemCode, selectedMatter.mainItemName) || '无' }}</p>
+          <p><strong>子项:</strong> {{ formatSubItemName(selectedMatter.mainItemCode, selectedMatter.subItemCode, selectedMatter.subItemName) || '无' }}</p>
+          <p><strong>孙项:</strong> {{ formatGrandchildItemName(selectedMatter.mainItemCode, selectedMatter.subItemCode, selectedMatter.grandchildItemCode, selectedMatter.grandchildItemName) || '无' }}</p>
           <p><strong>经办依据:</strong>
             <span v-if="selectedMatter.basisList && selectedMatter.basisList.length > 0">
               {{ selectedMatter.basisList.join(', ') }}
@@ -135,19 +139,37 @@
             <input type="text" v-model="form.id" disabled>
           </div>
 
-          <div class="form-group">
-            <label>主项名称 *</label>
-            <input type="text" v-model="form.mainItemName" required>
+          <div class="form-row">
+            <div class="form-group">
+              <label>主项编号</label>
+              <input type="number" v-model="form.mainItemCode">
+            </div>
+            <div class="form-group">
+              <label>主项名称 *</label>
+              <input type="text" v-model="form.mainItemName" required>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label>子项名称 *</label>
-            <input type="text" v-model="form.subItemName" required>
+          <div class="form-row">
+            <div class="form-group">
+              <label>子项编号</label>
+              <input type="number" v-model="form.subItemCode">
+            </div>
+            <div class="form-group">
+              <label>子项名称 *</label>
+              <input type="text" v-model="form.subItemName" required>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label>孙项名称 *</label>
-            <input type="text" v-model="form.grandchildItemName" required>
+          <div class="form-row">
+            <div class="form-group">
+              <label>孙项编号</label>
+              <input type="number" v-model="form.grandchildItemCode">
+            </div>
+            <div class="form-group">
+              <label>孙项名称 *</label>
+              <input type="text" v-model="form.grandchildItemName" required>
+            </div>
           </div>
 
           <div class="form-group">
@@ -189,16 +211,29 @@
                 v-for="(materialId, index) in form.materialIds"
                 :key="index"
               >
-                <select v-model="form.materialIds[index]">
-                  <option value="">请选择材料</option>
-                  <option
-                    v-for="material in materialsList"
-                    :key="material.id"
-                    :value="material.id"
+                <div class="material-select-wrapper">
+                  <input
+                    type="text"
+                    class="material-search-input"
+                    :placeholder="'搜索材料...'"
+                    v-model="materialSearchQueries[index]"
+                    @input="onMaterialSearchInput(index, $event.target.value)"
+                    @focus="onMaterialSearchFocus(index)"
                   >
-                    {{ material.id }} - {{ material.materialDetail }}
-                  </option>
-                </select>
+                  <div
+                    class="material-search-dropdown"
+                    v-if="materialSearchResults[index] && materialSearchResults[index].length > 0"
+                  >
+                    <div
+                      class="material-search-option"
+                      v-for="material in materialSearchResults[index]"
+                      :key="material.id"
+                      @click="selectMaterial(index, material)"
+                    >
+                      {{ material.id }} - {{ material.materialDetail }}
+                    </div>
+                  </div>
+                </div>
                 <button
                   type="button"
                   class="remove-material-btn"
@@ -314,8 +349,13 @@ export default {
       selectedMatter: null,
       showMatterForm: false,
       editingMatter: null,
+      materialSearchQueries: [], // 材料搜索查询
+      materialSearchResults: [], // 材料搜索结果
       form: {
         id: null,
+        mainItemCode: null,
+        subItemCode: null,
+        grandchildItemCode: null,
         mainItemName: '',
         subItemName: '',
         grandchildItemName: '',
@@ -404,6 +444,30 @@ export default {
       return dept ? dept.description : ''
     },
 
+    // 格式化显示主项名称（编号 + 名称）
+    formatMainItemName(code, name) {
+      if (!code && !name) return '-';
+      if (!code) return name;
+      if (!name) return `${code}`;
+      return `${code}.${name}`;
+    },
+
+    // 格式化显示子项名称（主项编号.子项编号.子项名称）
+    formatSubItemName(mainCode, subCode, name) {
+      if (!mainCode && !subCode && !name) return '-';
+      if (!mainCode && !subCode) return name || '-';
+      if (!name) return `${mainCode || ''}.${subCode || ''}`;
+      return `${mainCode || ''}.${subCode || ''}.${name}`;
+    },
+
+    // 格式化显示孙项名称（主项编号.子项编号.孙项编号.孙项名称）
+    formatGrandchildItemName(mainCode, subCode, grandchildCode, name) {
+      if (!mainCode && !subCode && !grandchildCode && !name) return '-';
+      if (!mainCode && !subCode && !grandchildCode) return name || '-';
+      if (!name) return `${mainCode || ''}.${subCode || ''}.${grandchildCode || ''}`;
+      return `${mainCode || ''}.${subCode || ''}.${grandchildCode || ''}.${name}`;
+    },
+
     viewMatterDetail(matter) {
       this.selectedMatter = matter
     },
@@ -421,6 +485,9 @@ export default {
     resetForm() {
       this.form = {
         id: null,
+        mainItemCode: null,
+        subItemCode: null,
+        grandchildItemCode: null,
         mainItemName: '',
         subItemName: '',
         grandchildItemName: '',
@@ -432,6 +499,8 @@ export default {
         provincialDepartmentOffice: '',
         isValid: true
       }
+      this.materialSearchQueries = []
+      this.materialSearchResults = []
     },
 
     closeForm() {
@@ -449,10 +518,53 @@ export default {
 
     addMaterial() {
       this.form.materialIds.push('')
+      this.materialSearchQueries.push('')
+      this.materialSearchResults.push([])
     },
 
     removeMaterial(index) {
       this.form.materialIds.splice(index, 1)
+      this.materialSearchQueries.splice(index, 1)
+      this.materialSearchResults.splice(index, 1)
+    },
+
+    // 材料搜索输入处理
+    onMaterialSearchInput(index, query) {
+      if (!this.materialSearchResults[index]) {
+        this.$set(this.materialSearchResults, index, [])
+      }
+
+      if (query.trim() === '') {
+        this.$set(this.materialSearchResults, index, [])
+        return
+      }
+
+      // 过滤材料列表
+      const filtered = this.materialsList.filter(material =>
+        material.id.toString().includes(query) ||
+        (material.materialDetail && material.materialDetail.includes(query))
+      )
+
+      this.$set(this.materialSearchResults, index, filtered)
+    },
+
+    // 材料搜索框获得焦点时显示所有材料
+    onMaterialSearchFocus(index) {
+      if (!this.materialSearchResults[index]) {
+        this.$set(this.materialSearchResults, index, [])
+      }
+
+      // 如果搜索框为空，显示所有材料
+      if (!this.materialSearchQueries[index] || this.materialSearchQueries[index].trim() === '') {
+        this.$set(this.materialSearchResults, index, this.materialsList)
+      }
+    },
+
+    // 选择材料
+    selectMaterial(index, material) {
+      this.$set(this.form.materialIds, index, material.id)
+      this.$set(this.materialSearchQueries, index, `${material.id} - ${material.materialDetail}`)
+      this.$set(this.materialSearchResults, index, [])
     },
 
     editMatter(matter) {
@@ -460,6 +572,9 @@ export default {
       // 将选中的事项数据填充到表单中
       this.form = {
         id: matter.id,
+        mainItemCode: matter.mainItemCode,
+        subItemCode: matter.subItemCode,
+        grandchildItemCode: matter.grandchildItemCode,
         mainItemName: matter.mainItemName || '',
         subItemName: matter.subItemName || '',
         grandchildItemName: matter.grandchildItemName || '',
@@ -471,6 +586,25 @@ export default {
         provincialDepartmentOffice: matter.provincialDepartmentOffice || '',
         isValid: matter.isValid !== undefined ? matter.isValid : true
       };
+
+      // 初始化材料搜索查询
+      this.materialSearchQueries = []
+      this.materialSearchResults = []
+
+      // 为每个材料ID设置搜索查询文本
+      this.form.materialIds.forEach((materialId, index) => {
+        if (materialId) {
+          const material = this.materialsList.find(m => m.id === materialId)
+          if (material) {
+            this.materialSearchQueries[index] = `${material.id} - ${material.materialDetail}`
+          } else {
+            this.materialSearchQueries[index] = materialId.toString()
+          }
+        } else {
+          this.materialSearchQueries[index] = ''
+        }
+        this.materialSearchResults[index] = []
+      });
 
       this.showMatterForm = true;
     },
@@ -489,6 +623,9 @@ export default {
         // 创建要发送的数据对象
         const matterToSave = {
           id: this.form.id,
+          mainItemCode: this.form.mainItemCode ? parseInt(this.form.mainItemCode) : null,
+          subItemCode: this.form.subItemCode ? parseInt(this.form.subItemCode) : null,
+          grandchildItemCode: this.form.grandchildItemCode ? parseInt(this.form.grandchildItemCode) : null,
           mainItemName: this.form.mainItemName,
           subItemName: this.form.subItemName,
           grandchildItemName: this.form.grandchildItemName,
@@ -849,6 +986,16 @@ export default {
   margin-bottom: 15px;
 }
 
+.form-row {
+  display: flex;
+  gap: 15px;
+}
+
+.form-row .form-group {
+  flex: 1;
+  margin-bottom: 15px;
+}
+
 .form-group label {
   display: block;
   margin-bottom: 5px;
@@ -926,8 +1073,41 @@ export default {
   gap: 10px;
 }
 
-.material-item select {
+.material-select-wrapper {
   flex: 1;
+  position: relative;
+}
+
+.material-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.material-search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #dcdfe6;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.material-search-option {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.material-search-option:hover {
+  background-color: #f5f7fa;
 }
 
 .remove-material-btn {
@@ -1019,6 +1199,11 @@ export default {
   .basis-item,
   .material-item {
     flex-direction: column;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
   }
 }
 </style>

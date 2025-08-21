@@ -11,7 +11,28 @@ import java.util.List;
  */
 @Repository
 public interface MatterRepository extends JpaRepository<Matter, Long> {
-    
+
+    /**
+     * 根据主项编号查询事项
+     * @param mainItemCode 主项编号
+     * @return 事项列表
+     */
+    List<Matter> findByMainItemCode(Long mainItemCode);
+
+    /**
+     * 根据子项编号查询事项
+     * @param subItemCode 子项编号
+     * @return 事项列表
+     */
+    List<Matter> findBySubItemCode(Long subItemCode);
+
+    /**
+     * 根据孙项编号查询事项
+     * @param grandchildItemCode 孙项编号
+     * @return 事项
+     */
+    Matter findByGrandchildItemCode(Long grandchildItemCode);
+
     /**
      * 根据主项名称查询事项列表
      * @param mainItemName 主项名称

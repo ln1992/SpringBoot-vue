@@ -17,6 +17,18 @@ public class Matter {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 主项编号
+    @Column(name = "main_item_code")
+    private Long mainItemCode;
+
+    // 子项编号
+    @Column(name = "sub_item_code")
+    private Long subItemCode;
+
+    // 孙项编号
+    @Column(name = "grandchild_item_code")
+    private Long grandchildItemCode;
+
     // 主项名称
     @Column(name = "main_item_name")
     private String mainItemName;
@@ -74,6 +86,30 @@ public class Matter {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getMainItemCode() {
+        return mainItemCode;
+    }
+
+    public void setMainItemCode(Long mainItemCode) {
+        this.mainItemCode = mainItemCode;
+    }
+
+    public Long getSubItemCode() {
+        return subItemCode;
+    }
+
+    public void setSubItemCode(Long subItemCode) {
+        this.subItemCode = subItemCode;
+    }
+
+    public Long getGrandchildItemCode() {
+        return grandchildItemCode;
+    }
+
+    public void setGrandchildItemCode(Long grandchildItemCode) {
+        this.grandchildItemCode = grandchildItemCode;
     }
 
     public String getMainItemName() {
@@ -160,6 +196,9 @@ public class Matter {
     public String toString() {
         return "Matter{" +
                 "id=" + id +
+                ", mainItemCode=" + mainItemCode + '\'' +
+                ", subItemCode=" + subItemCode + '\'' +
+                ", grandchildItemCode=" + grandchildItemCode + '\'' +
                 ", mainItemName='" + mainItemName + '\'' +
                 ", subItemName='" + subItemName + '\'' +
                 ", grandchildItemName='" + grandchildItemName + '\'' +
