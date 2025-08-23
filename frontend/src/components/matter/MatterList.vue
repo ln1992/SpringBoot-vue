@@ -317,7 +317,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>版本:</label>
-              <input type="text" v-model="form.version" disabled>
+              <input type="text" v-model="form.version">
             </div>
 
             <div class="form-group">
@@ -338,18 +338,30 @@
           </div>
 
           <div class="form-actions">
-            <button
-              type="button"
-              @click="closeForm"
-            >
-              取消
-            </button>
-            <button
-              type="submit"
-              class="save-btn"
-            >
-              {{ editingMatter ? '更新' : '创建' }}
-            </button>
+            <!-- 当发布状态为true或状态为false时，只显示关闭按钮 -->
+            <template v-if="editingMatter && (form.isPublish === true || form.isValid === false)">
+              <button
+                type="button"
+                @click="closeForm"
+              >
+                关闭
+              </button>
+            </template>
+            <!-- 其他情况显示取消和更新按钮 -->
+            <template v-else>
+              <button
+                type="button"
+                @click="closeForm"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                class="save-btn"
+              >
+                {{ editingMatter ? '更新' : '创建' }}
+              </button>
+            </template>
           </div>
         </form>
       </div>
@@ -690,16 +702,12 @@ export default {
           })
           .filter(id => !isNaN(id));
 
-        // 如果是更新且没有新图片，则不发送图片字段
-        const isUpdate = !!this.editingMatter;
+        let response;
 
-        // 创建表单数据
-        const formData = new FormData();
-
-        // 添加基本字段
+        // 构造要发送的数据对象
         const matterData = {
           id: this.form.id,
-          version: this.form.version,
+          version: this.form.version ? parseInt(this.form.version) : null,
           mainItemCode: this.form.mainItemCode,
           subItemCode: this.form.subItemCode,
           grandchildItemCode: this.form.grandchildItemCode,
@@ -716,33 +724,23 @@ export default {
           isPublish: this.form.isPublish
         };
 
-        // 添加图片文件（如果存在）
-        if (this.form.approvalProcessDiagram) {
-          formData.append('approvalProcessDiagram', this.form.approvalProcessDiagram);
-        }
-
-        if (this.form.businessProcessDiagram) {
-          formData.append('businessProcessDiagram', this.form.businessProcessDiagram);
-        }
-
-        // 添加JSON数据
-        formData.append('matterData', new Blob([JSON.stringify(matterData)], {
-          type: 'application/json'
-        }));
-
-        let response;
-
         if (this.editingMatter) {
-          // 更新事项
+          // 更新事项 - 使用 JSON 格式发送数据
           response = await fetch(API_UPDATE(this.form.id), {
             method: 'PUT',
-            body: formData
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(matterData)
           });
         } else {
-          // 新增事项
+          // 新增事项 - 使用 JSON 格式发送数据
           response = await fetch(API_CREATE, {
             method: 'POST',
-            body: formData
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(matterData)
           });
         }
 
@@ -1161,6 +1159,12 @@ export default {
 .form-group textarea {
   min-height: 60px;
   resize: vertical;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 5px;
 }
 
 /* 经办依据列表样式 */

@@ -78,7 +78,7 @@ public class MatterController {
     }
 
     // 更新事项
-    // 更新事项
+    // src/main/java/com/boylegu/springboot_vue/controller/MatterController.java
     @PutMapping("/{id}")
     public ResponseEntity<?> updateMatter(@PathVariable Long id, @RequestBody @Valid Matter matterDetails, BindingResult bindingResult) {
         // 处理验证错误
@@ -104,6 +104,10 @@ public class MatterController {
                 matter.setCommittedTimeLimit(matterDetails.getCommittedTimeLimit());
                 matter.setApprovalLevel(matterDetails.getApprovalLevel());
                 matter.setProvincialDepartmentOffice(matterDetails.getProvincialDepartmentOffice());
+                matter.setApprovalProcessDiagramId(matterDetails.getApprovalProcessDiagramId());
+                matter.setBusinessProcessDiagramId(matterDetails.getBusinessProcessDiagramId());
+                matter.setVersion(matterDetails.getVersion());
+                matter.setIsPublish(matterDetails.getIsPublish());
                 matter.setIsValid(matterDetails.getIsValid());
 
                 Matter updatedMatter = matterService.saveMatter(matter);
@@ -118,6 +122,7 @@ public class MatterController {
             return ResponseEntity.status(500).body("更新事项失败: " + e.getMessage());
         }
     }
+
 
 
     // 删除事项
