@@ -1,4 +1,3 @@
-<!-- src/components/matter/MatterList.vue -->
 <template>
   <div class="matter-list-container">
     <div class="header">
@@ -33,6 +32,8 @@
         <div class="table-cell">承诺时限</div>
         <div class="table-cell">审批层级</div>
         <div class="table-cell">省厅对口指导处室</div>
+        <div class="table-cell">版本</div>
+        <div class="table-cell">发布状态</div>
         <div class="table-cell">状态</div>
         <div class="table-cell">操作</div>
       </div>
@@ -56,6 +57,12 @@
         <div class="table-cell">{{ matter.committedTimeLimit || '-' }}天</div>
         <div class="table-cell">{{ getApprovalLevelDescription(matter.approvalLevel) || matter.approvalLevel || '-' }}</div>
         <div class="table-cell">{{ getProvincialDepartmentOfficeDescription(matter.provincialDepartmentOffice) || matter.provincialDepartmentOffice || '-' }}</div>
+        <div class="table-cell">{{ matter.version || '-' }}</div>
+        <div class="table-cell">
+          <span :class="['status-badge', matter.isPublish ? 'status-active' : 'status-inactive']">
+            {{ matter.isPublish ? '已发布' : '未发布' }}
+          </span>
+        </div>
         <div class="table-cell">
           <span :class="['status-badge', matter.isValid ? 'status-active' : 'status-inactive']">
             {{ matter.isValid ? '已上线' : '已下线' }}
@@ -63,13 +70,15 @@
         </div>
         <div class="table-cell">
           <div class="action-buttons">
-            <button
-              v-if="matter.isValid"
-              class="offline-btn"
-              @click.stop="toggleMatterStatus(matter.id, false)"
-            >
-              下线
-            </button>
+            <!-- 状态操作按钮 -->
+            <template v-if="matter.isValid">
+              <button
+                class="offline-btn"
+                @click.stop="toggleMatterStatus(matter.id, false)"
+              >
+                下线
+              </button>
+            </template>
             <template v-else>
               <button
                 class="online-btn"
@@ -84,46 +93,25 @@
                 删除
               </button>
             </template>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- 事项详情弹窗 -->
-    <div class="modal" v-if="selectedMatter" @click="closeModal">
-      <div class="modal-content" @click.stop>
-        <span class="close" @click="closeModal">&times;</span>
-        <h3>事项详情</h3>
-        <div class="matter-detail">
-          <p><strong>ID:</strong> {{ selectedMatter.id }}</p>
-          <p><strong>主项:</strong> {{ formatMainItemName(selectedMatter.mainItemCode, selectedMatter.mainItemName) || '无' }}</p>
-          <p><strong>子项:</strong> {{ formatSubItemName(selectedMatter.mainItemCode, selectedMatter.subItemCode, selectedMatter.subItemName) || '无' }}</p>
-          <p><strong>孙项:</strong> {{ formatGrandchildItemName(selectedMatter.mainItemCode, selectedMatter.subItemCode, selectedMatter.grandchildItemCode, selectedMatter.grandchildItemName) || '无' }}</p>
-          <p><strong>经办依据:</strong>
-            <span v-if="selectedMatter.basisList && selectedMatter.basisList.length > 0">
-              {{ selectedMatter.basisList.join(', ') }}
-            </span>
-            <span v-else>无</span>
-          </p>
-          <p><strong>材料ID列表:</strong>
-            <span v-if="selectedMatter.materialIds && selectedMatter.materialIds.length > 0">
-              {{ selectedMatter.materialIds.join(', ') }}
-            </span>
-            <span v-else>无</span>
-          </p>
-          <p><strong>法定时限:</strong> {{ selectedMatter.legalTimeLimit || '未设置' }}天</p>
-          <p><strong>承诺时限:</strong> {{ selectedMatter.committedTimeLimit || '未设置' }}天</p>
-          <p><strong>审批层级:</strong> {{ getApprovalLevelDescription(selectedMatter.approvalLevel) || selectedMatter.approvalLevel || '未设置' }}</p>
-          <p><strong>省厅对口指导处室:</strong> {{ getProvincialDepartmentOfficeDescription(selectedMatter.provincialDepartmentOffice) || selectedMatter.provincialDepartmentOffice || '未设置' }}</p>
-          <p><strong>状态:</strong>
-            <span :class="['status-badge', selectedMatter.isValid ? 'status-active' : 'status-inactive']">
-              {{ selectedMatter.isValid ? '已上线' : '已下线' }}
-            </span>
-          </p>
-        </div>
-        <div class="modal-actions">
-          <button @click="editMatter(selectedMatter)">编辑</button>
-          <button @click="closeModal">关闭</button>
+            <!-- 发布操作按钮 -->
+            <template v-if="matter.isValid && !matter.isPublish">
+              <button
+                class="publish-btn"
+                @click.stop="togglePublishStatus(matter.id, true)"
+              >
+                发布
+              </button>
+            </template>
+            <template v-else-if="matter.isValid && matter.isPublish">
+              <button
+                class="unpublish-btn"
+                @click.stop="togglePublishStatus(matter.id, false)"
+              >
+                取消发布
+              </button>
+            </template>
+          </div>
         </div>
       </div>
     </div>
@@ -142,7 +130,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>主项编号</label>
-              <input type="number" v-model="form.mainItemCode">
+              <input type="number" v-model.number="form.mainItemCode">
             </div>
             <div class="form-group">
               <label>主项名称 *</label>
@@ -153,7 +141,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>子项编号</label>
-              <input type="number" v-model="form.subItemCode">
+              <input type="number" v-model.number="form.subItemCode">
             </div>
             <div class="form-group">
               <label>子项名称 *</label>
@@ -164,7 +152,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>孙项编号</label>
-              <input type="number" v-model="form.grandchildItemCode">
+              <input type="number" v-model.number="form.grandchildItemCode">
             </div>
             <div class="form-group">
               <label>孙项名称 *</label>
@@ -177,12 +165,12 @@
             <div class="basis-list-container">
               <div
                 class="basis-item"
-                v-for="(basis, index) in form.basisList"
+                v-for="(basis, index) in form.bases"
                 :key="index"
               >
                 <input
                   type="text"
-                  v-model="form.basisList[index]"
+                  v-model="form.bases[index]"
                   placeholder="请输入经办依据"
                 >
                 <button
@@ -254,12 +242,12 @@
 
           <div class="form-group">
             <label>法定时限 (天) *</label>
-            <input type="number" v-model="form.legalTimeLimit" required>
+            <input type="number" v-model.number="form.legalTimeLimit" required>
           </div>
 
           <div class="form-group">
             <label>承诺时限 (天) *</label>
-            <input type="number" v-model="form.committedTimeLimit" required>
+            <input type="number" v-model.number="form.committedTimeLimit" required>
           </div>
 
           <div class="form-group">
@@ -290,35 +278,77 @@
             </select>
           </div>
 
+          <!-- 流程图上传 -->
           <div class="form-group">
-            <label>状态:</label>
-            <select v-model="form.isValid">
-              <option :value="true">已上线</option>
-              <option :value="false">已下线</option>
-            </select>
+            <label>审批流程图:</label>
+            <div class="image-upload-container">
+              <input
+                type="file"
+                accept="image/*"
+                @change="onApprovalDiagramChange"
+              />
+              <div v-if="form.approvalProcessDiagramPreview" class="image-preview">
+                <img :src="form.approvalProcessDiagramPreview" alt="审批流程图预览" />
+              </div>
+              <div v-else-if="editingMatter && editingMatter.approvalProcessDiagramId">
+                <p>已上传审批流程图</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>业务流程图:</label>
+            <div class="image-upload-container">
+              <input
+                type="file"
+                accept="image/*"
+                @change="onBusinessDiagramChange"
+              />
+              <div v-if="form.businessProcessDiagramPreview" class="image-preview">
+                <img :src="form.businessProcessDiagramPreview" alt="业务流程图预览" />
+              </div>
+              <div v-else-if="editingMatter && editingMatter.businessProcessDiagramId">
+                <p>已上传业务流程图</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 版本、发布状态、状态字段移到最后 -->
+          <div class="form-row">
+            <div class="form-group">
+              <label>版本:</label>
+              <input type="text" v-model="form.version" disabled>
+            </div>
+
+            <div class="form-group">
+              <label>发布状态:</label>
+              <select v-model="form.isPublish">
+                <option :value="true">已发布</option>
+                <option :value="false">未发布</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>状态:</label>
+              <select v-model="form.isValid">
+                <option :value="true">已上线</option>
+                <option :value="false">已下线</option>
+              </select>
+            </div>
           </div>
 
           <div class="form-actions">
             <button
-              v-if="editingMatter ? editingMatter.isValid : true"
               type="button"
               @click="closeForm"
             >
               取消
             </button>
             <button
-              v-if="editingMatter ? editingMatter.isValid : true"
               type="submit"
               class="save-btn"
             >
               {{ editingMatter ? '更新' : '创建' }}
-            </button>
-            <button
-              v-if="!(editingMatter ? editingMatter.isValid : true)"
-              type="button"
-              @click="closeForm"
-            >
-              关闭
             </button>
           </div>
         </form>
@@ -337,6 +367,8 @@ const API_UPDATE = (id) => `${API_BASE_URL}/${id}`
 const API_DELETE = (id) => `${API_BASE_URL}/${id}`
 const API_ACTIVATE = (id) => `${API_BASE_URL}/${id}/activate`
 const API_DEACTIVATE = (id) => `${API_BASE_URL}/${id}/deactivate`
+const API_PUBLISH = (id) => `${API_BASE_URL}/${id}/publish`
+const API_UNPUBLISH = (id) => `${API_BASE_URL}/${id}/unpublish`
 
 export default {
   name: 'MatterList',
@@ -353,19 +385,25 @@ export default {
       materialSearchResults: [], // 材料搜索结果
       form: {
         id: null,
+        version: null,
         mainItemCode: null,
         subItemCode: null,
         grandchildItemCode: null,
         mainItemName: '',
         subItemName: '',
         grandchildItemName: '',
-        basisList: [],
+        bases: [],
         materialIds: [],
         legalTimeLimit: null,
         committedTimeLimit: null,
         approvalLevel: '',
         provincialDepartmentOffice: '',
-        isValid: true
+        isValid: true,
+        isPublish: false,
+        approvalProcessDiagram: null,
+        businessProcessDiagram: null,
+        approvalProcessDiagramPreview: null,
+        businessProcessDiagramPreview: null
       },
       // 审批层级枚举
       approvalLevels: [
@@ -468,14 +506,6 @@ export default {
       return `${mainCode || ''}.${subCode || ''}.${grandchildCode || ''}.${name}`;
     },
 
-    viewMatterDetail(matter) {
-      this.selectedMatter = matter
-    },
-
-    closeModal() {
-      this.selectedMatter = null
-    },
-
     showAddForm() {
       this.editingMatter = null
       this.resetForm()
@@ -485,19 +515,25 @@ export default {
     resetForm() {
       this.form = {
         id: null,
+        version: null,
         mainItemCode: null,
         subItemCode: null,
         grandchildItemCode: null,
         mainItemName: '',
         subItemName: '',
         grandchildItemName: '',
-        basisList: [],
+        bases: [],
         materialIds: [],
         legalTimeLimit: null,
         committedTimeLimit: null,
         approvalLevel: '',
         provincialDepartmentOffice: '',
-        isValid: true
+        isValid: true,
+        isPublish: false,
+        approvalProcessDiagram: null,
+        businessProcessDiagram: null,
+        approvalProcessDiagramPreview: null,
+        businessProcessDiagramPreview: null
       }
       this.materialSearchQueries = []
       this.materialSearchResults = []
@@ -509,15 +545,15 @@ export default {
     },
 
     addBasis() {
-      this.form.basisList.push('')
+      this.form.bases.push('')
     },
 
     removeBasis(index) {
-      this.form.basisList.splice(index, 1)
+      this.form.bases.splice(index, 1)
     },
 
     addMaterial() {
-      this.form.materialIds.push('')
+      this.form.materialIds.push(null)
       this.materialSearchQueries.push('')
       this.materialSearchResults.push([])
     },
@@ -567,24 +603,58 @@ export default {
       this.$set(this.materialSearchResults, index, [])
     },
 
+    // 处理审批流程图上传
+    onApprovalDiagramChange(event) {
+      const file = event.target.files[0]
+      if (file) {
+        this.form.approvalProcessDiagram = file
+        // 生成预览
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          this.form.approvalProcessDiagramPreview = e.target.result
+        }
+        reader.readAsDataURL(file)
+      }
+    },
+
+    // 处理业务流程图上传
+    onBusinessDiagramChange(event) {
+      const file = event.target.files[0]
+      if (file) {
+        this.form.businessProcessDiagram = file
+        // 生成预览
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          this.form.businessProcessDiagramPreview = e.target.result
+        }
+        reader.readAsDataURL(file)
+      }
+    },
+
     editMatter(matter) {
       this.editingMatter = matter;
       // 将选中的事项数据填充到表单中
       this.form = {
         id: matter.id,
+        version: matter.version,
         mainItemCode: matter.mainItemCode,
         subItemCode: matter.subItemCode,
         grandchildItemCode: matter.grandchildItemCode,
         mainItemName: matter.mainItemName || '',
         subItemName: matter.subItemName || '',
         grandchildItemName: matter.grandchildItemName || '',
-        basisList: [...(matter.basisList || [])],
+        bases: [...(matter.bases || [])],
         materialIds: [...(matter.materialIds || [])],
         legalTimeLimit: matter.legalTimeLimit,
         committedTimeLimit: matter.committedTimeLimit,
         approvalLevel: matter.approvalLevel || '',
         provincialDepartmentOffice: matter.provincialDepartmentOffice || '',
-        isValid: matter.isValid !== undefined ? matter.isValid : true
+        isValid: matter.isValid !== undefined ? matter.isValid : true,
+        isPublish: matter.isPublish !== undefined ? matter.isPublish : false,
+        approvalProcessDiagram: null,
+        businessProcessDiagram: null,
+        approvalProcessDiagramPreview: null,
+        businessProcessDiagramPreview: null
       };
 
       // 初始化材料搜索查询
@@ -613,32 +683,52 @@ export default {
       try {
         // 确保 materialIds 是正确的格式
         const validMaterialIds = this.form.materialIds
-          .filter(id => id !== null && id !== undefined && id !== '')
+          .filter(id => id !== null && id !== undefined)
           .map(id => {
             // 确保ID是数字类型
             return typeof id === 'string' ? parseInt(id, 10) : id;
           })
           .filter(id => !isNaN(id));
 
-        // 创建要发送的数据对象
-        const matterToSave = {
+        // 如果是更新且没有新图片，则不发送图片字段
+        const isUpdate = !!this.editingMatter;
+
+        // 创建表单数据
+        const formData = new FormData();
+
+        // 添加基本字段
+        const matterData = {
           id: this.form.id,
-          mainItemCode: this.form.mainItemCode ? parseInt(this.form.mainItemCode) : null,
-          subItemCode: this.form.subItemCode ? parseInt(this.form.subItemCode) : null,
-          grandchildItemCode: this.form.grandchildItemCode ? parseInt(this.form.grandchildItemCode) : null,
+          version: this.form.version,
+          mainItemCode: this.form.mainItemCode,
+          subItemCode: this.form.subItemCode,
+          grandchildItemCode: this.form.grandchildItemCode,
           mainItemName: this.form.mainItemName,
           subItemName: this.form.subItemName,
           grandchildItemName: this.form.grandchildItemName,
-          basisList: this.form.basisList.filter(basis => basis !== ''),
-          materialIds: validMaterialIds,  // 确保这是数字数组
-          legalTimeLimit: this.form.legalTimeLimit ? parseInt(this.form.legalTimeLimit) : null,
-          committedTimeLimit: this.form.committedTimeLimit ? parseInt(this.form.committedTimeLimit) : null,
+          bases: this.form.bases.filter(basis => basis !== ''),
+          materialIds: validMaterialIds,
+          legalTimeLimit: this.form.legalTimeLimit,
+          committedTimeLimit: this.form.committedTimeLimit,
           approvalLevel: this.form.approvalLevel,
           provincialDepartmentOffice: this.form.provincialDepartmentOffice,
-          isValid: this.form.isValid
+          isValid: this.form.isValid,
+          isPublish: this.form.isPublish
         };
 
-        console.log('Sending matter data:', JSON.stringify(matterToSave, null, 2));
+        // 添加图片文件（如果存在）
+        if (this.form.approvalProcessDiagram) {
+          formData.append('approvalProcessDiagram', this.form.approvalProcessDiagram);
+        }
+
+        if (this.form.businessProcessDiagram) {
+          formData.append('businessProcessDiagram', this.form.businessProcessDiagram);
+        }
+
+        // 添加JSON数据
+        formData.append('matterData', new Blob([JSON.stringify(matterData)], {
+          type: 'application/json'
+        }));
 
         let response;
 
@@ -646,19 +736,13 @@ export default {
           // 更新事项
           response = await fetch(API_UPDATE(this.form.id), {
             method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(matterToSave)
+            body: formData
           });
         } else {
           // 新增事项
           response = await fetch(API_CREATE, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(matterToSave)
+            body: formData
           });
         }
 
@@ -704,6 +788,37 @@ export default {
         }
       } catch (error) {
         console.error(`更新事项状态出错:`, error);
+        alert(`${action}失败: ${error.message}`);
+      }
+    },
+
+    async togglePublishStatus(id, isPublish) {
+      try {
+        let response;
+        let action = isPublish ? '发布' : '取消发布';
+
+        if (isPublish) {
+          // 发布事项
+          response = await fetch(API_PUBLISH(id), {
+            method: 'PUT'
+          });
+        } else {
+          // 取消发布事项
+          response = await fetch(API_UNPUBLISH(id), {
+            method: 'PUT'
+          });
+        }
+
+        if (response.ok) {
+          await this.fetchMatters();
+          alert(`事项已${action}`);
+        } else if (response.status === 404) {
+          alert('事项不存在');
+        } else {
+          alert(`${action}失败: ${response.status}`);
+        }
+      } catch (error) {
+        console.error(`更新事项发布状态出错:`, error);
         alert(`${action}失败: ${error.message}`);
       }
     },
@@ -879,7 +994,7 @@ export default {
   flex-wrap: wrap;
 }
 
-.offline-btn, .online-btn, .delete-btn {
+.offline-btn, .online-btn, .delete-btn, .publish-btn, .unpublish-btn {
   padding: 4px 8px;
   border-radius: 3px;
   cursor: pointer;
@@ -913,6 +1028,24 @@ export default {
 
 .delete-btn:hover {
   background-color: #f78989;
+}
+
+.publish-btn {
+  background-color: #409eff;
+  color: white;
+}
+
+.publish-btn:hover {
+  background-color: #66b1ff;
+}
+
+.unpublish-btn {
+  background-color: #909399;
+  color: white;
+}
+
+.unpublish-btn:hover {
+  background-color: #a6a9ad;
 }
 
 /* 弹窗样式 */
@@ -960,6 +1093,17 @@ export default {
 .matter-detail p {
   margin: 10px 0;
   line-height: 1.5;
+}
+
+.process-diagrams h4 {
+  margin: 15px 0 5px 0;
+}
+
+.process-diagram-image {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
 }
 
 .modal-actions {
@@ -1136,6 +1280,22 @@ export default {
 
 .add-material-btn:hover {
   background-color: #66b1ff;
+}
+
+/* 图片上传样式 */
+.image-upload-container {
+  width: 100%;
+}
+
+.image-preview {
+  margin-top: 10px;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 200px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
 }
 
 .form-actions {

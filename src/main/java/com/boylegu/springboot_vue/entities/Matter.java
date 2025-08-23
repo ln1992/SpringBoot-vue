@@ -1,10 +1,7 @@
 // src/main/java/com/boylegu/springboot_vue/entities/Matter.java
 package com.boylegu.springboot_vue.entities;
 
-import com.boylegu.springboot_vue.validation.MaterialIdsExist;
-
 import javax.persistence.*;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -43,13 +40,12 @@ public class Matter {
 
     // 经办依据list
     @ElementCollection
-    @CollectionTable(name = "matter_basis", joinColumns = @JoinColumn(name = "matter_id"))
-    @Column(name = "basis")
-    private List<String> basisList;
+    @Column(name = "bases")
+    private List<String> bases;
 
     // 材料 ID 列表
     @ElementCollection
-    @CollectionTable(name = "matter_materials", joinColumns = @JoinColumn(name = "matter_id"))
+    //@CollectionTable(name = "matter_materials", joinColumns = @JoinColumn(name = "matter_id"))
     @Column(name = "material_id")
     //@MaterialIdsExist
     private List<Long> materialIds;
@@ -71,6 +67,20 @@ public class Matter {
     @Column(name = "provincial_department_office")
     @Enumerated(EnumType.STRING)
     private ProvincialDepartmentOffice provincialDepartmentOffice;
+
+    @Column(name = "approval_process_diagram_id")
+    private Long approvalProcessDiagramId;
+
+    @Column(name = "business_process_diagram_id")
+    private Long businessProcessDiagramId;
+
+    // 是否有效（默认为true）
+    @Column(name = "version")
+    private Long version;
+
+    // 是否有效（默认为true）
+    @Column(name = "is_publish")
+    private Boolean isPublish = false;
 
     // 是否有效（默认为true）
     @Column(name = "is_valid")
@@ -136,12 +146,12 @@ public class Matter {
         this.grandchildItemName = grandchildItemName;
     }
 
-    public List<String> getBasisList() {
-        return basisList;
+    public List<String> getBases() {
+        return bases;
     }
 
-    public void setBasisList(List<String> basisList) {
-        this.basisList = basisList;
+    public void setBases(List<String> basisList) {
+        this.bases = basisList;
     }
 
     public List<Long> getMaterialIds() {
@@ -184,34 +194,69 @@ public class Matter {
         this.provincialDepartmentOffice = provincialDepartmentOffice;
     }
 
+    public Long getApprovalProcessDiagramId() {
+        return approvalProcessDiagramId;
+    }
+
+    public void setApprovalProcessDiagramId(Long approvalProcessDiagramId) {
+        this.approvalProcessDiagramId = approvalProcessDiagramId;
+    }
+
+    public Long getBusinessProcessDiagramId() {
+        return businessProcessDiagramId;
+    }
+
+    public void setBusinessProcessDiagramId(Long businessProcessDiagramId) {
+        this.businessProcessDiagramId = businessProcessDiagramId;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
+
+    public Boolean getIsPublish() {
+        return isPublish;
+    }
+
+    public void setIsPublish(Boolean publish) {
+        this.isPublish = publish;
+    }
+
     public Boolean getIsValid() {
         return isValid;
     }
 
     public void setIsValid(Boolean valid) {
-        isValid = valid;
+        this.isValid = valid;
     }
 
     @Override
     public String toString() {
         return "Matter{" +
                 "id=" + id +
-                ", mainItemCode=" + mainItemCode + '\'' +
-                ", subItemCode=" + subItemCode + '\'' +
-                ", grandchildItemCode=" + grandchildItemCode + '\'' +
+                ", mainItemCode=" + mainItemCode +
+                ", subItemCode=" + subItemCode +
+                ", grandchildItemCode=" + grandchildItemCode +
                 ", mainItemName='" + mainItemName + '\'' +
                 ", subItemName='" + subItemName + '\'' +
                 ", grandchildItemName='" + grandchildItemName + '\'' +
-                ", basisList=" + basisList +
+                ", bases=" + bases +
                 ", materialIds=" + materialIds +
-                ", legalTimeLimit='" + legalTimeLimit + '\'' +
-                ", committedTimeLimit='" + committedTimeLimit + '\'' +
-                ", approvalLevel='" + approvalLevel + '\'' +
-                ", provincialDepartmentOffice='" + provincialDepartmentOffice + '\'' +
+                ", legalTimeLimit=" + legalTimeLimit +
+                ", committedTimeLimit=" + committedTimeLimit +
+                ", approvalLevel=" + approvalLevel +
+                ", provincialDepartmentOffice=" + provincialDepartmentOffice +
+                ", approvalProcessDiagramId=" + approvalProcessDiagramId +
+                ", businessProcessDiagramId=" + businessProcessDiagramId +
+                ", version=" + version +
+                ", isPublish=" + isPublish +
                 ", isValid=" + isValid +
                 '}';
     }
-
     /**
      * 审批层级枚举
      */

@@ -36,9 +36,31 @@ public interface MatterService {
      */
     List<Matter> getMattersByProvincialDepartmentOffice(Matter.ProvincialDepartmentOffice provincialDepartmentOffice);
 
-    // 新增：激活事项（上线）
+    /**
+     * 激活事项（设置为有效）
+     * @param id 事项ID
+     * @return 更新后的事项对象，如果未找到则返回null
+     */
     Matter activateMatter(Long id);
 
-    // 新增：停用事项（下线）
+    /**
+     * 停用事项（设置为无效）
+     * @param id 事项ID
+     * @return 更新后的事项对象，如果未找到则返回null
+     */
     Matter deactivateMatter(Long id);
+
+    /**
+     * 发布事项
+     * @param id 事项ID
+     * @return 更新后的事项对象，如果未找到则返回null
+     */
+    Matter publishMatter(Long id);
+
+    /**
+     * 取消发布事项
+     * @param id 事项ID
+     * @return 更新后的事项对象，如果未找到则返回null
+     */
+    Matter unpublishMatter(Long id);
 }

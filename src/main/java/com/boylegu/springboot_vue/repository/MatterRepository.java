@@ -1,3 +1,4 @@
+// src/main/java/com/boylegu/springboot_vue/repository/MatterRepository.java
 package com.boylegu.springboot_vue.repository;
 
 import com.boylegu.springboot_vue.entities.Matter;
@@ -39,21 +40,21 @@ public interface MatterRepository extends JpaRepository<Matter, Long> {
      * @return 事项列表
      */
     List<Matter> findByMainItemName(String mainItemName);
-    
+
     /**
      * 根据审批层级查询事项列表
      * @param approvalLevel 审批层级
      * @return 事项列表
      */
     List<Matter> findByApprovalLevel(Matter.ApprovalLevel approvalLevel);
-    
+
     /**
      * 根据省厅对口指导处室（单位）查询事项列表
      * @param provincialDepartmentOffice 省厅对口指导处室（单位）
      * @return 事项列表
      */
     List<Matter> findByProvincialDepartmentOffice(Matter.ProvincialDepartmentOffice provincialDepartmentOffice);
-    
+
     /**
      * 根据主项名称和子项名称查询事项
      * @param mainItemName 主项名称
@@ -62,5 +63,24 @@ public interface MatterRepository extends JpaRepository<Matter, Long> {
      */
     List<Matter> findByMainItemNameAndSubItemName(String mainItemName, String subItemName);
 
+    /**
+     * 根据孙项名称查询事项
+     * @param grandchildItemName 孙项名称
+     * @return 事项
+     */
     Matter findByGrandchildItemName(String grandchildItemName);
+
+    /**
+     * 根据发布状态查询事项
+     * @param isPublish 发布状态
+     * @return 事项列表
+     */
+    List<Matter> findByIsPublish(Boolean isPublish);
+
+    /**
+     * 根据有效性查询事项
+     * @param isValid 有效性
+     * @return 事项列表
+     */
+    List<Matter> findByIsValid(Boolean isValid);
 }

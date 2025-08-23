@@ -98,7 +98,7 @@ public class MatterController {
                 matter.setMainItemName(matterDetails.getMainItemName());
                 matter.setSubItemName(matterDetails.getSubItemName());
                 matter.setGrandchildItemName(matterDetails.getGrandchildItemName());
-                matter.setBasisList(matterDetails.getBasisList());
+                matter.setBases(matterDetails.getBases());
                 matter.setMaterialIds(matterDetails.getMaterialIds());
                 matter.setLegalTimeLimit(matterDetails.getLegalTimeLimit());
                 matter.setCommittedTimeLimit(matterDetails.getCommittedTimeLimit());
@@ -179,6 +179,32 @@ public class MatterController {
         } catch (Exception e) {
             logger.severe("Error retrieving matters by provincial department office: " + e.getMessage());
             return ResponseEntity.status(500).build();
+        }
+    }
+
+    /**
+     * 发布事项
+     */
+    @PutMapping("/{id}/publish")
+    public ResponseEntity<?> publishMatter(@PathVariable Long id) {
+        Matter publishedMatter = matterService.publishMatter(id);
+        if (publishedMatter != null) {
+            return ResponseEntity.ok(publishedMatter);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * 取消发布事项
+     */
+    @PutMapping("/{id}/unpublish")
+    public ResponseEntity<?> unpublishMatter(@PathVariable Long id) {
+        Matter unpublishedMatter = matterService.unpublishMatter(id);
+        if (unpublishedMatter != null) {
+            return ResponseEntity.ok(unpublishedMatter);
+        } else {
+            return ResponseEntity.notFound().build();
         }
     }
 
