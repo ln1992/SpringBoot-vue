@@ -1,7 +1,9 @@
-// src/main/java/com/boylegu/springboot_vue/entities/BaseProcessDiagram.java
+// src/main/java/com/boylegu/springboot_vue/entities/ProcessDiagram.java
 package com.boylegu.springboot_vue.entities;
 
 import javax.persistence.*;
+import java.util.Base64;
+import java.util.Objects;
 
 @MappedSuperclass
 public abstract class ProcessDiagram {
@@ -9,15 +11,21 @@ public abstract class ProcessDiagram {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "image_name")
+    private String imageName;
+
     @Lob
     @Column(name = "image_data", columnDefinition = "LONGBLOB")
     private byte[] imageData;
 
-    @Column(name = "image_name")
-    private String imageName;
+    // 使用 ImageType 枚举替代 contentType 字符串
+    @Enumerated(EnumType.STRING)
+    @Column(name = "image_type")
+    private ImageType imageType;
 
-    @Column(name = "content_type")
-    private String contentType;
+    // 是否有效（默认为true）- 新增字段
+    @Column(name = "is_valid")
+    private Boolean isValid = true;
 
     // 默认构造函数
     public ProcessDiagram() {}
@@ -31,14 +39,6 @@ public abstract class ProcessDiagram {
         this.id = id;
     }
 
-    public byte[] getImageData() {
-        return imageData;
-    }
-
-    public void setImageData(byte[] imageData) {
-        this.imageData = imageData;
-    }
-
     public String getImageName() {
         return imageName;
     }
@@ -47,24 +47,80 @@ public abstract class ProcessDiagram {
         this.imageName = imageName;
     }
 
-    public String getContentType() {
-        return contentType;
+    public byte[] getImageData() {
+        return imageData;
     }
 
-    public void setContentType(String contentType) {
-        this.contentType = contentType;
+    public void setImageData(byte[] imageData) {
+        this.imageData = imageData;
     }
 
-    // 使用 ImageType 设置 content type
+    // 获取 ImageType 枚举
+    public ImageType getImageType() {
+        return imageType;
+    }
+
+    // 设置 ImageType 枚举
     public void setImageType(ImageType imageType) {
-        if (imageType != null) {
-            this.contentType = imageType.getContentType();
+        this.imageType = imageType;
+    }
+
+    // 兼容旧的 getContentType 方法
+    @Transient
+    public String getContentType() {
+        return imageType != null ? imageType.getContentType() : null;
+    }
+
+    // 兼容旧的 setContentType 方法
+    @Transient
+    public void setContentType(String contentType) {
+        if (contentType != null) {
+            this.imageType = ImageType.fromContentType(contentType);
         }
     }
 
-    // 根据 content type 获取 ImageType
-    public ImageType getImageType() {
-        return ImageType.fromContentType(this.contentType);
+    // 新增的 isValid 字段的 getter 和 setter 方法
+    public Boolean getIsValid() {
+        return isValid;
+    }
+
+    public void setIsValid(Boolean valid) {
+        isValid = valid;
+    }
+
+    // 获取图像数据的Base64 URL，用于前端显示
+    @Transient
+    public String getImageDataUrl() {
+        if (imageData != null && imageType != null && imageData.length > 0) {
+            return "data:" + imageType.getContentType() + ";base64," + Base64.getEncoder().encodeToString(imageData);
+        }
+        return null;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ProcessDiagram that = (ProcessDiagram) o;
+        return Objects.equals(id, that.id) &&
+                Objects.equals(imageName, that.imageName) &&
+                imageType == that.imageType &&
+                Objects.equals(isValid, that.isValid);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, imageName, imageType, isValid);
+    }
+
+    @Override
+    public String toString() {
+        return "ProcessDiagram{" +
+                "id=" + id +
+                ", imageName='" + imageName + '\'' +
+                ", imageType=" + imageType +
+                ", isValid=" + isValid +
+                '}';
     }
 
     public enum ImageType {

@@ -3,7 +3,10 @@ package com.boylegu.springboot_vue.repository;
 
 import com.boylegu.springboot_vue.entities.BusinessProcessDiagram;
 import org.springframework.stereotype.Repository;
+import java.util.List;
 
 @Repository
 public interface BusinessProcessDiagramRepository extends ProcessDiagramRepository<BusinessProcessDiagram> {
+    // 在具体实体的Repository中添加方法
+    List<BusinessProcessDiagram> findByIsValid(Boolean isValid);
 }

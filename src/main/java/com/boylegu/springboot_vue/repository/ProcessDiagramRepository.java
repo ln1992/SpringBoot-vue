@@ -10,5 +10,5 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface ProcessDiagramRepository<T extends ProcessDiagram> extends JpaRepository<T, Long> {
-    // 这是一个通用的Repository接口，具体的Repository应该继承它
+    // 移除 findByIsValid 方法，因为 ProcessDiagram 不是实体类
 }

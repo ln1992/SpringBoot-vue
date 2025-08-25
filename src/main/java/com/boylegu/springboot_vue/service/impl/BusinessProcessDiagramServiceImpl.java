@@ -2,6 +2,7 @@
 package com.boylegu.springboot_vue.service.impl;
 
 import com.boylegu.springboot_vue.entities.BusinessProcessDiagram;
+import com.boylegu.springboot_vue.entities.ProcessDiagram;
 import com.boylegu.springboot_vue.repository.BusinessProcessDiagramRepository;
 import com.boylegu.springboot_vue.service.BusinessProcessDiagramService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,76 +26,63 @@ public class BusinessProcessDiagramServiceImpl implements BusinessProcessDiagram
 
     @Override
     public BusinessProcessDiagram getDiagramById(Long id) {
-        return businessProcessDiagramRepository.findById(id).orElse(null);
+        Optional<BusinessProcessDiagram> diagram = businessProcessDiagramRepository.findById(id);
+        return diagram.orElse(null);
     }
 
     @Override
-    public BusinessProcessDiagram saveDiagram(BusinessProcessDiagram diagram) {
-        return businessProcessDiagramRepository.save(diagram);
-    }
-
-    @Override
-    public BusinessProcessDiagram saveDiagramWithImage(MultipartFile imageFile, String imageName) throws IOException {
-        BusinessProcessDiagram diagram = new BusinessProcessDiagram();
-        diagram.setImageName(imageName);
-        diagram.setImageData(imageFile.getBytes());
-
-        // 设置content type
-        String contentType = imageFile.getContentType();
-        if (contentType == null || contentType.isEmpty()) {
-            // 根据文件扩展名推断content type
-            String originalFilename = imageFile.getOriginalFilename();
-            if (originalFilename != null && originalFilename.contains(".")) {
-                String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-                com.boylegu.springboot_vue.entities.ProcessDiagram.ImageType imageType =
-                        com.boylegu.springboot_vue.entities.ProcessDiagram.ImageType.fromExtension(extension);
-                if (imageType != null) {
-                    contentType = imageType.getContentType();
-                }
-            }
-        }
-        diagram.setContentType(contentType);
-
-        return businessProcessDiagramRepository.save(diagram);
-    }
-
-    @Override
-    public BusinessProcessDiagram updateDiagram(Long id, MultipartFile imageFile, String imageName) throws IOException {
-        Optional<BusinessProcessDiagram> diagramOptional = businessProcessDiagramRepository.findById(id);
-        if (diagramOptional.isPresent()) {
-            BusinessProcessDiagram diagram = diagramOptional.get();
-
-            if (imageName != null && !imageName.isEmpty()) {
-                diagram.setImageName(imageName);
-            }
-
+    public BusinessProcessDiagram saveDiagram(BusinessProcessDiagram diagram, MultipartFile imageFile) {
+        try {
             if (imageFile != null && !imageFile.isEmpty()) {
                 diagram.setImageData(imageFile.getBytes());
 
-                // 设置content type
-                String contentType = imageFile.getContentType();
-                if (contentType == null || contentType.isEmpty()) {
-                    // 根据文件扩展名推断content type
-                    String originalFilename = imageFile.getOriginalFilename();
-                    if (originalFilename != null && originalFilename.contains(".")) {
-                        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-                        com.boylegu.springboot_vue.entities.ProcessDiagram.ImageType imageType =
-                                com.boylegu.springboot_vue.entities.ProcessDiagram.ImageType.fromExtension(extension);
-                        if (imageType != null) {
-                            contentType = imageType.getContentType();
-                        }
+                // 使用 ImageType 设置 image type
+                String originalFilename = imageFile.getOriginalFilename();
+                if (originalFilename != null && originalFilename.contains(".")) {
+                    String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                    ProcessDiagram.ImageType imageType = ProcessDiagram.ImageType.fromExtension(extension);
+                    if (imageType != null) {
+                        diagram.setImageType(imageType);
                     }
                 }
-                diagram.setContentType(contentType);
             }
-
             return businessProcessDiagramRepository.save(diagram);
+        } catch (IOException e) {
+            throw new RuntimeException("保存图片失败", e);
         }
-        return null;
     }
 
     @Override
     public void deleteDiagram(Long id) {
         businessProcessDiagramRepository.deleteById(id);
+    }
+
+    @Override
+    public List<BusinessProcessDiagram> getDiagramsByIsValid(Boolean isValid) {
+        return businessProcessDiagramRepository.findByIsValid(isValid);
+    }
+
+    @Override
+    public boolean activateDiagram(Long id) {
+        Optional<BusinessProcessDiagram> diagramOptional = businessProcessDiagramRepository.findById(id);
+        if (diagramOptional.isPresent()) {
+            BusinessProcessDiagram diagram = diagramOptional.get();
+            diagram.setIsValid(true);
+            businessProcessDiagramRepository.save(diagram);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean deactivateDiagram(Long id) {
+        Optional<BusinessProcessDiagram> diagramOptional = businessProcessDiagramRepository.findById(id);
+        if (diagramOptional.isPresent()) {
+            BusinessProcessDiagram diagram = diagramOptional.get();
+            diagram.setIsValid(false);
+            businessProcessDiagramRepository.save(diagram);
+            return true;
+        }
+        return false;
     }
 }

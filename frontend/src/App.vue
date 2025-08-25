@@ -18,6 +18,14 @@
         <div v-else-if="selectedMenu === 'matter'">
           <matter-list></matter-list>
         </div>
+        <!-- 添加审批流程图视图 -->
+        <div v-else-if="selectedMenu === 'approval-diagram'">
+          <approval-process-diagram-list></approval-process-diagram-list>
+        </div>
+        <!-- 添加业务流程图视图 -->
+        <div v-else-if="selectedMenu === 'business-diagram'">
+          <business-process-diagram-list></business-process-diagram-list>
+        </div>
       </el-col>
     </el-row>
 
@@ -40,6 +48,9 @@ import DbFooter from './components/DbFooter.vue'
 import MaterialList from './components/material/MaterialList.vue'
 // 导入事项管理组件
 import MatterList from './components/matter/MatterList.vue'
+// 导入流程图管理组件
+import ApprovalProcessDiagramList from './components/ProcessDiagram/ApprovalProcessDiagramList.vue'
+import BusinessProcessDiagramList from './components/ProcessDiagram/BusinessProcessDiagramList.vue'
 import ElRow from "element-ui/packages/row/src/row";
 
 export default {
@@ -52,7 +63,10 @@ export default {
     DbFooter,
     MaterialList,
     // 注册事项管理组件
-    MatterList
+    MatterList,
+    // 注册流程图管理组件
+    ApprovalProcessDiagramList,
+    BusinessProcessDiagramList
   },
   data() {
     return {

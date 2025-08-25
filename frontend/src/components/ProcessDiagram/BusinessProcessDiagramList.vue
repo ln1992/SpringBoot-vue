@@ -18,16 +18,21 @@
       <button @click="fetchDiagrams">重试</button>
     </div>
 
-    <div class="no-data" v-else-if="diagrams.length === 0">
-      <p>暂无业务流程图数据</p>
-      <button class="add-btn" @click="showAddForm">新增第一个业务流程图</button>
+    <div class="no-data" v-else-if="diagrams && diagrams.length === 0">
+      <div class="no-data-content">
+        <h3>暂无业务流程图数据</h3>
+        <p>点击下方按钮添加您的第一个业务流程图</p>
+        <button class="add-btn" @click="showAddForm">新增业务流程图</button>
+      </div>
     </div>
 
-    <div class="diagrams-table" v-else>
+    <div class="diagrams-table" v-else-if="diagrams && diagrams.length > 0">
       <div class="table-header">
         <div class="table-cell">ID</div>
         <div class="table-cell">名称</div>
+        <div class="table-cell">图片类型</div>
         <div class="table-cell">预览</div>
+        <div class="table-cell">状态</div>
         <div class="table-cell">操作</div>
       </div>
 
@@ -37,7 +42,12 @@
         :key="diagram.id"
       >
         <div class="table-cell">{{ diagram.id }}</div>
-        <div class="table-cell">{{ diagram.imageName || '未命名' }}</div>
+        <div class="table-cell diagram-name" @click="viewDiagramDetail(diagram)">
+          {{ diagram.imageName || '未命名' }}
+        </div>
+        <div class="table-cell">
+          {{ diagram.imageType || '未知' }}
+        </div>
         <div class="table-cell">
           <img
             v-if="diagram.imageDataUrl"
@@ -49,9 +59,33 @@
           <span v-else>无预览</span>
         </div>
         <div class="table-cell">
+          <span :class="['status-badge', diagram.isValid ? 'status-active' : 'status-inactive']">
+            {{ diagram.isValid ? '已上线' : '已下线' }}
+          </span>
+        </div>
+        <div class="table-cell">
           <div class="action-buttons">
-            <button class="edit-btn" @click="editDiagram(diagram)">编辑</button>
-            <button class="delete-btn" @click="deleteDiagram(diagram.id)">删除</button>
+            <button
+              v-if="diagram.isValid"
+              class="offline-btn"
+              @click.stop="toggleDiagramStatus(diagram.id, false)"
+            >
+              下线
+            </button>
+            <template v-else>
+              <button
+                class="online-btn"
+                @click.stop="toggleDiagramStatus(diagram.id, true)"
+              >
+                上线
+              </button>
+              <button
+                class="delete-btn"
+                @click.stop="deleteDiagram(diagram.id)"
+              >
+                删除
+              </button>
+            </template>
           </div>
         </div>
       </div>
@@ -65,6 +99,12 @@
         <div class="diagram-detail">
           <p><strong>ID:</strong> {{ selectedDiagram.id }}</p>
           <p><strong>名称:</strong> {{ selectedDiagram.imageName || '未命名' }}</p>
+          <p><strong>图片类型:</strong> {{ selectedDiagram.imageType || '未知' }}</p>
+          <p><strong>状态:</strong>
+            <span :class="['status-badge', selectedDiagram.isValid ? 'status-active' : 'status-inactive']">
+              {{ selectedDiagram.isValid ? '已上线' : '已下线' }}
+            </span>
+          </p>
           <div class="image-preview-container">
             <img
               v-if="selectedDiagram.imageDataUrl"
@@ -99,25 +139,40 @@
           </div>
 
           <div class="form-group">
-            <label>上传图像 *</label>
+            <label>上传图像</label>
             <input
               type="file"
               accept="image/*"
               @change="onImageChange"
-              :disabled="!!editingDiagram && !!editingDiagram.imageDataUrl"
             />
             <div v-if="form.imagePreview" class="image-preview">
               <img :src="form.imagePreview" alt="预览图像" />
             </div>
             <div v-else-if="editingDiagram && editingDiagram.imageDataUrl" class="image-preview">
               <img :src="editingDiagram.imageDataUrl" alt="当前图像" />
-              <p>当前图像 (编辑时不可更改)</p>
+              <p>当前图像</p>
             </div>
           </div>
 
+          <div class="form-group">
+            <label>状态:</label>
+            <select v-model="form.isValid">
+              <option :value="true">已上线</option>
+              <option :value="false">已下线</option>
+            </select>
+          </div>
+
           <div class="form-actions">
-            <button type="button" @click="closeForm">取消</button>
-            <button type="submit" class="save-btn">
+            <button
+              type="button"
+              @click="closeForm"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              class="save-btn"
+            >
               {{ editingDiagram ? '更新' : '创建' }}
             </button>
           </div>
@@ -128,7 +183,15 @@
 </template>
 
 <script>
-const API_BASE_URL = 'http://localhost:8000/api/process-diagrams/business'
+// API端点常量
+const API_BASE_URL = 'http://localhost:8000/api/process-diagrams/business';
+const API_GET_ALL = `${API_BASE_URL}`;
+const API_CREATE = `${API_BASE_URL}`;
+const API_GET_BY_ID = (id) => `${API_BASE_URL}/${id}`;
+const API_UPDATE = (id) => `${API_BASE_URL}/${id}`;
+const API_DELETE = (id) => `${API_BASE_URL}/${id}`;
+const API_ACTIVATE = (id) => `${API_BASE_URL}/${id}/activate`;
+const API_DEACTIVATE = (id) => `${API_BASE_URL}/${id}/deactivate`;
 
 export default {
   name: 'BusinessProcessDiagramList',
@@ -144,51 +207,84 @@ export default {
         id: null,
         imageName: '',
         imageFile: null,
-        imagePreview: null
+        imagePreview: null,
+        isValid: true
       }
-    }
+    };
   },
   async mounted() {
-    await this.fetchDiagrams()
+    await this.fetchDiagrams();
   },
   methods: {
     async fetchDiagrams() {
-      this.loading = true
-      this.error = null
+      this.loading = true;
+      this.error = null;
+      this.selectedDiagram = null;
 
       try {
-        const response = await fetch(API_BASE_URL)
+        const response = await fetch(API_GET_ALL, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+
         if (response.ok) {
-          this.diagrams = await response.json()
-          // 为每个流程图添加图像数据URL
-          this.diagrams.forEach(diagram => {
-            if (diagram.imageData) {
-              diagram.imageDataUrl = `data:${diagram.contentType};base64,${diagram.imageData}`
-            }
-          })
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            this.diagrams = Array.isArray(data) ? data : [];
+
+            // 为每个流程图添加图像数据URL
+            this.diagrams.forEach(diagram => {
+              // 使用后端提供的getImageDataUrl方法
+              if (diagram.imageDataUrl) {
+                diagram.imageDataUrl = diagram.imageDataUrl;
+              } else if (diagram.imageData && diagram.imageType) {
+                // 根据imageType生成Base64 URL
+                const contentType = this.getContentTypeByImageType(diagram.imageType);
+                diagram.imageDataUrl = `data:${contentType};base64,${diagram.imageData}`;
+              } else if (diagram.imageData && diagram.contentType) {
+                // 后备方案：使用contentType字段（兼容旧数据）
+                diagram.imageDataUrl = `data:${diagram.contentType};base64,${diagram.imageData}`;
+              }
+
+              // 确保有状态字段
+              if (diagram.isValid === undefined) {
+                diagram.isValid = true;
+              }
+
+              // 确保imageName存在
+              if (diagram.imageName === undefined || diagram.imageName === null) {
+                diagram.imageName = '';
+              }
+            });
+          } else {
+            throw new Error('服务器返回的不是JSON格式数据');
+          }
         } else {
-          throw new Error(`获取业务流程图失败: ${response.status}`)
+          this.error = `HTTP Error: ${response.status} ${response.statusText}`;
         }
       } catch (error) {
-        this.error = error.message || '网络错误'
-        console.error('获取业务流程图列表出错:', error)
+        this.error = error.message || '网络错误';
+        console.error('获取业务流程图列表出错:', error);
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 
     viewDiagramDetail(diagram) {
-      this.selectedDiagram = diagram
+      this.selectedDiagram = diagram;
     },
 
     closeDetailModal() {
-      this.selectedDiagram = null
+      this.selectedDiagram = null;
     },
 
     showAddForm() {
-      this.editingDiagram = null
-      this.resetForm()
-      this.showDiagramForm = true
+      this.editingDiagram = null;
+      this.resetForm();
+      this.showDiagramForm = true;
     },
 
     resetForm() {
@@ -196,103 +292,153 @@ export default {
         id: null,
         imageName: '',
         imageFile: null,
-        imagePreview: null
-      }
+        imagePreview: null,
+        isValid: true
+      };
     },
 
     closeForm() {
-      this.showDiagramForm = false
-      this.editingDiagram = null
+      this.showDiagramForm = false;
+      this.editingDiagram = null;
     },
 
     onImageChange(event) {
-      const file = event.target.files[0]
+      const file = event.target.files[0];
       if (file) {
-        this.form.imageFile = file
+        this.form.imageFile = file;
         // 生成预览
-        const reader = new FileReader()
+        const reader = new FileReader();
         reader.onload = (e) => {
-          this.form.imagePreview = e.target.result
-        }
-        reader.readAsDataURL(file)
+          this.form.imagePreview = e.target.result;
+        };
+        reader.readAsDataURL(file);
       }
     },
 
     editDiagram(diagram) {
-      this.editingDiagram = diagram
+      this.editingDiagram = diagram;
       this.form = {
         id: diagram.id,
         imageName: diagram.imageName || '',
         imageFile: null,
-        imagePreview: null
-      }
-      this.showDiagramForm = true
+        imagePreview: null,
+        isValid: diagram.isValid !== undefined ? diagram.isValid : true
+      };
+      this.showDiagramForm = true;
+      this.selectedDiagram = null;
     },
 
     async saveDiagram() {
       try {
-        const formData = new FormData()
-        formData.append('imageName', this.form.imageName)
+        const formData = new FormData();
+        formData.append('imageName', this.form.imageName);
+        formData.append('isValid', this.form.isValid);
 
         // 如果是新增或者编辑时重新上传了图片
         if (this.form.imageFile) {
-          formData.append('imageFile', this.form.imageFile)
+          formData.append('imageFile', this.form.imageFile);
         }
 
-        let response
+        let response;
 
         if (this.editingDiagram) {
           // 更新流程图
-          response = await fetch(`${API_BASE_URL}/${this.form.id}`, {
+          response = await fetch(API_UPDATE(this.form.id), {
             method: 'PUT',
             body: formData
-          })
+          });
         } else {
           // 新增流程图
-          response = await fetch(API_BASE_URL, {
+          response = await fetch(API_CREATE, {
             method: 'POST',
             body: formData
-          })
+          });
         }
 
         if (response.ok) {
-          await this.fetchDiagrams()
-          this.closeForm()
-          alert(this.editingDiagram ? '业务流程图更新成功' : '业务流程图创建成功')
+          await this.fetchDiagrams();
+          this.closeForm();
+          alert(this.editingDiagram ? '业务流程图更新成功' : '业务流程图创建成功');
         } else {
-          const errorText = await response.text()
-          console.error('Server error response:', errorText)
-          alert((this.editingDiagram ? '更新' : '创建') + '失败: ' + response.status + ' - ' + errorText)
+          const errorText = await response.text();
+          alert((this.editingDiagram ? '更新' : '创建') + '失败: ' + response.status + ' - ' + errorText);
         }
       } catch (error) {
-        console.error('保存业务流程图出错:', error)
-        alert('保存失败: ' + error.message)
+        console.error('保存业务流程图出错:', error);
+        alert('保存失败: ' + error.message);
+      }
+    },
+
+    async toggleDiagramStatus(id, isValid) {
+      try {
+        let response;
+        let action = isValid ? '启用' : '禁用';
+
+        if (isValid) {
+          // 启用流程图
+          response = await fetch(API_ACTIVATE(id), {
+            method: 'PUT'
+          });
+        } else {
+          // 禁用流程图
+          response = await fetch(API_DEACTIVATE(id), {
+            method: 'PUT'
+          });
+        }
+
+        if (response.ok) {
+          await this.fetchDiagrams();
+          alert(`流程图已${action}`);
+        } else if (response.status === 404) {
+          alert('流程图不存在');
+        } else {
+          alert(`${action}失败: ${response.status}`);
+        }
+      } catch (error) {
+        console.error(`更新流程图状态出错:`, error);
+        alert(`${action}失败: ${error.message}`);
       }
     },
 
     async deleteDiagram(id) {
       if (!confirm('确定要删除这个业务流程图吗？')) {
-        return
+        return;
       }
 
       try {
-        const response = await fetch(`${API_BASE_URL}/${id}`, {
+        const response = await fetch(API_DELETE(id), {
           method: 'DELETE'
-        })
+        });
 
         if (response.ok) {
-          await this.fetchDiagrams()
-          alert('业务流程图删除成功')
+          await this.fetchDiagrams();
+          alert('业务流程图删除成功');
         } else {
-          alert('删除失败: ' + response.status)
+          alert('删除失败: ' + response.status);
         }
       } catch (error) {
-        console.error('删除业务流程图出错:', error)
-        alert('删除失败: ' + error.message)
+        console.error('删除业务流程图出错:', error);
+        alert('删除失败: ' + error.message);
       }
+    },
+
+    /**
+     * 根据imageType获取对应的contentType
+     * @param {string} imageType - 图像类型，如'JPEG', 'PNG'等
+     * @returns {string} - 对应的MIME类型
+     */
+    getContentTypeByImageType(imageType) {
+      const contentTypes = {
+        'JPEG': 'image/jpeg',
+        'PNG': 'image/png',
+        'GIF': 'image/gif',
+        'BMP': 'image/bmp',
+        'SVG': 'image/svg+xml'
+      };
+      return contentTypes[imageType] || 'image/jpeg';
     }
   }
-}
+};
 </script>
 
 <style scoped>
@@ -365,6 +511,20 @@ export default {
   cursor: pointer;
 }
 
+.no-data-content {
+  text-align: center;
+}
+
+.no-data-content h3 {
+  color: #303133;
+  margin-bottom: 10px;
+}
+
+.no-data-content p {
+  color: #909399;
+  margin-bottom: 20px;
+}
+
 .diagrams-table {
   border: 1px solid #dcdfe6;
   border-radius: 4px;
@@ -406,12 +566,87 @@ export default {
   flex: 0 0 60px;
 }
 
+.table-cell:nth-child(2) {
+  flex: 2;
+  cursor: pointer;
+  color: #409eff;
+  font-weight: 500;
+}
+
+.table-cell:nth-child(2):hover {
+  color: #66b1ff;
+  text-decoration: underline;
+}
+
 .preview-image {
   max-width: 100px;
   max-height: 50px;
   cursor: pointer;
   border: 1px solid #dcdfe6;
   border-radius: 4px;
+}
+
+/* 状态标签样式 */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-active {
+  background-color: #f0f9eb;
+  color: #67c23a;
+  border: 1px solid #c2e7b0;
+}
+
+.status-inactive {
+  background-color: #fef0f0;
+  color: #f56c6c;
+  border: 1px solid #fbc4c4;
+}
+
+/* 操作按钮样式 */
+.action-buttons {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.offline-btn, .online-btn, .delete-btn {
+  padding: 4px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  border: none;
+  white-space: nowrap;
+}
+
+.offline-btn {
+  background-color: #e6a23c;
+  color: white;
+}
+
+.offline-btn:hover {
+  background-color: #ebb563;
+}
+
+.online-btn {
+  background-color: #67c23a;
+  color: white;
+}
+
+.online-btn:hover {
+  background-color: #85ce61;
+}
+
+.delete-btn {
+  background-color: #f56c6c;
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: #f78989;
 }
 
 /* 弹窗样式 */
@@ -508,7 +743,8 @@ export default {
   color: #303133;
 }
 
-.form-group input {
+.form-group input,
+.form-group select {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #dcdfe6;
@@ -570,41 +806,6 @@ export default {
 
 .save-btn:hover {
   background-color: #85ce61;
-}
-
-/* 操作按钮样式 */
-.action-buttons {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-}
-
-.edit-btn,
-.delete-btn {
-  padding: 4px 8px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 12px;
-  border: none;
-  white-space: nowrap;
-}
-
-.edit-btn {
-  background-color: #409eff;
-  color: white;
-}
-
-.edit-btn:hover {
-  background-color: #66b1ff;
-}
-
-.delete-btn {
-  background-color: #f56c6c;
-  color: white;
-}
-
-.delete-btn:hover {
-  background-color: #f78989;
 }
 
 @media (max-width: 768px) {

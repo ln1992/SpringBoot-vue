@@ -10,6 +10,13 @@
     </div>
     <div
       class="menu-item"
+      :class="{ active: activeItem === 'matter' }"
+      @click="selectItem('matter')"
+    >
+      事项管理
+    </div>
+    <div
+      class="menu-item"
       :class="{ active: activeItem === 'material' }"
       @click="selectItem('material')"
     >
@@ -17,10 +24,17 @@
     </div>
     <div
       class="menu-item"
-      :class="{ active: activeItem === 'matter' }"
-      @click="selectItem('matter')"
+      :class="{ active: activeItem === 'approval-diagram' }"
+      @click="selectItem('approval-diagram')"
     >
-      事项管理
+      审批流程图
+    </div>
+    <div
+      class="menu-item"
+      :class="{ active: activeItem === 'business-diagram' }"
+      @click="selectItem('business-diagram')"
+    >
+      业务流程图
     </div>
   </div>
 </template>
@@ -80,10 +94,11 @@ export default {
 
   .menu-item {
     display: inline-block;
-    width: calc(33.33% - 1px);
+    width: calc(20% - 1px); /* 5个菜单项 */
     text-align: center;
     padding-left: 0;
     border-right: 1px solid #d1d5da;
+    font-size: 12px;
   }
 
   .menu-item:last-child {
