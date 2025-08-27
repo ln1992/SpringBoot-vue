@@ -1,7 +1,7 @@
-// src/main/java/com/boylegu/springboot_vue/entities/BusinessProcessDiagram.java
 package com.boylegu.springboot_vue.entities;
 
-import javax.persistence.*;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "business_process_diagram")

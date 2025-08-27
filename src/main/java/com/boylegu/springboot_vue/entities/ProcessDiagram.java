@@ -1,17 +1,18 @@
-// src/main/java/com/boylegu/springboot_vue/entities/ProcessDiagram.java
 package com.boylegu.springboot_vue.entities;
 
+import com.fasterxml.jackson.annotation.*;
 import javax.persistence.*;
 import java.util.Base64;
 import java.util.Objects;
 
 @MappedSuperclass
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class ProcessDiagram {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "image_name")
+    @Column(name = "image_name", unique = true)
     private String imageName;
 
     @Lob
@@ -47,6 +48,7 @@ public abstract class ProcessDiagram {
         this.imageName = imageName;
     }
 
+    @JsonIgnore
     public byte[] getImageData() {
         return imageData;
     }
@@ -90,6 +92,7 @@ public abstract class ProcessDiagram {
 
     // 获取图像数据的Base64 URL，用于前端显示
     @Transient
+    @JsonProperty("imageDataUrl")
     public String getImageDataUrl() {
         if (imageData != null && imageType != null && imageData.length > 0) {
             return "data:" + imageType.getContentType() + ";base64," + Base64.getEncoder().encodeToString(imageData);

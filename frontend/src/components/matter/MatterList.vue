@@ -281,35 +281,87 @@
           <!-- 流程图上传 -->
           <div class="form-group">
             <label>审批流程图:</label>
-            <div class="image-upload-container">
-              <input
-                type="file"
-                accept="image/*"
-                @change="onApprovalDiagramChange"
+            <div class="process-diagram-selection">
+              <div class="diagram-select-wrapper">
+                <input
+                  type="text"
+                  class="diagram-search-input"
+                  placeholder="搜索审批流程图..."
+                  v-model="approvalDiagramSearchQuery"
+                  @input="onApprovalDiagramSearchInput($event.target.value)"
+                  @focus="onApprovalDiagramSearchFocus"
+                >
+                <div
+                  class="diagram-search-dropdown"
+                  v-if="approvalDiagramSearchResults.length > 0"
+                >
+                  <div
+                    class="diagram-search-option"
+                    v-for="diagram in approvalDiagramSearchResults"
+                    :key="diagram.id"
+                    @click="selectApprovalDiagram(diagram)"
+                  >
+                    {{ diagram.id }} - {{ diagram.imageName }}
+                  </div>
+                </div>
+              </div>
+              <button
+                v-if="form.approvalProcessDiagramId"
+                type="button"
+                class="clear-selection-btn"
+                @click="clearApprovalDiagram"
+              >
+                清除
+              </button>
+            </div>
+            <div v-if="form.approvalProcessDiagramId" class="image-preview">
+              <img 
+                :src="getApprovalProcessDiagramUrl(form.approvalProcessDiagramId)" 
+                alt="审批流程图预览" 
               />
-              <div v-if="form.approvalProcessDiagramPreview" class="image-preview">
-                <img :src="form.approvalProcessDiagramPreview" alt="审批流程图预览" />
-              </div>
-              <div v-else-if="editingMatter && editingMatter.approvalProcessDiagramId">
-                <p>已上传审批流程图</p>
-              </div>
             </div>
           </div>
 
           <div class="form-group">
             <label>业务流程图:</label>
-            <div class="image-upload-container">
-              <input
-                type="file"
-                accept="image/*"
-                @change="onBusinessDiagramChange"
+            <div class="process-diagram-selection">
+              <div class="diagram-select-wrapper">
+                <input
+                  type="text"
+                  class="diagram-search-input"
+                  placeholder="搜索业务流程图..."
+                  v-model="businessDiagramSearchQuery"
+                  @input="onBusinessDiagramSearchInput($event.target.value)"
+                  @focus="onBusinessDiagramSearchFocus"
+                >
+                <div
+                  class="diagram-search-dropdown"
+                  v-if="businessDiagramSearchResults.length > 0"
+                >
+                  <div
+                    class="diagram-search-option"
+                    v-for="diagram in businessDiagramSearchResults"
+                    :key="diagram.id"
+                    @click="selectBusinessDiagram(diagram)"
+                  >
+                    {{ diagram.id }} - {{ diagram.imageName }}
+                  </div>
+                </div>
+              </div>
+              <button
+                v-if="form.businessProcessDiagramId"
+                type="button"
+                class="clear-selection-btn"
+                @click="clearBusinessDiagram"
+              >
+                清除
+              </button>
+            </div>
+            <div v-if="form.businessProcessDiagramId" class="image-preview">
+              <img 
+                :src="getBusinessProcessDiagramUrl(form.businessProcessDiagramId)" 
+                alt="业务流程图预览" 
               />
-              <div v-if="form.businessProcessDiagramPreview" class="image-preview">
-                <img :src="form.businessProcessDiagramPreview" alt="业务流程图预览" />
-              </div>
-              <div v-else-if="editingMatter && editingMatter.businessProcessDiagramId">
-                <p>已上传业务流程图</p>
-              </div>
             </div>
           </div>
 
@@ -388,6 +440,12 @@ export default {
     return {
       matters: [],
       materialsList: [], // 存储所有材料列表
+      approvalProcessDiagrams: [], // 存储所有审批流程图
+      businessProcessDiagrams: [], // 存储所有业务流程图
+      approvalDiagramSearchQuery: '', // 审批流程图搜索查询
+      businessDiagramSearchQuery: '', // 业务流程图搜索查询
+      approvalDiagramSearchResults: [], // 审批流程图搜索结果
+      businessDiagramSearchResults: [], // 业务流程图搜索结果
       loading: true,
       error: null,
       selectedMatter: null,
@@ -412,10 +470,8 @@ export default {
         provincialDepartmentOffice: '',
         isValid: true,
         isPublish: false,
-        approvalProcessDiagram: null,
-        businessProcessDiagram: null,
-        approvalProcessDiagramPreview: null,
-        businessProcessDiagramPreview: null
+        approvalProcessDiagramId: null,
+        businessProcessDiagramId: null
       },
       // 审批层级枚举
       approvalLevels: [
@@ -441,6 +497,7 @@ export default {
   async mounted() {
     await this.fetchMatters()
     await this.fetchMaterials() // 获取材料列表
+    await this.fetchProcessDiagrams() // 获取流程图列表
   },
   methods: {
     async fetchMatters() {
@@ -477,6 +534,25 @@ export default {
         }
       } catch (error) {
         console.error('获取材料列表出错:', error);
+      }
+    },
+
+    // 获取所有有效流程图列表
+    async fetchProcessDiagrams() {
+      try {
+        // 获取审批流程图
+        const approvalResponse = await fetch('http://localhost:8000/api/process-diagrams/approval/search/valid?isValid=true');
+        if (approvalResponse.ok) {
+          this.approvalProcessDiagrams = await approvalResponse.json();
+        }
+
+        // 获取业务流程图
+        const businessResponse = await fetch('http://localhost:8000/api/process-diagrams/business/search/valid?isValid=true');
+        if (businessResponse.ok) {
+          this.businessProcessDiagrams = await businessResponse.json();
+        }
+      } catch (error) {
+        console.error('获取流程图列表出错:', error);
       }
     },
 
@@ -542,13 +618,15 @@ export default {
         provincialDepartmentOffice: '',
         isValid: true,
         isPublish: false,
-        approvalProcessDiagram: null,
-        businessProcessDiagram: null,
-        approvalProcessDiagramPreview: null,
-        businessProcessDiagramPreview: null
+        approvalProcessDiagramId: null,
+        businessProcessDiagramId: null
       }
       this.materialSearchQueries = []
       this.materialSearchResults = []
+      this.approvalDiagramSearchQuery = ''
+      this.businessDiagramSearchQuery = ''
+      this.approvalDiagramSearchResults = []
+      this.businessDiagramSearchResults = []
     },
 
     closeForm() {
@@ -615,32 +693,80 @@ export default {
       this.$set(this.materialSearchResults, index, [])
     },
 
-    // 处理审批流程图上传
-    onApprovalDiagramChange(event) {
-      const file = event.target.files[0]
-      if (file) {
-        this.form.approvalProcessDiagram = file
-        // 生成预览
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          this.form.approvalProcessDiagramPreview = e.target.result
-        }
-        reader.readAsDataURL(file)
+    // 处理审批流程图搜索输入
+    onApprovalDiagramSearchInput(query) {
+      if (query.trim() === '') {
+        this.approvalDiagramSearchResults = [];
+        return;
+      }
+
+      // 过滤流程图列表
+      const filtered = this.approvalProcessDiagrams.filter(diagram =>
+        diagram.id.toString().includes(query) ||
+        (diagram.imageName && diagram.imageName.includes(query))
+      );
+
+      this.approvalDiagramSearchResults = filtered;
+    },
+
+    // 审批流程图搜索框获得焦点时显示所有流程图
+    onApprovalDiagramSearchFocus() {
+      // 如果搜索框为空，显示所有流程图
+      if (!this.approvalDiagramSearchQuery || this.approvalDiagramSearchQuery.trim() === '') {
+        this.approvalDiagramSearchResults = [...this.approvalProcessDiagrams];
       }
     },
 
-    // 处理业务流程图上传
-    onBusinessDiagramChange(event) {
-      const file = event.target.files[0]
-      if (file) {
-        this.form.businessProcessDiagram = file
-        // 生成预览
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          this.form.businessProcessDiagramPreview = e.target.result
-        }
-        reader.readAsDataURL(file)
+    // 选择审批流程图
+    selectApprovalDiagram(diagram) {
+      this.form.approvalProcessDiagramId = diagram.id;
+      this.approvalDiagramSearchQuery = `${diagram.id} - ${diagram.imageName}`;
+      this.approvalDiagramSearchResults = [];
+    },
+
+    // 清除审批流程图选择
+    clearApprovalDiagram() {
+      this.form.approvalProcessDiagramId = null;
+      this.approvalDiagramSearchQuery = '';
+      this.approvalDiagramSearchResults = [];
+    },
+
+    // 处理业务流程图搜索输入
+    onBusinessDiagramSearchInput(query) {
+      if (query.trim() === '') {
+        this.businessDiagramSearchResults = [];
+        return;
       }
+
+      // 过滤流程图列表
+      const filtered = this.businessProcessDiagrams.filter(diagram =>
+        diagram.id.toString().includes(query) ||
+        (diagram.imageName && diagram.imageName.includes(query))
+      );
+
+      this.businessDiagramSearchResults = filtered;
+    },
+
+    // 业务流程图搜索框获得焦点时显示所有流程图
+    onBusinessDiagramSearchFocus() {
+      // 如果搜索框为空，显示所有流程图
+      if (!this.businessDiagramSearchQuery || this.businessDiagramSearchQuery.trim() === '') {
+        this.businessDiagramSearchResults = [...this.businessProcessDiagrams];
+      }
+    },
+
+    // 选择业务流程图
+    selectBusinessDiagram(diagram) {
+      this.form.businessProcessDiagramId = diagram.id;
+      this.businessDiagramSearchQuery = `${diagram.id} - ${diagram.imageName}`;
+      this.businessDiagramSearchResults = [];
+    },
+
+    // 清除业务流程图选择
+    clearBusinessDiagram() {
+      this.form.businessProcessDiagramId = null;
+      this.businessDiagramSearchQuery = '';
+      this.businessDiagramSearchResults = [];
     },
 
     editMatter(matter) {
@@ -663,10 +789,8 @@ export default {
         provincialDepartmentOffice: matter.provincialDepartmentOffice || '',
         isValid: matter.isValid !== undefined ? matter.isValid : true,
         isPublish: matter.isPublish !== undefined ? matter.isPublish : false,
-        approvalProcessDiagram: null,
-        businessProcessDiagram: null,
-        approvalProcessDiagramPreview: null,
-        businessProcessDiagramPreview: null
+        approvalProcessDiagramId: matter.approvalProcessDiagramId || null,
+        businessProcessDiagramId: matter.businessProcessDiagramId || null
       };
 
       // 初始化材料搜索查询
@@ -688,21 +812,54 @@ export default {
         this.materialSearchResults[index] = []
       });
 
+      // 初始化流程图搜索查询
+      this.approvalDiagramSearchQuery = '';
+      this.businessDiagramSearchQuery = '';
+      this.approvalDiagramSearchResults = [];
+      this.businessDiagramSearchResults = [];
+
+      // 设置审批流程图搜索查询文本
+      if (this.form.approvalProcessDiagramId) {
+        const diagram = this.approvalProcessDiagrams.find(d => d.id === this.form.approvalProcessDiagramId);
+        if (diagram) {
+          this.approvalDiagramSearchQuery = `${diagram.id} - ${diagram.imageName}`;
+        }
+      }
+
+      // 设置业务流程图搜索查询文本
+      if (this.form.businessProcessDiagramId) {
+        const diagram = this.businessProcessDiagrams.find(d => d.id === this.form.businessProcessDiagramId);
+        if (diagram) {
+          this.businessDiagramSearchQuery = `${diagram.id} - ${diagram.imageName}`;
+        }
+      }
+
       this.showMatterForm = true;
     },
 
     async saveMatter() {
       try {
-        // 确保 materialIds 是正确的格式
+        // 验证并转换materialIds
         const validMaterialIds = this.form.materialIds
           .filter(id => id !== null && id !== undefined)
           .map(id => {
-            // 确保ID是数字类型
-            return typeof id === 'string' ? parseInt(id, 10) : id;
+            const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+            return isNaN(numId) ? null : numId;
           })
-          .filter(id => !isNaN(id));
+          .filter(id => id !== null);
 
-        let response;
+        // 验证流程图ID
+        const validApprovalDiagramId = this.form.approvalProcessDiagramId ? 
+          (typeof this.form.approvalProcessDiagramId === 'string' ? 
+            parseInt(this.form.approvalProcessDiagramId, 10) : 
+            this.form.approvalProcessDiagramId) : 
+          null;
+        
+        const validBusinessDiagramId = this.form.businessProcessDiagramId ? 
+          (typeof this.form.businessProcessDiagramId === 'string' ? 
+            parseInt(this.form.businessProcessDiagramId, 10) : 
+            this.form.businessProcessDiagramId) : 
+          null;
 
         // 构造要发送的数据对象
         const matterData = {
@@ -720,29 +877,45 @@ export default {
           committedTimeLimit: this.form.committedTimeLimit,
           approvalLevel: this.form.approvalLevel,
           provincialDepartmentOffice: this.form.provincialDepartmentOffice,
+          approvalProcessDiagramId: isNaN(validApprovalDiagramId) ? null : validApprovalDiagramId,
+          businessProcessDiagramId: isNaN(validBusinessDiagramId) ? null : validBusinessDiagramId,
           isValid: this.form.isValid,
           isPublish: this.form.isPublish
         };
 
-        if (this.editingMatter) {
-          // 更新事项 - 使用 JSON 格式发送数据
-          response = await fetch(API_UPDATE(this.form.id), {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(matterData)
-          });
-        } else {
-          // 新增事项 - 使用 JSON 格式发送数据
-          response = await fetch(API_CREATE, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(matterData)
-          });
+        // 验证必填字段
+        if (!matterData.mainItemName || !matterData.subItemName || !matterData.grandchildItemName) {
+          alert('主项名称、子项名称和孙项名称不能为空');
+          return;
         }
+
+        if (matterData.legalTimeLimit === null || matterData.committedTimeLimit === null) {
+          alert('法定时限和承诺时限必须填写');
+          return;
+        }
+
+        let response;
+        let apiEndpoint;
+        let method;
+
+        if (this.editingMatter) {
+          // 更新事项
+          apiEndpoint = API_UPDATE(this.form.id);
+          method = 'PUT';
+        } else {
+          // 新增事项
+          apiEndpoint = API_CREATE;
+          method = 'POST';
+        }
+
+        // 发送请求
+        response = await fetch(apiEndpoint, {
+          method: method,
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(matterData)
+        });
 
         if (response.ok) {
           await this.fetchMatters();
@@ -751,7 +924,19 @@ export default {
         } else {
           const errorText = await response.text();
           console.error('Server error response:', errorText);
-          alert((this.editingMatter ? '更新' : '创建') + '失败: ' + response.status + ' - ' + errorText);
+          
+          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          try {
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.message) {
+              errorMessage = errorJson.message;
+            }
+          } catch (e) {
+            // 如果响应不是JSON格式，使用原始错误信息
+            errorMessage = errorText;
+          }
+          
+          alert((this.editingMatter ? '更新' : '创建') + '失败: ' + errorMessage);
         }
       } catch (error) {
         console.error('保存事项出错:', error);
@@ -841,8 +1026,41 @@ export default {
         console.error('删除事项出错:', error)
         alert('删除失败: ' + error.message)
       }
+    },
+
+    // 获取审批流程图URL
+    getApprovalProcessDiagramUrl(id) {
+      const diagram = this.approvalProcessDiagrams.find(d => d.id === id);
+      return diagram ? diagram.imageDataUrl : '';
+    },
+
+    // 获取业务流程图URL
+    getBusinessProcessDiagramUrl(id) {
+      const diagram = this.businessProcessDiagrams.find(d => d.id === id);
+      return diagram ? diagram.imageDataUrl : '';
+    },
+  },
+  computed: {
+    // 过滤审批流程图
+    filteredApprovalProcessDiagrams() {
+      if (!this.approvalDiagramSearch) {
+        return this.approvalProcessDiagrams;
+      }
+      return this.approvalProcessDiagrams.filter(diagram => 
+        diagram.imageName && diagram.imageName.includes(this.approvalDiagramSearch)
+      );
+    },
+    
+    // 过滤业务流程图
+    filteredBusinessProcessDiagrams() {
+      if (!this.businessDiagramSearch) {
+        return this.businessProcessDiagrams;
+      }
+      return this.businessProcessDiagrams.filter(diagram => 
+        diagram.imageName && diagram.imageName.includes(this.businessDiagramSearch)
+      );
     }
-  }
+  },
 }
 </script>
 
@@ -1286,6 +1504,63 @@ export default {
   background-color: #66b1ff;
 }
 
+/* 流程图选择样式 */
+.process-diagram-selection {
+  display: flex;
+  gap: 10px;
+}
+
+.diagram-select-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.diagram-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.diagram-search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #dcdfe6;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.diagram-search-option {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.diagram-search-option:hover {
+  background-color: #f5f7fa;
+}
+
+.clear-selection-btn {
+  background-color: #f56c6c;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.clear-selection-btn:hover {
+  background-color: #f78989;
+}
+
 /* 图片上传样式 */
 .image-upload-container {
   width: 100%;
@@ -1300,6 +1575,19 @@ export default {
   max-height: 200px;
   border: 1px solid #dcdfe6;
   border-radius: 4px;
+}
+
+.search-box {
+  margin: 10px 0;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
 }
 
 .form-actions {
@@ -1361,7 +1649,8 @@ export default {
   }
 
   .basis-item,
-  .material-item {
+  .material-item,
+  .process-diagram-selection {
     flex-direction: column;
   }
 
@@ -1371,3 +1660,4 @@ export default {
   }
 }
 </style>
+</file>
