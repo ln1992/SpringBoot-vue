@@ -22,12 +22,12 @@
         </div>
 
         <div class="form-group">
-          <label>审核点:</label>
+          <label>审核要点:</label>
           <textarea v-model="form.reviewPoint"></textarea>
         </div>
 
         <div class="form-group">
-          <label>自动审批标准:</label>
+          <label>"智能秒批"判断标准:</label>
           <textarea v-model="form.autoApprovalCriteria"></textarea>
         </div>
 
@@ -44,21 +44,21 @@
           <div class="form-group half-width">
             <label>材料来源:</label>
             <select v-model="form.materialSource">
-              <option value="PERSONAL_SUBMISSION">个人提交网上办理</option>
+              <option value="PERSONAL_SUBMISSION">申请人自备</option>
               <option value="SYSTEM_AUTO_SHARED">系统自动获取</option>
             </select>
           </div>
         </div>
 
-        <!-- 将处理方式和承诺资格放在同一行，各占一半 -->
+        <!-- 将办理方式及材料信息获取方式说明和是否适用告知承诺放在同一行，各占一半 -->
         <div class="form-row">
           <div class="form-group half-width">
-            <label>处理方式:</label>
+            <label>办理方式及材料信息获取方式说明:</label>
             <input type="text" v-model="form.processingMethodAndInfoAccess">
           </div>
 
           <div class="form-group half-width">
-            <label>承诺资格:</label>
+            <label>是否适用告知承诺:</label>
             <select v-model="form.isEligibleForPromise">
               <option :value="true">是</option>
               <option :value="false">否</option>
@@ -67,7 +67,7 @@
         </div>
 
         <div class="form-group">
-          <label>状态:</label>
+          <label>是否有效:</label>
           <select v-model="form.isValid">
             <option :value="true">已上线</option>
             <option :value="false">已下线</option>

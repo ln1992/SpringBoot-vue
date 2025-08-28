@@ -30,13 +30,13 @@
         <div class="table-header">
           <div class="table-cell">ID</div>
           <div class="table-cell">材料明细</div>
-          <div class="table-cell">审核点</div>
-          <div class="table-cell">自动审批标准</div>
-          <div class="table-cell">共享</div>
+          <div class="table-cell">审核要点</div>
+          <div class="table-cell">"智能秒批"判断标准</div>
+          <div class="table-cell">是否共享</div>
           <div class="table-cell">材料来源</div>
-          <div class="table-cell">处理方式</div>
-          <div class="table-cell">承诺资格</div>
-          <div class="table-cell">状态</div>
+          <div class="table-cell">办理方式及材料信息获取方式说明</div>
+          <div class="table-cell">是否适用告知承诺</div>
+          <div class="table-cell">是否有效</div>
           <div class="table-cell">操作</div>
         </div>
 
@@ -110,12 +110,12 @@
           </div>
 
           <div class="form-group">
-            <label>审核点:</label>
+            <label>审核要点:</label>
             <textarea v-model="form.reviewPoint"></textarea>
           </div>
 
           <div class="form-group">
-            <label>自动审批标准:</label>
+            <label>"智能秒批"判断标准:</label>
             <textarea v-model="form.autoApprovalCriteria"></textarea>
           </div>
 
@@ -130,18 +130,18 @@
           <div class="form-group">
             <label>材料来源:</label>
             <select v-model="form.materialSource">
-              <option value="PERSONAL_SUBMISSION">个人提交网上办理</option>
+              <option value="PERSONAL_SUBMISSION">申请人自备</option>
               <option value="SYSTEM_AUTO_SHARED">系统自动获取</option>
             </select>
           </div>
 
           <div class="form-group">
-            <label>处理方式:</label>
+            <label>办理方式及材料信息获取方式说明:</label>
             <input type="text" v-model="form.processingMethodAndInfoAccess">
           </div>
 
           <div class="form-group">
-            <label>承诺资格:</label>
+            <label>是否适用告知承诺:</label>
             <select v-model="form.isEligibleForPromise">
               <option :value="true">是</option>
               <option :value="false">否</option>
@@ -149,7 +149,7 @@
           </div>
 
           <div class="form-group">
-            <label>状态:</label>
+            <label>是否有效:</label>
             <select v-model="form.isValid">
               <option :value="true">已上线</option>
               <option :value="false">已下线</option>
@@ -176,8 +176,7 @@
   </div>
 </template>
 
-<script>
-// 引入MaterialDetail组件
+<script>// 引入MaterialDetail组件
 import MaterialDetail from './MaterialDetail.vue';
 
 // API端点常量
@@ -248,7 +247,7 @@ export default {
     // 获取材料来源文本
     getMaterialSourceText(source) {
       const sourceMap = {
-        'PERSONAL_SUBMISSION': '个人提交网上办理',
+        'PERSONAL_SUBMISSION': '申请人自备',
         'SYSTEM_AUTO_SHARED': '系统自动获取'
       };
       return sourceMap[source] || source;

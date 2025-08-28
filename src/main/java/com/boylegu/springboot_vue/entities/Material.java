@@ -151,7 +151,17 @@ public class Material {
     }
 
     public enum MaterialSource {
-        PERSONAL_SUBMISSION,     // 个人提交网上办理，线上提交材料
-        SYSTEM_AUTO_SHARED    // 系统自动获取，如数据不全则需申请者提交
+        PERSONAL_SUBMISSION("申请人自备"),
+        SYSTEM_AUTO_SHARED("系统自动获取");
+
+        private final String label;
+
+        MaterialSource(String label) {
+            this.label = label;
+        }
+
+        public String getLabel() {
+            return label;
+        }
     }
 }
