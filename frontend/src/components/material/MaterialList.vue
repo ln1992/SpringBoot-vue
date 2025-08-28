@@ -1,128 +1,109 @@
 <!-- src/components/material/MaterialList.vue -->
 <template>
   <div class="material-list-container">
-    <div class="header">
-      <h2>材料清单</h2>
-      <div class="header-actions">
-        <button class="refresh-btn" @click="fetchMaterials">刷新</button>
-        <button class="add-btn" @click="showAddForm">新增材料</button>
-      </div>
-    </div>
-
-    <div class="loading" v-if="loading">
-      <p>正在加载材料数据...</p>
-    </div>
-
-    <div class="error" v-else-if="error">
-      <p>加载失败: {{ error }}</p>
-      <button @click="fetchMaterials">重试</button>
-    </div>
-
-    <div class="no-data" v-else-if="materials.length === 0">
-      <p>暂无材料数据</p>
-      <button class="add-btn" @click="showAddForm">新增第一个材料</button>
-    </div>
-
-    <div class="materials-table" v-else>
-      <div class="table-header">
-        <div class="table-cell">ID</div>
-        <div class="table-cell">材料明细</div>
-        <div class="table-cell">审核点</div>
-        <div class="table-cell">自动审批标准</div>
-        <div class="table-cell">共享</div>
-        <div class="table-cell">材料来源</div>
-        <div class="table-cell">处理方式</div>
-        <div class="table-cell">承诺资格</div>
-        <div class="table-cell">状态</div>
-        <div class="table-cell">操作</div>
+    <!-- 材料列表界面 -->
+    <div v-if="!selectedMaterial">
+      <div class="header">
+        <h2>材料清单</h2>
+        <div class="header-actions">
+          <button class="refresh-btn" @click="fetchMaterials">刷新</button>
+          <button class="add-btn" @click="showAddForm">新增材料</button>
+        </div>
       </div>
 
-      <div
-        class="table-row"
-        v-for="material in materials"
-        :key="material.id"
-      >
-        <div class="table-cell">{{ material.id }}</div>
-        <div class="table-cell material-name" @click="editMaterial(material)">
-          {{ material.materialDetail || '-' }}
+      <div class="loading" v-if="loading">
+        <p>正在加载材料数据...</p>
+      </div>
+
+      <div class="error" v-else-if="error">
+        <p>加载失败: {{ error }}</p>
+        <button @click="fetchMaterials">重试</button>
+      </div>
+
+      <div class="no-data" v-else-if="materials.length === 0">
+        <p>暂无材料数据</p>
+        <button class="add-btn" @click="showAddForm">新增第一个材料</button>
+      </div>
+
+      <!-- 材料表格 -->
+      <div class="materials-table" v-else>
+        <div class="table-header">
+          <div class="table-cell">ID</div>
+          <div class="table-cell">材料明细</div>
+          <div class="table-cell">审核点</div>
+          <div class="table-cell">自动审批标准</div>
+          <div class="table-cell">共享</div>
+          <div class="table-cell">材料来源</div>
+          <div class="table-cell">处理方式</div>
+          <div class="table-cell">承诺资格</div>
+          <div class="table-cell">状态</div>
+          <div class="table-cell">操作</div>
         </div>
-        <div class="table-cell">{{ material.reviewPoint || '-' }}</div>
-        <div class="table-cell">{{ material.autoApprovalCriteria || '-' }}</div>
-        <div class="table-cell">{{ material.isShared ? '是' : '否' }}</div>
-        <div class="table-cell">{{ material.materialSource || '-' }}</div>
-        <div class="table-cell">{{ material.processingMethodAndInfoAccess || '-' }}</div>
-        <div class="table-cell">{{ material.isEligibleForPromise ? '是' : '否' }}</div>
-        <div class="table-cell">
-          <span :class="['status-badge', material.isValid ? 'status-active' : 'status-inactive']">
-            {{ material.isValid ? '已上线' : '已下线' }}
-          </span>
-        </div>
-        <div class="table-cell">
-          <div class="action-buttons">
-            <button
-              v-if="material.isValid"
-              class="offline-btn"
-              @click.stop="toggleMaterialStatus(material.id, false)"
-            >
-              下线
-            </button>
-            <template v-else>
+
+        <div
+          class="table-row"
+          v-for="material in materials"
+          :key="material.id"
+          @click="showMaterialDetail(material)"
+        >
+          <div class="table-cell">{{ material.id }}</div>
+          <div class="table-cell material-name">
+            {{ material.materialDetail || '-' }}
+          </div>
+          <div class="table-cell">{{ material.reviewPoint || '-' }}</div>
+          <div class="table-cell">{{ material.autoApprovalCriteria || '-' }}</div>
+          <div class="table-cell">{{ material.isShared ? '是' : '否' }}</div>
+          <div class="table-cell">{{ getMaterialSourceText(material.materialSource) || '-' }}</div>
+          <div class="table-cell">{{ material.processingMethodAndInfoAccess || '-' }}</div>
+          <div class="table-cell">{{ material.isEligibleForPromise ? '是' : '否' }}</div>
+          <div class="table-cell">
+            <span :class="['status-badge', material.isValid ? 'status-active' : 'status-inactive']">
+              {{ material.isValid ? '已上线' : '已下线' }}
+            </span>
+          </div>
+          <div class="table-cell action-cell">
+            <div class="action-buttons">
               <button
-                class="online-btn"
-                @click.stop="toggleMaterialStatus(material.id, true)"
+                v-if="material.isValid"
+                class="offline-btn"
+                @click.stop="toggleMaterialStatus(material.id, false)"
               >
-                上线
+                下线
               </button>
-              <button
-                class="delete-btn"
-                @click.stop="deleteMaterial(material.id)"
-              >
-                删除
-              </button>
-            </template>
+              <template v-else>
+                <button
+                  class="online-btn"
+                  @click.stop="toggleMaterialStatus(material.id, true)"
+                >
+                  上线
+                </button>
+                <button
+                  class="delete-btn"
+                  @click.stop="deleteMaterial(material.id)"
+                >
+                  删除
+                </button>
+              </template>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 材料详情弹窗 -->
-    <div class="modal" v-if="selectedMaterial" @click="closeModal">
-      <div class="modal-content" @click.stop>
-        <span class="close" @click="closeModal">&times;</span>
-        <h3>材料详情</h3>
-        <div class="material-detail">
-          <p><strong>ID:</strong> {{ selectedMaterial.id }}</p>
-          <p><strong>材料明细:</strong> {{ selectedMaterial.materialDetail || '无' }}</p>
-          <p><strong>审核点:</strong> {{ selectedMaterial.reviewPoint || '无' }}</p>
-          <p><strong>自动审批标准:</strong> {{ selectedMaterial.autoApprovalCriteria || '无' }}</p>
-          <p><strong>是否共享:</strong> {{ selectedMaterial.isShared ? '是' : '否' }}</p>
-          <p><strong>材料来源:</strong> {{ selectedMaterial.materialSource || '未指定' }}</p>
-          <p><strong>处理方式:</strong> {{ selectedMaterial.processingMethodAndInfoAccess || '未指定' }}</p>
-          <p><strong>承诺资格:</strong> {{ selectedMaterial.isEligibleForPromise ? '是' : '否' }}</p>
-          <p><strong>状态:</strong>
-            <span :class="['status-badge', selectedMaterial.isValid ? 'status-active' : 'status-inactive']">
-              {{ selectedMaterial.isValid ? '已上线' : '已下线' }}
-            </span>
-          </p>
-        </div>
-        <div class="modal-actions">
-          <button @click="editMaterial(selectedMaterial)">编辑</button>
-          <button @click="closeModal">关闭</button>
-        </div>
-      </div>
-    </div>
+    <!-- 材料详情界面 -->
+    <MaterialDetail
+      v-else
+      :material="selectedMaterial"
+      @back="goBackToList"
+      @material-updated="handleMaterialUpdated"
+    />
 
-    <!-- 新增/编辑材料弹窗 -->
+    <!-- 新增材料弹窗 -->
     <div class="modal" v-if="showMaterialForm" @click="closeForm">
       <div class="modal-content form-modal" @click.stop>
         <span class="close" @click="closeForm">&times;</span>
-        <h3>{{ editingMaterial ? '编辑材料' : '新增材料' }}</h3>
+        <h3>新增材料</h3>
         <form @submit.prevent="saveMaterial">
-          <div class="form-group" v-if="editingMaterial">
-            <label>ID:</label>
-            <input type="text" v-model="form.id" disabled>
-          </div>
-
           <div class="form-group">
             <label>材料明细 *</label>
             <input type="text" v-model="form.materialDetail" required>
@@ -177,25 +158,16 @@
 
           <div class="form-actions">
             <button
-              v-if="editingMaterial ? editingMaterial.isValid : true"
               type="button"
               @click="closeForm"
             >
-              取消
+              返回
             </button>
             <button
-              v-if="editingMaterial ? editingMaterial.isValid : true"
               type="submit"
               class="save-btn"
             >
-              {{ editingMaterial ? '更新' : '创建' }}
-            </button>
-            <button
-              v-if="!(editingMaterial ? editingMaterial.isValid : true)"
-              type="button"
-              @click="closeForm"
-            >
-              关闭
+              创建
             </button>
           </div>
         </form>
@@ -205,6 +177,9 @@
 </template>
 
 <script>
+// 引入MaterialDetail组件
+import MaterialDetail from './MaterialDetail.vue';
+
 // API端点常量
 const API_BASE_URL = 'http://localhost:8000/api/materials';
 const API_GET_ALL = `${API_BASE_URL}`;
@@ -214,8 +189,12 @@ const API_UPDATE = (id) => `${API_BASE_URL}/${id}`;
 const API_DELETE = (id) => `${API_BASE_URL}/${id}`;
 const API_ACTIVATE = (id) => `${API_BASE_URL}/${id}/activate`;
 const API_DEACTIVATE = (id) => `${API_BASE_URL}/${id}/deactivate`;
+
 export default {
   name: 'MaterialList',
+  components: {
+    MaterialDetail
+  },
   data() {
     return {
       materials: [],
@@ -266,12 +245,37 @@ export default {
       }
     },
 
-    viewMaterialDetail(material) {
+    // 获取材料来源文本
+    getMaterialSourceText(source) {
+      const sourceMap = {
+        'PERSONAL_SUBMISSION': '个人提交网上办理',
+        'SYSTEM_AUTO_SHARED': '系统自动获取'
+      };
+      return sourceMap[source] || source;
+    },
+
+    // 显示材料详情
+    showMaterialDetail(material) {
       this.selectedMaterial = material;
     },
 
-    closeModal() {
+    // 返回列表页
+    goBackToList() {
+      console.log('MaterialList: 接收到返回事件，当前selectedMaterial值:', this.selectedMaterial);
       this.selectedMaterial = null;
+      console.log('MaterialList: 已将selectedMaterial设置为null');
+    },
+
+    // 处理材料更新事件
+    handleMaterialUpdated(updatedMaterial) {
+      console.log('接收到material-updated事件，更新的材料数据:', updatedMaterial);
+      // 更新列表中的材料
+      const index = this.materials.findIndex(m => m.id === updatedMaterial.id);
+      if (index !== -1) {
+        this.materials.splice(index, 1, updatedMaterial);
+      }
+      // 更新选中的材料
+      this.selectedMaterial = updatedMaterial;
     },
 
     showAddForm() {
@@ -354,6 +358,33 @@ export default {
       }
     },
 
+    // 添加 deleteMaterial 方法
+    async deleteMaterial(id) {
+      if (!confirm('确定要删除这个材料吗？')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(API_DELETE(id), {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          await this.fetchMaterials();
+          // 如果正在查看被删除的材料，则返回列表
+          if (this.selectedMaterial && this.selectedMaterial.id === id) {
+            this.selectedMaterial = null;
+          }
+          alert('材料删除成功');
+        } else {
+          alert('删除失败: ' + response.status);
+        }
+      } catch (error) {
+        console.error('删除材料出错:', error);
+        alert('删除失败: ' + error.message);
+      }
+    },
+
     async toggleMaterialStatus(id, isValid) {
       try {
         let response;
@@ -383,27 +414,6 @@ export default {
         console.error(`更新材料状态出错:`, error);
         alert(`${action}失败: ${error.message}`);
       }
-    },
-    async deleteMaterial(id) {
-      if (!confirm('确定要删除这个材料吗？')) {
-        return;
-      }
-
-      try {
-        const response = await fetch(API_DELETE(id), {
-          method: 'DELETE'
-        });
-
-        if (response.ok) {
-          await this.fetchMaterials();
-          alert('材料删除成功');
-        } else {
-          alert('删除失败: ' + response.status);
-        }
-      } catch (error) {
-        console.error('删除材料出错:', error);
-        alert('删除失败: ' + error.message);
-      }
     }
   }
 };
@@ -421,6 +431,8 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .header h2 {
@@ -433,7 +445,8 @@ export default {
   gap: 10px;
 }
 
-.refresh-btn, .add-btn {
+.refresh-btn,
+.add-btn {
   background-color: #409eff;
   color: white;
   border: none;
@@ -455,7 +468,9 @@ export default {
   background-color: #85ce61;
 }
 
-.loading, .error, .no-data {
+.loading,
+.error,
+.no-data {
   text-align: center;
   padding: 40px 20px;
   color: #909399;
@@ -465,7 +480,8 @@ export default {
   color: #f56c6c;
 }
 
-.error button, .no-data button {
+.error button,
+.no-data button {
   margin-top: 10px;
   background-color: #409eff;
   color: white;
@@ -479,6 +495,7 @@ export default {
   border: 1px solid #dcdfe6;
   border-radius: 4px;
   overflow: hidden;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .table-header {
@@ -491,6 +508,8 @@ export default {
 .table-row {
   display: flex;
   border-bottom: 1px solid #dcdfe6;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .table-row:hover {
@@ -512,25 +531,25 @@ export default {
   align-items: center;
 }
 
-.table-cell:first-child {
+/* 特定列的宽度调整 */
+.table-cell:nth-child(1) {
+  /* ID列 */
   flex: 0 0 60px;
 }
 
 .table-cell:nth-child(2) {
+  /* 材料明细列 */
   flex: 2;
-  cursor: pointer;
-  color: #409eff;
+}
+
+.table-cell:nth-child(10) {
+  /* 操作列 */
+  flex: 0 0 120px;
+}
+
+.material-name {
   font-weight: 500;
-}
-
-.table-cell:nth-child(2):hover {
-  color: #66b1ff;
-  text-decoration: underline;
-}
-
-.table-cell:nth-child(3),
-.table-cell:nth-child(4) {
-  flex: 1.5;
+  color: #409eff;
 }
 
 /* 状态标签样式 */
@@ -554,13 +573,19 @@ export default {
 }
 
 /* 操作按钮样式 */
+.action-cell {
+  justify-content: flex-start;
+}
+
 .action-buttons {
   display: flex;
   gap: 5px;
   flex-wrap: wrap;
 }
 
-.offline-btn, .online-btn, .delete-btn {
+.offline-btn,
+.online-btn,
+.delete-btn {
   padding: 4px 8px;
   border-radius: 3px;
   cursor: pointer;
@@ -638,30 +663,6 @@ export default {
   color: #303133;
 }
 
-.material-detail p {
-  margin: 10px 0;
-  line-height: 1.5;
-}
-
-.modal-actions {
-  margin-top: 20px;
-  text-align: right;
-}
-
-.modal-actions button {
-  margin-left: 10px;
-  background-color: #409eff;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.modal-actions button:hover {
-  background-color: #66b1ff;
-}
-
 /* 表单样式 */
 .form-group {
   margin-bottom: 15px;
@@ -723,29 +724,50 @@ export default {
   background-color: #85ce61;
 }
 
+/* 响应式设计 */
 @media (max-width: 768px) {
-  .materials-table {
-    font-size: 12px;
-  }
-
-  .table-cell {
-    padding: 8px 5px;
+  .material-list-container {
+    padding: 10px;
   }
 
   .header {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    align-items: stretch;
   }
 
   .header-actions {
-    width: 100%;
-    justify-content: space-between;
+    justify-content: center;
+  }
+
+  .table-header,
+  .table-row {
+    flex-wrap: wrap;
+  }
+
+  .table-cell {
+    flex: 0 0 50%;
+    padding: 8px 5px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .table-cell:nth-child(1),
+  .table-cell:nth-child(2) {
+    flex: 0 0 100%;
+  }
+
+  .table-cell:nth-child(10) {
+    flex: 0 0 100%;
+    justify-content: flex-start;
   }
 
   .action-buttons {
-    flex-direction: column;
-    gap: 3px;
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .modal-content {
+    width: 95%;
+    padding: 15px;
   }
 }
 </style>
