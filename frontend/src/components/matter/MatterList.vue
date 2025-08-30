@@ -1,427 +1,155 @@
+<!-- src/components/matter/MatterList.vue -->
 <template>
   <div class="matter-list-container">
-    <div class="header">
-      <h2>事项清单</h2>
-      <div class="header-actions">
-        <button class="refresh-btn" @click="fetchMatters">刷新</button>
-        <button class="add-btn" @click="showAddForm">新增事项</button>
-      </div>
-    </div>
-
-    <div class="loading" v-if="loading">
-      <p>正在加载事项数据...</p>
-    </div>
-
-    <div class="error" v-else-if="error">
-      <p>加载失败: {{ error }}</p>
-      <button @click="fetchMatters">重试</button>
-    </div>
-
-    <div class="no-data" v-else-if="matters.length === 0">
-      <p>暂无事项数据</p>
-      <button class="add-btn" @click="showAddForm">新增第一个事项</button>
-    </div>
-
-    <div class="matters-table" v-else>
-      <div class="table-header">
-        <div class="table-cell">ID</div>
-        <div class="table-cell">主项名称</div>
-        <div class="table-cell">子项名称</div>
-        <div class="table-cell">孙项名称</div>
-        <div class="table-cell">法定时限</div>
-        <div class="table-cell">承诺时限</div>
-        <div class="table-cell">审批层级</div>
-        <div class="table-cell">省厅对口指导处室</div>
-        <div class="table-cell">版本</div>
-        <div class="table-cell">发布状态</div>
-        <div class="table-cell">状态</div>
-        <div class="table-cell">操作</div>
-      </div>
-
-      <div
-        class="table-row"
-        v-for="matter in matters"
-        :key="matter.id"
-      >
-        <div class="table-cell">{{ matter.id }}</div>
-        <div class="table-cell matter-name" @click="editMatter(matter)">
-          {{ formatMainItemName(matter.mainItemCode, matter.mainItemName) }}
-        </div>
-        <div class="table-cell">
-          {{ formatSubItemName(matter.mainItemCode, matter.subItemCode, matter.subItemName) }}
-        </div>
-        <div class="table-cell">
-          {{ formatGrandchildItemName(matter.mainItemCode, matter.subItemCode, matter.grandchildItemCode, matter.grandchildItemName) }}
-        </div>
-        <div class="table-cell">{{ matter.legalTimeLimit || '-' }}天</div>
-        <div class="table-cell">{{ matter.committedTimeLimit || '-' }}天</div>
-        <div class="table-cell">{{ getApprovalLevelDescription(matter.approvalLevel) || matter.approvalLevel || '-' }}</div>
-        <div class="table-cell">{{ getProvincialDepartmentOfficeDescription(matter.provincialDepartmentOffice) || matter.provincialDepartmentOffice || '-' }}</div>
-        <div class="table-cell">{{ matter.version || '-' }}</div>
-        <div class="table-cell">
-          <span :class="['status-badge', matter.isPublish ? 'status-active' : 'status-inactive']">
-            {{ matter.isPublish ? '已发布' : '未发布' }}
-          </span>
-        </div>
-        <div class="table-cell">
-          <span :class="['status-badge', matter.isValid ? 'status-active' : 'status-inactive']">
-            {{ matter.isValid ? '已上线' : '已下线' }}
-          </span>
-        </div>
-        <div class="table-cell">
-          <div class="action-buttons">
-            <!-- 状态操作按钮 -->
-            <template v-if="matter.isValid">
-              <button
-                class="offline-btn"
-                @click.stop="toggleMatterStatus(matter.id, false)"
-              >
-                下线
-              </button>
-            </template>
-            <template v-else>
-              <button
-                class="online-btn"
-                @click.stop="toggleMatterStatus(matter.id, true)"
-              >
-                上线
-              </button>
-              <button
-                class="delete-btn"
-                @click.stop="deleteMatter(matter.id)"
-              >
-                删除
-              </button>
-            </template>
-
-            <!-- 发布操作按钮 -->
-            <template v-if="matter.isValid && !matter.isPublish">
-              <button
-                class="publish-btn"
-                @click.stop="togglePublishStatus(matter.id, true)"
-              >
-                发布
-              </button>
-            </template>
-            <template v-else-if="matter.isValid && matter.isPublish">
-              <button
-                class="unpublish-btn"
-                @click.stop="togglePublishStatus(matter.id, false)"
-              >
-                取消发布
-              </button>
-            </template>
-          </div>
+    <!-- 事项列表界面 -->
+    <div v-if="!selectedMatter && !showAddForm">
+      <div class="header">
+        <h2>事项清单</h2>
+        <div class="header-actions">
+          <button class="refresh-btn" @click="fetchMatters">刷新</button>
+          <button class="add-btn" @click="showAddForm = true">新增事项</button>
         </div>
       </div>
-    </div>
 
-    <!-- 新增/编辑事项弹窗 -->
-    <div class="modal" v-if="showMatterForm" @click="closeForm">
-      <div class="modal-content form-modal" @click.stop>
-        <span class="close" @click="closeForm">&times;</span>
-        <h3>{{ editingMatter ? '编辑事项' : '新增事项' }}</h3>
-        <form @submit.prevent="saveMatter">
-          <div class="form-group" v-if="editingMatter">
-            <label>ID:</label>
-            <input type="text" v-model="form.id" disabled>
+      <div class="loading" v-if="loading">
+        <p>正在加载事项数据...</p>
+      </div>
+
+      <div class="error" v-else-if="error">
+        <p>加载失败: {{ error }}</p>
+        <button @click="fetchMatters">重试</button>
+      </div>
+
+      <div class="no-data" v-else-if="matters.length === 0">
+        <p>暂无事项数据</p>
+        <button class="add-btn" @click="showAddForm = true">新增第一个事项</button>
+      </div>
+
+      <!-- 事项表格 -->
+      <div class="matters-table" v-else>
+        <div class="table-header">
+          <div class="table-cell">ID</div>
+          <div class="table-cell">主项名称</div>
+          <div class="table-cell">子项名称</div>
+          <div class="table-cell">孙项名称</div>
+          <div class="table-cell">法定时限</div>
+          <div class="table-cell">承诺时限</div>
+          <div class="table-cell">审批层级</div>
+          <div class="table-cell">省厅对口指导处室</div>
+          <div class="table-cell">版本</div>
+          <div class="table-cell">发布状态</div>
+          <div class="table-cell">状态</div>
+          <div class="table-cell">操作</div>
+        </div>
+
+        <div
+          class="table-row"
+          v-for="matter in matters"
+          :key="matter.id"
+          @click="editMatter(matter)"
+        >
+          <div class="table-cell">{{ matter.id }}</div>
+          <div class="table-cell matter-name">
+            {{ formatMainItemName(matter.mainItemCode, matter.mainItemName) }}
           </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>主项编号</label>
-              <input type="number" v-model.number="form.mainItemCode">
-            </div>
-            <div class="form-group">
-              <label>主项名称 *</label>
-              <input type="text" v-model="form.mainItemName" required>
-            </div>
+          <div class="table-cell">
+            {{ formatSubItemName(matter.mainItemCode, matter.subItemCode, matter.subItemName) }}
           </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>子项编号</label>
-              <input type="number" v-model.number="form.subItemCode">
-            </div>
-            <div class="form-group">
-              <label>子项名称 *</label>
-              <input type="text" v-model="form.subItemName" required>
-            </div>
+          <div class="table-cell">
+            {{ formatGrandchildItemName(matter.mainItemCode, matter.subItemCode, matter.grandchildItemCode, matter.grandchildItemName) }}
           </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>孙项编号</label>
-              <input type="number" v-model.number="form.grandchildItemCode">
-            </div>
-            <div class="form-group">
-              <label>孙项名称 *</label>
-              <input type="text" v-model="form.grandchildItemName" required>
-            </div>
+          <div class="table-cell">{{ matter.legalTimeLimit || '-' }}天</div>
+          <div class="table-cell">{{ matter.committedTimeLimit || '-' }}天</div>
+          <div class="table-cell">{{ getApprovalLevelDescription(matter.approvalLevel) || matter.approvalLevel || '-' }}</div>
+          <div class="table-cell">{{ getProvincialDepartmentOfficeDescription(matter.provincialDepartmentOffice) || matter.provincialDepartmentOffice || '-' }}</div>
+          <div class="table-cell">{{ matter.version || '-' }}</div>
+          <div class="table-cell">
+            <span :class="['status-badge', matter.isPublish ? 'status-active' : 'status-inactive']">
+              {{ matter.isPublish ? '已发布' : '未发布' }}
+            </span>
           </div>
-
-          <div class="form-group">
-            <label>经办依据:</label>
-            <div class="basis-list-container">
-              <div
-                class="basis-item"
-                v-for="(basis, index) in form.bases"
-                :key="index"
-              >
-                <input
-                  type="text"
-                  v-model="form.bases[index]"
-                  placeholder="请输入经办依据"
-                >
+          <div class="table-cell">
+            <span :class="['status-badge', matter.isValid ? 'status-active' : 'status-inactive']">
+              {{ matter.isValid ? '已上线' : '已下线' }}
+            </span>
+          </div>
+          <div class="table-cell">
+            <div class="action-buttons">
+              <!-- 状态操作按钮 -->
+              <template v-if="matter.isValid">
                 <button
-                  type="button"
-                  class="remove-basis-btn"
-                  @click="removeBasis(index)"
+                  class="offline-btn"
+                  @click.stop="toggleMatterStatus(matter.id, false)"
+                >
+                  下线
+                </button>
+              </template>
+              <template v-else>
+                <button
+                  class="online-btn"
+                  @click.stop="toggleMatterStatus(matter.id, true)"
+                >
+                  上线
+                </button>
+                <button
+                  class="delete-btn"
+                  @click.stop="deleteMatter(matter.id)"
                 >
                   删除
                 </button>
-              </div>
-              <button
-                type="button"
-                class="add-basis-btn"
-                @click="addBasis"
-              >
-                + 新增法条
-              </button>
-            </div>
-          </div>
+              </template>
 
-          <div class="form-group">
-            <label>关联材料:</label>
-            <div class="material-selection-container">
-              <div
-                class="material-item"
-                v-for="(materialId, index) in form.materialIds"
-                :key="index"
-              >
-                <div class="material-select-wrapper">
-                  <input
-                    type="text"
-                    class="material-search-input"
-                    :placeholder="'搜索材料...'"
-                    v-model="materialSearchQueries[index]"
-                    @input="onMaterialSearchInput(index, $event.target.value)"
-                    @focus="onMaterialSearchFocus(index)"
-                  >
-                  <div
-                    class="material-search-dropdown"
-                    v-if="materialSearchResults[index] && materialSearchResults[index].length > 0"
-                  >
-                    <div
-                      class="material-search-option"
-                      v-for="material in materialSearchResults[index]"
-                      :key="material.id"
-                      @click="selectMaterial(index, material)"
-                    >
-                      {{ material.id }} - {{ material.materialDetail }}
-                    </div>
-                  </div>
-                </div>
+              <!-- 发布操作按钮 -->
+              <template v-if="matter.isValid && !matter.isPublish">
                 <button
-                  type="button"
-                  class="remove-material-btn"
-                  @click="removeMaterial(index)"
+                  class="publish-btn"
+                  @click.stop="togglePublishStatus(matter.id, true)"
                 >
-                  删除
+                  发布
                 </button>
-              </div>
-              <button
-                type="button"
-                class="add-material-btn"
-                @click="addMaterial"
-              >
-                + 添加材料
-              </button>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>法定时限 (天) *</label>
-            <input type="number" v-model.number="form.legalTimeLimit" required>
-          </div>
-
-          <div class="form-group">
-            <label>承诺时限 (天) *</label>
-            <input type="number" v-model.number="form.committedTimeLimit" required>
-          </div>
-
-          <div class="form-group">
-            <label>审批层级 *</label>
-            <select v-model="form.approvalLevel" required>
-              <option value="">请选择审批层级</option>
-              <option
-                v-for="level in approvalLevels"
-                :key="level.name"
-                :value="level.name"
-              >
-                {{ level.description }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>省厅对口指导处室 *</label>
-            <select v-model="form.provincialDepartmentOffice" required>
-              <option value="">请选择省厅对口指导处室</option>
-              <option
-                v-for="office in provincialDepartmentOffices"
-                :key="office.name"
-                :value="office.name"
-              >
-                {{ office.description }}
-              </option>
-            </select>
-          </div>
-
-          <!-- 流程图上传 -->
-          <div class="form-group">
-            <label>审批流程图:</label>
-            <div class="process-diagram-selection">
-              <div class="diagram-select-wrapper">
-                <input
-                  type="text"
-                  class="diagram-search-input"
-                  placeholder="搜索审批流程图..."
-                  v-model="approvalDiagramSearchQuery"
-                  @input="onApprovalDiagramSearchInput($event.target.value)"
-                  @focus="onApprovalDiagramSearchFocus"
+              </template>
+              <template v-else-if="matter.isValid && matter.isPublish">
+                <button
+                  class="unpublish-btn"
+                  @click.stop="togglePublishStatus(matter.id, false)"
                 >
-                <div
-                  class="diagram-search-dropdown"
-                  v-if="approvalDiagramSearchResults.length > 0"
-                >
-                  <div
-                    class="diagram-search-option"
-                    v-for="diagram in approvalDiagramSearchResults"
-                    :key="diagram.id"
-                    @click="selectApprovalDiagram(diagram)"
-                  >
-                    {{ diagram.id }} - {{ diagram.imageName }}
-                  </div>
-                </div>
-              </div>
-              <button
-                v-if="form.approvalProcessDiagramId"
-                type="button"
-                class="clear-selection-btn"
-                @click="clearApprovalDiagram"
-              >
-                清除
-              </button>
-            </div>
-            <div v-if="form.approvalProcessDiagramId" class="image-preview">
-              <img 
-                :src="getApprovalProcessDiagramUrl(form.approvalProcessDiagramId)" 
-                alt="审批流程图预览" 
-              />
+                  取消发布
+                </button>
+              </template>
             </div>
           </div>
-
-          <div class="form-group">
-            <label>业务流程图:</label>
-            <div class="process-diagram-selection">
-              <div class="diagram-select-wrapper">
-                <input
-                  type="text"
-                  class="diagram-search-input"
-                  placeholder="搜索业务流程图..."
-                  v-model="businessDiagramSearchQuery"
-                  @input="onBusinessDiagramSearchInput($event.target.value)"
-                  @focus="onBusinessDiagramSearchFocus"
-                >
-                <div
-                  class="diagram-search-dropdown"
-                  v-if="businessDiagramSearchResults.length > 0"
-                >
-                  <div
-                    class="diagram-search-option"
-                    v-for="diagram in businessDiagramSearchResults"
-                    :key="diagram.id"
-                    @click="selectBusinessDiagram(diagram)"
-                  >
-                    {{ diagram.id }} - {{ diagram.imageName }}
-                  </div>
-                </div>
-              </div>
-              <button
-                v-if="form.businessProcessDiagramId"
-                type="button"
-                class="clear-selection-btn"
-                @click="clearBusinessDiagram"
-              >
-                清除
-              </button>
-            </div>
-            <div v-if="form.businessProcessDiagramId" class="image-preview">
-              <img 
-                :src="getBusinessProcessDiagramUrl(form.businessProcessDiagramId)" 
-                alt="业务流程图预览" 
-              />
-            </div>
-          </div>
-
-          <!-- 版本、发布状态、状态字段移到最后 -->
-          <div class="form-row">
-            <div class="form-group">
-              <label>版本:</label>
-              <input type="text" v-model="form.version">
-            </div>
-
-            <div class="form-group">
-              <label>发布状态:</label>
-              <select v-model="form.isPublish">
-                <option :value="true">已发布</option>
-                <option :value="false">未发布</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>状态:</label>
-              <select v-model="form.isValid">
-                <option :value="true">已上线</option>
-                <option :value="false">已下线</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <!-- 当发布状态为true或状态为false时，只显示关闭按钮 -->
-            <template v-if="editingMatter && (form.isPublish === true || form.isValid === false)">
-              <button
-                type="button"
-                @click="closeForm"
-              >
-                关闭
-              </button>
-            </template>
-            <!-- 其他情况显示取消和更新按钮 -->
-            <template v-else>
-              <button
-                type="button"
-                @click="closeForm"
-              >
-                取消
-              </button>
-              <button
-                type="submit"
-                class="save-btn"
-              >
-                {{ editingMatter ? '更新' : '创建' }}
-              </button>
-            </template>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
+
+    <!-- 事项详情界面 -->
+    <MatterDetail
+      v-else-if="selectedMatter"
+      :matter="selectedMatter"
+      :materials-list="materialsList"
+      :approval-process-diagrams="approvalProcessDiagrams"
+      :business-process-diagrams="businessProcessDiagrams"
+      @back="goBackToList"
+      @matter-updated="handleMatterUpdated"
+    />
+
+    <!-- 新增事项界面 -->
+    <MatterDetail
+      v-else-if="showAddForm"
+      :matter="newMatter"
+      :materials-list="materialsList"
+      :approval-process-diagrams="approvalProcessDiagrams"
+      :business-process-diagrams="businessProcessDiagrams"
+      @back="cancelAdd"
+      @matter-updated="handleMatterAdded"
+    />
   </div>
 </template>
 
 <script>
+// 引入详情组件
+import MatterDetail from './MatterDetail.vue';
+
 // API端点常量
 const API_BASE_URL = 'http://localhost:8000/api/matters'
 const API_MATERIALS_URL = 'http://localhost:8000/api/materials'
@@ -436,6 +164,9 @@ const API_UNPUBLISH = (id) => `${API_BASE_URL}/${id}/unpublish`
 
 export default {
   name: 'MatterList',
+  components: {
+    MatterDetail
+  },
   data() {
     return {
       matters: [],
@@ -449,10 +180,29 @@ export default {
       loading: true,
       error: null,
       selectedMatter: null,
-      showMatterForm: false,
-      editingMatter: null,
+      showAddForm: false,
       materialSearchQueries: [], // 材料搜索查询
       materialSearchResults: [], // 材料搜索结果
+      newMatter: {
+        id: null,
+        version: null,
+        mainItemCode: null,
+        subItemCode: null,
+        grandchildItemCode: null,
+        mainItemName: '',
+        subItemName: '',
+        grandchildItemName: '',
+        bases: [],
+        materialIds: [],
+        legalTimeLimit: null,
+        committedTimeLimit: null,
+        approvalLevel: '',
+        provincialDepartmentOffice: '',
+        isValid: true,
+        isPublish: false,
+        approvalProcessDiagramId: null,
+        businessProcessDiagramId: null
+      },
       form: {
         id: null,
         version: null,
@@ -503,6 +253,7 @@ export default {
     async fetchMatters() {
       this.loading = true
       this.error = null
+      this.selectedMatter = null
 
       try {
         const response = await fetch(API_GET_ALL)
@@ -594,10 +345,40 @@ export default {
       return `${mainCode || ''}.${subCode || ''}.${grandchildCode || ''}.${name}`;
     },
 
-    showAddForm() {
-      this.editingMatter = null
-      this.resetForm()
-      this.showMatterForm = true
+    // 显示材料详情
+    editMatter(matter) {
+      this.selectedMatter = matter;
+    },
+
+    // 返回列表页
+    goBackToList() {
+      this.selectedMatter = null;
+    },
+
+    // 取消新增
+    cancelAdd() {
+      this.showAddForm = false;
+    },
+
+    // 处理事项更新事件
+    handleMatterUpdated(updatedMatter) {
+      // 更新列表中的事项
+      const index = this.matters.findIndex(m => m.id === updatedMatter.id);
+      if (index !== -1) {
+        this.matters.splice(index, 1, updatedMatter);
+      }
+      // 更新选中的事项
+      this.selectedMatter = updatedMatter;
+    },
+
+    // 处理新增事项
+    async handleMatterAdded(newMatter) {
+      // 添加到事项列表
+      this.matters.push(newMatter);
+      // 返回列表页
+      this.showAddForm = false;
+      // 刷新列表
+      await this.fetchMatters();
     },
 
     resetForm() {
@@ -627,11 +408,6 @@ export default {
       this.businessDiagramSearchQuery = ''
       this.approvalDiagramSearchResults = []
       this.businessDiagramSearchResults = []
-    },
-
-    closeForm() {
-      this.showMatterForm = false
-      this.editingMatter = null
     },
 
     addBasis() {
@@ -769,74 +545,6 @@ export default {
       this.businessDiagramSearchResults = [];
     },
 
-    editMatter(matter) {
-      this.editingMatter = matter;
-      // 将选中的事项数据填充到表单中
-      this.form = {
-        id: matter.id,
-        version: matter.version,
-        mainItemCode: matter.mainItemCode,
-        subItemCode: matter.subItemCode,
-        grandchildItemCode: matter.grandchildItemCode,
-        mainItemName: matter.mainItemName || '',
-        subItemName: matter.subItemName || '',
-        grandchildItemName: matter.grandchildItemName || '',
-        bases: [...(matter.bases || [])],
-        materialIds: [...(matter.materialIds || [])],
-        legalTimeLimit: matter.legalTimeLimit,
-        committedTimeLimit: matter.committedTimeLimit,
-        approvalLevel: matter.approvalLevel || '',
-        provincialDepartmentOffice: matter.provincialDepartmentOffice || '',
-        isValid: matter.isValid !== undefined ? matter.isValid : true,
-        isPublish: matter.isPublish !== undefined ? matter.isPublish : false,
-        approvalProcessDiagramId: matter.approvalProcessDiagramId || null,
-        businessProcessDiagramId: matter.businessProcessDiagramId || null
-      };
-
-      // 初始化材料搜索查询
-      this.materialSearchQueries = []
-      this.materialSearchResults = []
-
-      // 为每个材料ID设置搜索查询文本
-      this.form.materialIds.forEach((materialId, index) => {
-        if (materialId) {
-          const material = this.materialsList.find(m => m.id === materialId)
-          if (material) {
-            this.materialSearchQueries[index] = `${material.id} - ${material.materialDetail}`
-          } else {
-            this.materialSearchQueries[index] = materialId.toString()
-          }
-        } else {
-          this.materialSearchQueries[index] = ''
-        }
-        this.materialSearchResults[index] = []
-      });
-
-      // 初始化流程图搜索查询
-      this.approvalDiagramSearchQuery = '';
-      this.businessDiagramSearchQuery = '';
-      this.approvalDiagramSearchResults = [];
-      this.businessDiagramSearchResults = [];
-
-      // 设置审批流程图搜索查询文本
-      if (this.form.approvalProcessDiagramId) {
-        const diagram = this.approvalProcessDiagrams.find(d => d.id === this.form.approvalProcessDiagramId);
-        if (diagram) {
-          this.approvalDiagramSearchQuery = `${diagram.id} - ${diagram.imageName}`;
-        }
-      }
-
-      // 设置业务流程图搜索查询文本
-      if (this.form.businessProcessDiagramId) {
-        const diagram = this.businessProcessDiagrams.find(d => d.id === this.form.businessProcessDiagramId);
-        if (diagram) {
-          this.businessDiagramSearchQuery = `${diagram.id} - ${diagram.imageName}`;
-        }
-      }
-
-      this.showMatterForm = true;
-    },
-
     async saveMatter() {
       try {
         // 验证并转换materialIds
@@ -849,16 +557,16 @@ export default {
           .filter(id => id !== null);
 
         // 验证流程图ID
-        const validApprovalDiagramId = this.form.approvalProcessDiagramId ? 
-          (typeof this.form.approvalProcessDiagramId === 'string' ? 
-            parseInt(this.form.approvalProcessDiagramId, 10) : 
-            this.form.approvalProcessDiagramId) : 
+        const validApprovalDiagramId = this.form.approvalProcessDiagramId ?
+          (typeof this.form.approvalProcessDiagramId === 'string' ?
+            parseInt(this.form.approvalProcessDiagramId, 10) :
+            this.form.approvalProcessDiagramId) :
           null;
-        
-        const validBusinessDiagramId = this.form.businessProcessDiagramId ? 
-          (typeof this.form.businessProcessDiagramId === 'string' ? 
-            parseInt(this.form.businessProcessDiagramId, 10) : 
-            this.form.businessProcessDiagramId) : 
+
+        const validBusinessDiagramId = this.form.businessProcessDiagramId ?
+          (typeof this.form.businessProcessDiagramId === 'string' ?
+            parseInt(this.form.businessProcessDiagramId, 10) :
+            this.form.businessProcessDiagramId) :
           null;
 
         // 构造要发送的数据对象
@@ -894,23 +602,9 @@ export default {
           return;
         }
 
-        let response;
-        let apiEndpoint;
-        let method;
-
-        if (this.editingMatter) {
-          // 更新事项
-          apiEndpoint = API_UPDATE(this.form.id);
-          method = 'PUT';
-        } else {
-          // 新增事项
-          apiEndpoint = API_CREATE;
-          method = 'POST';
-        }
-
         // 发送请求
-        response = await fetch(apiEndpoint, {
-          method: method,
+        const response = await fetch(API_CREATE, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
@@ -920,11 +614,11 @@ export default {
         if (response.ok) {
           await this.fetchMatters();
           this.closeForm();
-          alert(this.editingMatter ? '事项更新成功' : '事项创建成功');
+          alert('事项创建成功');
         } else {
           const errorText = await response.text();
           console.error('Server error response:', errorText);
-          
+
           let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
           try {
             const errorJson = JSON.parse(errorText);
@@ -935,8 +629,8 @@ export default {
             // 如果响应不是JSON格式，使用原始错误信息
             errorMessage = errorText;
           }
-          
-          alert((this.editingMatter ? '更新' : '创建') + '失败: ' + errorMessage);
+
+          alert('创建失败: ' + errorMessage);
         }
       } catch (error) {
         console.error('保存事项出错:', error);
@@ -1018,6 +712,10 @@ export default {
 
         if (response.ok) {
           await this.fetchMatters()
+          // 如果正在查看被删除的事项，则返回列表
+          if (this.selectedMatter && this.selectedMatter.id === id) {
+            this.selectedMatter = null
+          }
           alert('事项删除成功')
         } else {
           alert('删除失败: ' + response.status)
@@ -1039,28 +737,7 @@ export default {
       const diagram = this.businessProcessDiagrams.find(d => d.id === id);
       return diagram ? diagram.imageDataUrl : '';
     },
-  },
-  computed: {
-    // 过滤审批流程图
-    filteredApprovalProcessDiagrams() {
-      if (!this.approvalDiagramSearch) {
-        return this.approvalProcessDiagrams;
-      }
-      return this.approvalProcessDiagrams.filter(diagram => 
-        diagram.imageName && diagram.imageName.includes(this.approvalDiagramSearch)
-      );
-    },
-    
-    // 过滤业务流程图
-    filteredBusinessProcessDiagrams() {
-      if (!this.businessDiagramSearch) {
-        return this.businessProcessDiagrams;
-      }
-      return this.businessProcessDiagrams.filter(diagram => 
-        diagram.imageName && diagram.imageName.includes(this.businessDiagramSearch)
-      );
-    }
-  },
+  }
 }
 </script>
 
@@ -1146,6 +823,8 @@ export default {
 .table-row {
   display: flex;
   border-bottom: 1px solid #dcdfe6;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .table-row:hover {
@@ -1173,9 +852,8 @@ export default {
 
 /* 主项名称可点击样式 */
 .matter-name {
-  cursor: pointer;
-  color: #409eff;
   font-weight: 500;
+  color: #409eff;
 }
 
 .matter-name:hover {
@@ -1264,365 +942,6 @@ export default {
   background-color: #a6a9ad;
 }
 
-/* 弹窗样式 */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 4px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  position: relative;
-}
-
-.form-modal {
-  max-width: 600px;
-}
-
-.close {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  font-size: 24px;
-  cursor: pointer;
-  color: #909399;
-}
-
-.close:hover {
-  color: #303133;
-}
-
-.matter-detail p {
-  margin: 10px 0;
-  line-height: 1.5;
-}
-
-.process-diagrams h4 {
-  margin: 15px 0 5px 0;
-}
-
-.process-diagram-image {
-  max-width: 100%;
-  height: auto;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-}
-
-.modal-actions {
-  margin-top: 20px;
-  text-align: right;
-}
-
-.modal-actions button {
-  margin-left: 10px;
-  background-color: #409eff;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.modal-actions button:hover {
-  background-color: #66b1ff;
-}
-
-/* 表单样式 */
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-row {
-  display: flex;
-  gap: 15px;
-}
-
-.form-row .form-group {
-  flex: 1;
-  margin-bottom: 15px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #303133;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.form-group textarea {
-  min-height: 60px;
-  resize: vertical;
-}
-
-.form-hint {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 5px;
-}
-
-/* 经办依据列表样式 */
-.basis-list-container {
-  width: 100%;
-}
-
-.basis-item {
-  display: flex;
-  margin-bottom: 10px;
-  gap: 10px;
-}
-
-.basis-item input {
-  flex: 1;
-}
-
-.remove-basis-btn {
-  background-color: #f56c6c;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.remove-basis-btn:hover {
-  background-color: #f78989;
-}
-
-.add-basis-btn {
-  background-color: #409eff;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.add-basis-btn:hover {
-  background-color: #66b1ff;
-}
-
-/* 材料选择样式 */
-.material-selection-container {
-  width: 100%;
-}
-
-.material-item {
-  display: flex;
-  margin-bottom: 10px;
-  gap: 10px;
-}
-
-.material-select-wrapper {
-  flex: 1;
-  position: relative;
-}
-
-.material-search-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.material-search-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: white;
-  border: 1px solid #dcdfe6;
-  border-top: none;
-  border-radius: 0 0 4px 4px;
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 100;
-}
-
-.material-search-option {
-  padding: 8px 12px;
-  cursor: pointer;
-}
-
-.material-search-option:hover {
-  background-color: #f5f7fa;
-}
-
-.remove-material-btn {
-  background-color: #f56c6c;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.remove-material-btn:hover {
-  background-color: #f78989;
-}
-
-.add-material-btn {
-  background-color: #409eff;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.add-material-btn:hover {
-  background-color: #66b1ff;
-}
-
-/* 流程图选择样式 */
-.process-diagram-selection {
-  display: flex;
-  gap: 10px;
-}
-
-.diagram-select-wrapper {
-  flex: 1;
-  position: relative;
-}
-
-.diagram-search-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.diagram-search-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: white;
-  border: 1px solid #dcdfe6;
-  border-top: none;
-  border-radius: 0 0 4px 4px;
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 100;
-}
-
-.diagram-search-option {
-  padding: 8px 12px;
-  cursor: pointer;
-}
-
-.diagram-search-option:hover {
-  background-color: #f5f7fa;
-}
-
-.clear-selection-btn {
-  background-color: #f56c6c;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.clear-selection-btn:hover {
-  background-color: #f78989;
-}
-
-/* 图片上传样式 */
-.image-upload-container {
-  width: 100%;
-}
-
-.image-preview {
-  margin-top: 10px;
-}
-
-.image-preview img {
-  max-width: 100%;
-  max-height: 200px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-}
-
-.search-box {
-  margin: 10px 0;
-}
-
-.search-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.form-actions {
-  margin-top: 20px;
-  text-align: right;
-}
-
-.form-actions button {
-  margin-left: 10px;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.form-actions button[type="button"] {
-  background-color: #909399;
-  color: white;
-  border: none;
-}
-
-.form-actions button[type="button"]:hover {
-  background-color: #a6a9ad;
-}
-
-.save-btn {
-  background-color: #67c23a;
-  color: white;
-  border: none;
-}
-
-.save-btn:hover {
-  background-color: #85ce61;
-}
-
 @media (max-width: 768px) {
   .matters-table {
     font-size: 12px;
@@ -1647,17 +966,5 @@ export default {
     flex-direction: column;
     gap: 3px;
   }
-
-  .basis-item,
-  .material-item,
-  .process-diagram-selection {
-    flex-direction: column;
-  }
-
-  .form-row {
-    flex-direction: column;
-    gap: 0;
-  }
 }
 </style>
-</file>
