@@ -7,22 +7,38 @@
 
     <div class="matter-detail-content">
       <form @submit.prevent="handleSubmit">
-        <!-- ID和版本字段放在同一行 -->
+        <!-- ID、版本、发布状态和状态字段放在同一行 -->
         <div class="form-row">
           <div class="form-group form-group-id">
             <label>ID:</label>
             <input type="text" v-model="form.id" disabled>
           </div>
 
-          <div class="form-group">
+          <div class="form-group form-group-version">
             <label>版本:</label>
             <input type="text" v-model="form.version">
+          </div>
+
+          <div class="form-group form-group-status">
+            <label>发布状态:</label>
+            <select v-model="form.isPublish">
+              <option :value="true">已发布</option>
+              <option :value="false">未发布</option>
+            </select>
+          </div>
+
+          <div class="form-group form-group-status">
+            <label>状态:</label>
+            <select v-model="form.isValid">
+              <option :value="true">已上线</option>
+              <option :value="false">已下线</option>
+            </select>
           </div>
         </div>
 
         <!-- 主项信息 -->
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group form-group-code-super-narrow">
             <label>主项编号</label>
             <input type="number" v-model.number="form.mainItemCode">
           </div>
@@ -34,7 +50,7 @@
 
         <!-- 子项信息 -->
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group form-group-code-super-narrow">
             <label>子项编号</label>
             <input type="number" v-model.number="form.subItemCode">
           </div>
@@ -46,7 +62,7 @@
 
         <!-- 孙项信息 -->
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group form-group-code-super-narrow">
             <label>孙项编号</label>
             <input type="number" v-model.number="form.grandchildItemCode">
           </div>
@@ -181,109 +197,95 @@
           </div>
         </div>
 
-        <!-- 流程图上传 -->
+        <!-- 流程图上传 - 并列显示 -->
         <div class="form-group">
-          <label>审批流程图:</label>
-          <div class="process-diagram-selection">
-            <div class="diagram-select-wrapper">
-              <input
-                type="text"
-                class="diagram-search-input"
-                placeholder="搜索审批流程图..."
-                v-model="approvalDiagramSearchQuery"
-                @input="onApprovalDiagramSearchInput($event.target.value)"
-                @focus="onApprovalDiagramSearchFocus"
-              >
-              <div
-                class="diagram-search-dropdown"
-                v-if="approvalDiagramSearchResults.length > 0"
-              >
-                <div
-                  class="diagram-search-option"
-                  v-for="diagram in approvalDiagramSearchResults"
-                  :key="diagram.id"
-                  @click="selectApprovalDiagram(diagram)"
-                >
-                  {{ diagram.id }} - {{ diagram.imageName }}
+          <label>流程图:</label>
+          <div class="process-diagrams-container">
+            <!-- 审批流程图 -->
+            <div class="process-diagram-section">
+              <div class="process-diagram-selection">
+                <div class="diagram-select-wrapper">
+                  <input
+                    type="text"
+                    class="diagram-search-input"
+                    placeholder="搜索审批流程图..."
+                    v-model="approvalDiagramSearchQuery"
+                    @input="onApprovalDiagramSearchInput($event.target.value)"
+                    @focus="onApprovalDiagramSearchFocus"
+                  >
+                  <div
+                    class="diagram-search-dropdown"
+                    v-if="approvalDiagramSearchResults.length > 0"
+                  >
+                    <div
+                      class="diagram-search-option"
+                      v-for="diagram in approvalDiagramSearchResults"
+                      :key="diagram.id"
+                      @click="selectApprovalDiagram(diagram)"
+                    >
+                      {{ diagram.id }} - {{ diagram.imageName }}
+                    </div>
+                  </div>
                 </div>
+                <button
+                  v-if="form.approvalProcessDiagramId"
+                  type="button"
+                  class="clear-selection-btn"
+                  @click="clearApprovalDiagram"
+                >
+                  清除
+                </button>
+              </div>
+              <div v-if="form.approvalProcessDiagramId" class="image-preview">
+                <img
+                  :src="getApprovalProcessDiagramUrl(form.approvalProcessDiagramId)"
+                  alt="审批流程图预览"
+                />
               </div>
             </div>
-            <button
-              v-if="form.approvalProcessDiagramId"
-              type="button"
-              class="clear-selection-btn"
-              @click="clearApprovalDiagram"
-            >
-              清除
-            </button>
-          </div>
-          <div v-if="form.approvalProcessDiagramId" class="image-preview">
-            <img
-              :src="getApprovalProcessDiagramUrl(form.approvalProcessDiagramId)"
-              alt="审批流程图预览"
-            />
-          </div>
-        </div>
 
-        <div class="form-group">
-          <label>业务流程图:</label>
-          <div class="process-diagram-selection">
-            <div class="diagram-select-wrapper">
-              <input
-                type="text"
-                class="diagram-search-input"
-                placeholder="搜索业务流程图..."
-                v-model="businessDiagramSearchQuery"
-                @input="onBusinessDiagramSearchInput($event.target.value)"
-                @focus="onBusinessDiagramSearchFocus"
-              >
-              <div
-                class="diagram-search-dropdown"
-                v-if="businessDiagramSearchResults.length > 0"
-              >
-                <div
-                  class="diagram-search-option"
-                  v-for="diagram in businessDiagramSearchResults"
-                  :key="diagram.id"
-                  @click="selectBusinessDiagram(diagram)"
-                >
-                  {{ diagram.id }} - {{ diagram.imageName }}
+            <!-- 业务流程图 -->
+            <div class="process-diagram-section">
+              <div class="process-diagram-selection">
+                <div class="diagram-select-wrapper">
+                  <input
+                    type="text"
+                    class="diagram-search-input"
+                    placeholder="搜索业务流程图..."
+                    v-model="businessDiagramSearchQuery"
+                    @input="onBusinessDiagramSearchInput($event.target.value)"
+                    @focus="onBusinessDiagramSearchFocus"
+                  >
+                  <div
+                    class="diagram-search-dropdown"
+                    v-if="businessDiagramSearchResults.length > 0"
+                  >
+                    <div
+                      class="diagram-search-option"
+                      v-for="diagram in businessDiagramSearchResults"
+                      :key="diagram.id"
+                      @click="selectBusinessDiagram(diagram)"
+                    >
+                      {{ diagram.id }} - {{ diagram.imageName }}
+                    </div>
+                  </div>
                 </div>
+                <button
+                  v-if="form.businessProcessDiagramId"
+                  type="button"
+                  class="clear-selection-btn"
+                  @click="clearBusinessDiagram"
+                >
+                  清除
+                </button>
+              </div>
+              <div v-if="form.businessProcessDiagramId" class="image-preview">
+                <img
+                  :src="getBusinessProcessDiagramUrl(form.businessProcessDiagramId)"
+                  alt="业务流程图预览"
+                />
               </div>
             </div>
-            <button
-              v-if="form.businessProcessDiagramId"
-              type="button"
-              class="clear-selection-btn"
-              @click="clearBusinessDiagram"
-            >
-              清除
-            </button>
-          </div>
-          <div v-if="form.businessProcessDiagramId" class="image-preview">
-            <img
-              :src="getBusinessProcessDiagramUrl(form.businessProcessDiagramId)"
-              alt="业务流程图预览"
-            />
-          </div>
-        </div>
-
-        <!-- 发布状态和状态放在同一行 -->
-        <div class="form-row">
-          <div class="form-group">
-            <label>发布状态:</label>
-            <select v-model="form.isPublish">
-              <option :value="true">已发布</option>
-              <option :value="false">未发布</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>状态:</label>
-            <select v-model="form.isValid">
-              <option :value="true">已上线</option>
-              <option :value="false">已下线</option>
-            </select>
           </div>
         </div>
 
@@ -750,9 +752,21 @@ export default {
   margin-bottom: 15px;
 }
 
-/* 调整ID字段的宽度 */
+/* 调整字段的宽度 */
 .form-group-id {
-  flex: 0 0 120px; /* ID字段更窄 */
+  flex: 0 0 120px !important; /* ID字段更窄 */
+}
+
+.form-group-version {
+  flex: 0 0 120px !important; /* 版本字段同样窄 */
+}
+
+.form-group-status {
+  flex: 0 0 120px !important; /* 状态字段宽度适中 */
+}
+
+.form-group-code-super-narrow {
+  flex: 0 0 120px !important; /* 编号字段调宽一些，从70px增加到90px */
 }
 
 .form-group label {
@@ -909,6 +923,15 @@ export default {
 }
 
 /* 流程图选择样式 */
+.process-diagrams-container {
+  display: flex;
+  gap: 20px;
+}
+
+.process-diagram-section {
+  flex: 1;
+}
+
 .process-diagram-selection {
   display: flex;
   gap: 10px;
@@ -1034,15 +1057,23 @@ export default {
     gap: 0;
   }
 
-  /* 在移动端恢复ID字段的默认宽度 */
-  .form-group-id {
-    flex: 1;
+  /* 在移动端恢复字段的默认宽度 */
+  .form-group-id,
+  .form-group-version,
+  .form-group-status,
+  .form-group-code-super-narrow {
+    flex: 1 !important;
   }
 
   .basis-item,
   .material-item,
   .process-diagram-selection {
     flex-direction: column;
+  }
+
+  .process-diagrams-container {
+    flex-direction: column;
+    gap: 15px;
   }
 
   .form-actions {
