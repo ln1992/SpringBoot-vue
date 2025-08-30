@@ -1,138 +1,113 @@
 <!-- src/components/processdiagram/BusinessProcessDiagramList.vue -->
 <template>
   <div class="process-diagram-container">
-    <div class="header">
-      <h2>业务流程图管理</h2>
-      <div class="header-actions">
-        <button class="refresh-btn" @click="fetchDiagrams">刷新</button>
-        <button class="add-btn" @click="showAddForm">新增业务流程图</button>
-      </div>
-    </div>
-
-    <div class="loading" v-if="loading">
-      <p>正在加载业务流程图数据...</p>
-    </div>
-
-    <div class="error" v-else-if="error">
-      <p>加载失败: {{ error }}</p>
-      <button @click="fetchDiagrams">重试</button>
-    </div>
-
-    <div class="no-data" v-else-if="diagrams && diagrams.length === 0">
-      <div class="no-data-content">
-        <h3>暂无业务流程图数据</h3>
-        <p>点击下方按钮添加您的第一个业务流程图</p>
-        <button class="add-btn" @click="showAddForm">新增业务流程图</button>
-      </div>
-    </div>
-
-    <div class="diagrams-table" v-else-if="diagrams && diagrams.length > 0">
-      <div class="table-header">
-        <div class="table-cell">ID</div>
-        <div class="table-cell">名称</div>
-        <div class="table-cell">图片类型</div>
-        <div class="table-cell">预览</div>
-        <div class="table-cell">状态</div>
-        <div class="table-cell">操作</div>
+    <!-- 流程图列表界面 -->
+    <div v-if="!selectedDiagram">
+      <div class="header">
+        <h2>业务流程图管理</h2>
+        <div class="header-actions">
+          <button class="refresh-btn" @click="fetchDiagrams">刷新</button>
+          <button class="add-btn" @click="showAddForm">新增业务流程图</button>
+        </div>
       </div>
 
-      <div
-        class="table-row"
-        v-for="diagram in diagrams"
-        :key="diagram.id"
-      >
-        <div class="table-cell">{{ diagram.id }}</div>
-        <div class="table-cell diagram-name" @click="viewDiagramDetail(diagram)">
-          {{ diagram.imageName || '未命名' }}
+      <div class="loading" v-if="loading">
+        <p>正在加载业务流程图数据...</p>
+      </div>
+
+      <div class="error" v-else-if="error">
+        <p>加载失败: {{ error }}</p>
+        <button @click="fetchDiagrams">重试</button>
+      </div>
+
+      <div class="no-data" v-else-if="diagrams && diagrams.length === 0">
+        <div class="no-data-content">
+          <h3>暂无业务流程图数据</h3>
+          <p>点击下方按钮添加您的第一个业务流程图</p>
+          <button class="add-btn" @click="showAddForm">新增业务流程图</button>
         </div>
-        <div class="table-cell">
-          {{ diagram.imageType || '未知' }}
+      </div>
+
+      <div class="diagrams-table" v-else-if="diagrams && diagrams.length > 0">
+        <div class="table-header">
+          <div class="table-cell">ID</div>
+          <div class="table-cell">名称</div>
+          <div class="table-cell">图片类型</div>
+          <div class="table-cell">预览</div>
+          <div class="table-cell">状态</div>
+          <div class="table-cell">操作</div>
         </div>
-        <div class="table-cell">
-          <img
-            v-if="diagram.imageDataUrl"
-            :src="diagram.imageDataUrl"
-            :alt="diagram.imageName"
-            class="preview-image"
-            @click="viewDiagramDetail(diagram)"
-          />
-          <span v-else>无预览</span>
-        </div>
-        <div class="table-cell">
-          <span :class="['status-badge', diagram.isValid ? 'status-active' : 'status-inactive']">
-            {{ diagram.isValid ? '已上线' : '已下线' }}
-          </span>
-        </div>
-        <div class="table-cell">
-          <div class="action-buttons">
-            <button
-              v-if="diagram.isValid"
-              class="offline-btn"
-              @click.stop="toggleDiagramStatus(diagram.id, false)"
-            >
-              下线
-            </button>
-            <template v-else>
-              <button
-                class="online-btn"
-                @click.stop="toggleDiagramStatus(diagram.id, true)"
-              >
-                上线
-              </button>
-              <button
-                class="delete-btn"
-                @click.stop="deleteDiagram(diagram.id)"
-              >
-                删除
-              </button>
-            </template>
+
+        <div
+          class="table-row"
+          v-for="diagram in diagrams"
+          :key="diagram.id"
+          @click="viewDiagramDetail(diagram)"
+        >
+          <div class="table-cell">{{ diagram.id }}</div>
+          <div class="table-cell diagram-name">
+            {{ diagram.imageName || '未命名' }}
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 流程图详情弹窗 -->
-    <div class="modal" v-if="selectedDiagram" @click="closeDetailModal">
-      <div class="modal-content detail-modal" @click.stop>
-        <span class="close" @click="closeDetailModal">&times;</span>
-        <h3>业务流程图详情</h3>
-        <div class="diagram-detail">
-          <p><strong>ID:</strong> {{ selectedDiagram.id }}</p>
-          <p><strong>名称:</strong> {{ selectedDiagram.imageName || '未命名' }}</p>
-          <p><strong>图片类型:</strong> {{ selectedDiagram.imageType || '未知' }}</p>
-          <p><strong>状态:</strong>
-            <span :class="['status-badge', selectedDiagram.isValid ? 'status-active' : 'status-inactive']">
-              {{ selectedDiagram.isValid ? '已上线' : '已下线' }}
-            </span>
-          </p>
-          <div class="image-preview-container">
+          <div class="table-cell">
+            {{ diagram.imageType || '未知' }}
+          </div>
+          <div class="table-cell">
             <img
-              v-if="selectedDiagram.imageDataUrl"
-              :src="selectedDiagram.imageDataUrl"
-              :alt="selectedDiagram.imageName"
-              class="detail-image"
+              v-if="diagram.imageDataUrl"
+              :src="diagram.imageDataUrl"
+              :alt="diagram.imageName"
+              class="preview-image"
             />
-            <p v-else>无图像数据</p>
+            <span v-else>无预览</span>
           </div>
-        </div>
-        <div class="modal-actions">
-          <button @click="editDiagram(selectedDiagram)">编辑</button>
-          <button @click="closeDetailModal">关闭</button>
+          <div class="table-cell">
+            <span :class="['status-badge', diagram.isValid ? 'status-active' : 'status-inactive']">
+              {{ diagram.isValid ? '已上线' : '已下线' }}
+            </span>
+          </div>
+          <div class="table-cell">
+            <div class="action-buttons">
+              <button
+                v-if="diagram.isValid"
+                class="offline-btn"
+                @click.stop="toggleDiagramStatus(diagram.id, false)"
+              >
+                下线
+              </button>
+              <template v-else>
+                <button
+                  class="online-btn"
+                  @click.stop="toggleDiagramStatus(diagram.id, true)"
+                >
+                  上线
+                </button>
+                <button
+                  class="delete-btn"
+                  @click.stop="deleteDiagram(diagram.id)"
+                >
+                  删除
+                </button>
+              </template>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 新增/编辑流程图弹窗 -->
+    <!-- 流程图详情界面 -->
+    <BusinessProcessDiagramDetail
+      v-else
+      :diagram="selectedDiagram"
+      @back="goBackToList"
+      @diagram-updated="handleDiagramUpdated"
+    />
+
+    <!-- 新增流程图弹窗 -->
     <div class="modal" v-if="showDiagramForm" @click="closeForm">
       <div class="modal-content form-modal" @click.stop>
         <span class="close" @click="closeForm">&times;</span>
-        <h3>{{ editingDiagram ? '编辑业务流程图' : '新增业务流程图' }}</h3>
+        <h3>新增业务流程图</h3>
         <form @submit.prevent="saveDiagram">
-          <div class="form-group" v-if="editingDiagram">
-            <label>ID:</label>
-            <input type="text" v-model="form.id" disabled>
-          </div>
-
           <div class="form-group">
             <label>名称 *</label>
             <input type="text" v-model="form.imageName" required>
@@ -147,10 +122,6 @@
             />
             <div v-if="form.imagePreview" class="image-preview">
               <img :src="form.imagePreview" alt="预览图像" />
-            </div>
-            <div v-else-if="editingDiagram && editingDiagram.imageDataUrl" class="image-preview">
-              <img :src="editingDiagram.imageDataUrl" alt="当前图像" />
-              <p>当前图像</p>
             </div>
           </div>
 
@@ -173,7 +144,7 @@
               type="submit"
               class="save-btn"
             >
-              {{ editingDiagram ? '更新' : '创建' }}
+              创建
             </button>
           </div>
         </form>
@@ -183,6 +154,9 @@
 </template>
 
 <script>
+// 引入详情组件
+import BusinessProcessDiagramDetail from './BusinessProcessDiagramDetail.vue';
+
 // API端点常量
 const API_BASE_URL = 'http://localhost:8000/api/process-diagrams/business';
 const API_GET_ALL = `${API_BASE_URL}`;
@@ -195,6 +169,9 @@ const API_DEACTIVATE = (id) => `${API_BASE_URL}/${id}/deactivate`;
 
 export default {
   name: 'BusinessProcessDiagramList',
+  components: {
+    BusinessProcessDiagramDetail
+  },
   data() {
     return {
       diagrams: [],
@@ -202,9 +179,7 @@ export default {
       error: null,
       selectedDiagram: null,
       showDiagramForm: false,
-      editingDiagram: null,
       form: {
-        id: null,
         imageName: '',
         imageFile: null,
         imagePreview: null,
@@ -277,19 +252,27 @@ export default {
       this.selectedDiagram = diagram;
     },
 
-    closeDetailModal() {
+    goBackToList() {
       this.selectedDiagram = null;
     },
 
+    handleDiagramUpdated(updatedDiagram) {
+      // 更新列表中的流程图
+      const index = this.diagrams.findIndex(d => d.id === updatedDiagram.id);
+      if (index !== -1) {
+        this.diagrams.splice(index, 1, updatedDiagram);
+      }
+      // 更新选中的流程图
+      this.selectedDiagram = updatedDiagram;
+    },
+
     showAddForm() {
-      this.editingDiagram = null;
       this.resetForm();
       this.showDiagramForm = true;
     },
 
     resetForm() {
       this.form = {
-        id: null,
         imageName: '',
         imageFile: null,
         imagePreview: null,
@@ -299,7 +282,6 @@ export default {
 
     closeForm() {
       this.showDiagramForm = false;
-      this.editingDiagram = null;
     },
 
     onImageChange(event) {
@@ -315,19 +297,6 @@ export default {
       }
     },
 
-    editDiagram(diagram) {
-      this.editingDiagram = diagram;
-      this.form = {
-        id: diagram.id,
-        imageName: diagram.imageName || '',
-        imageFile: null,
-        imagePreview: null,
-        isValid: diagram.isValid !== undefined ? diagram.isValid : true
-      };
-      this.showDiagramForm = true;
-      this.selectedDiagram = null;
-    },
-
     async saveDiagram() {
       try {
         const formData = new FormData();
@@ -339,29 +308,19 @@ export default {
           formData.append('imageFile', this.form.imageFile);
         }
 
-        let response;
-
-        if (this.editingDiagram) {
-          // 更新流程图
-          response = await fetch(API_UPDATE(this.form.id), {
-            method: 'PUT',
-            body: formData
-          });
-        } else {
-          // 新增流程图
-          response = await fetch(API_CREATE, {
-            method: 'POST',
-            body: formData
-          });
-        }
+        // 新增流程图
+        const response = await fetch(API_CREATE, {
+          method: 'POST',
+          body: formData
+        });
 
         if (response.ok) {
           await this.fetchDiagrams();
           this.closeForm();
-          alert(this.editingDiagram ? '业务流程图更新成功' : '业务流程图创建成功');
+          alert('业务流程图创建成功');
         } else {
           const errorText = await response.text();
-          alert((this.editingDiagram ? '更新' : '创建') + '失败: ' + response.status + ' - ' + errorText);
+          alert('创建失败: ' + response.status + ' - ' + errorText);
         }
       } catch (error) {
         console.error('保存业务流程图出错:', error);
@@ -412,6 +371,10 @@ export default {
 
         if (response.ok) {
           await this.fetchDiagrams();
+          // 如果正在查看被删除的流程图，则返回列表
+          if (this.selectedDiagram && this.selectedDiagram.id === id) {
+            this.selectedDiagram = null;
+          }
           alert('业务流程图删除成功');
         } else {
           alert('删除失败: ' + response.status);
@@ -442,6 +405,7 @@ export default {
 </script>
 
 <style scoped>
+/* 保留原有样式，只需修改部分选择器 */
 .process-diagram-container {
   padding: 20px;
   max-width: 1200px;
@@ -541,6 +505,8 @@ export default {
 .table-row {
   display: flex;
   border-bottom: 1px solid #dcdfe6;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .table-row:hover {
@@ -568,20 +534,13 @@ export default {
 
 .table-cell:nth-child(2) {
   flex: 2;
-  cursor: pointer;
   color: #409eff;
   font-weight: 500;
-}
-
-.table-cell:nth-child(2):hover {
-  color: #66b1ff;
-  text-decoration: underline;
 }
 
 .preview-image {
   max-width: 100px;
   max-height: 50px;
-  cursor: pointer;
   border: 1px solid #dcdfe6;
   border-radius: 4px;
 }
@@ -674,10 +633,6 @@ export default {
   position: relative;
 }
 
-.detail-modal {
-  max-width: 600px;
-}
-
 .form-modal {
   max-width: 600px;
 }
@@ -693,42 +648,6 @@ export default {
 
 .close:hover {
   color: #303133;
-}
-
-.diagram-detail p {
-  margin: 10px 0;
-  line-height: 1.5;
-}
-
-.image-preview-container {
-  text-align: center;
-  margin: 15px 0;
-}
-
-.detail-image {
-  max-width: 100%;
-  max-height: 300px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-}
-
-.modal-actions {
-  margin-top: 20px;
-  text-align: right;
-}
-
-.modal-actions button {
-  margin-left: 10px;
-  background-color: #409eff;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.modal-actions button:hover {
-  background-color: #66b1ff;
 }
 
 /* 表单样式 */
@@ -753,11 +672,6 @@ export default {
   box-sizing: border-box;
 }
 
-.form-group input:disabled {
-  background-color: #f5f7fa;
-  cursor: not-allowed;
-}
-
 .image-preview {
   margin-top: 10px;
 }
@@ -767,12 +681,6 @@ export default {
   max-height: 200px;
   border: 1px solid #dcdfe6;
   border-radius: 4px;
-}
-
-.image-preview p {
-  margin: 5px 0;
-  font-size: 12px;
-  color: #909399;
 }
 
 .form-actions {
