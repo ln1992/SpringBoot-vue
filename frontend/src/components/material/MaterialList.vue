@@ -413,9 +413,15 @@ export default {
         console.error(`更新材料状态出错:`, error);
         alert(`${action}失败: ${error.message}`);
       }
+    },
+
+    // 添加这个方法用于重置到列表视图
+    resetToListView() {
+      this.selectedMaterial = null;
+      this.showMaterialForm = false;
     }
   }
-};
+}
 </script>
 
 <style scoped>

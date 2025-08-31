@@ -399,6 +399,11 @@ export default {
         'SVG': 'image/svg+xml'
       };
       return contentTypes[imageType] || 'image/jpeg';
+    },
+
+    resetToListView() {
+      this.selectedDiagram = null;
+      this.showDiagramForm = false;
     }
   }
 };

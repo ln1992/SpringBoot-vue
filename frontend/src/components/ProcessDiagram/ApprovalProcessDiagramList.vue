@@ -395,6 +395,11 @@ export default {
         console.error('删除审批流程图出错:', error);
         alert('删除失败: ' + error.message);
       }
+    },
+
+    resetToListView() {
+      this.selectedDiagram = null;
+      this.showDiagramForm = false;
     }
   }
 };

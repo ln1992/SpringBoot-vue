@@ -441,6 +441,11 @@ export default {
         console.error('删除事项出错:', error)
         alert('删除失败: ' + error.message)
       }
+    },
+
+    resetToListView() {
+      this.selectedMatter = null;
+      this.showMaterialForm = false;
     }
   }
 }

@@ -50,8 +50,14 @@ export default {
   },
   methods: {
     selectItem(item) {
+      // 如果点击的是当前已激活的项，则重新发送事件以确保回到列表视图
+      if (this.activeItem === item) {
+        this.$emit('menu-selected', item);
+        return;
+      }
+
+      // 更新激活项并发送事件
       this.activeItem = item;
-      // 发送事件到父组件，通知选择了哪个菜单项
       this.$emit('menu-selected', item);
     }
   }

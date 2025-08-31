@@ -4,7 +4,10 @@
     <db-header></db-header>
     <el-row class="container">
       <el-col :span="4" class="menu">
-        <db-sidebar @menu-selected="handleMenuSelect"></db-sidebar>
+        <db-sidebar
+          @menu-selected="handleMenuSelect"
+          :key="sidebarKey"
+        ></db-sidebar>
       </el-col>
       <el-col :span="20" class="content">
         <div v-if="selectedMenu === 'dashboard'">
@@ -12,19 +15,19 @@
           <db-table></db-table>
         </div>
         <div v-else-if="selectedMenu === 'material'">
-          <material-list></material-list>
+          <material-list ref="materialList"></material-list>
         </div>
         <!-- 添加事项管理视图 -->
         <div v-else-if="selectedMenu === 'matter'">
-          <matter-list></matter-list>
+          <matter-list ref="matterList"></matter-list>
         </div>
         <!-- 添加审批流程图视图 -->
         <div v-else-if="selectedMenu === 'approval-diagram'">
-          <approval-process-diagram-list></approval-process-diagram-list>
+          <approval-process-diagram-list ref="approvalDiagramList"></approval-process-diagram-list>
         </div>
         <!-- 添加业务流程图视图 -->
         <div v-else-if="selectedMenu === 'business-diagram'">
-          <business-process-diagram-list></business-process-diagram-list>
+          <business-process-diagram-list ref="businessDiagramList"></business-process-diagram-list>
         </div>
       </el-col>
     </el-row>
@@ -40,7 +43,7 @@
 </template>
 
 <script>
-import DbHeader  from './components/DbHeader.vue'
+import DbHeader from './components/DbHeader.vue'
 import DbSidebar from './components/DbSidebar.vue'
 import DbFilterinput from './components/DbFilterinput.vue'
 import DbTable from './components/DbTable.vue'
@@ -56,7 +59,8 @@ import ElRow from "element-ui/packages/row/src/row";
 export default {
   name: 'app',
   components: {
-    ElRow, DbHeader,
+    ElRow,
+    DbHeader,
     DbSidebar,
     DbFilterinput,
     DbTable,
@@ -70,12 +74,53 @@ export default {
   },
   data() {
     return {
-      selectedMenu: 'dashboard' // 默认显示dashboard
+      selectedMenu: 'dashboard', // 默认显示dashboard
+      sidebarKey: 0 // 用于强制刷新sidebar组件
     }
   },
   methods: {
     handleMenuSelect(menuItem) {
+      // 如果点击的是当前已选中的菜单项，则强制刷新到列表视图
+      if (this.selectedMenu === menuItem) {
+        this.resetToListView(menuItem);
+      }
+
+      // 更新选中的菜单项
       this.selectedMenu = menuItem;
+    },
+
+    resetToListView(menuItem) {
+      // 通过ref调用对应组件的重置方法
+      this.$nextTick(() => {
+        try {
+          switch (menuItem) {
+            case 'material':
+              if (this.$refs.materialList && typeof this.$refs.materialList.resetToListView === 'function') {
+                this.$refs.materialList.resetToListView();
+              }
+              break;
+            case 'matter':
+              if (this.$refs.matterList && typeof this.$refs.matterList.resetToListView === 'function') {
+                this.$refs.matterList.resetToListView();
+              }
+              break;
+            case 'approval-diagram':
+              if (this.$refs.approvalDiagramList && typeof this.$refs.approvalDiagramList.resetToListView === 'function') {
+                this.$refs.approvalDiagramList.resetToListView();
+              }
+              break;
+            case 'business-diagram':
+              if (this.$refs.businessDiagramList && typeof this.$refs.businessDiagramList.resetToListView === 'function') {
+                this.$refs.businessDiagramList.resetToListView();
+              }
+              break;
+            default:
+              break;
+          }
+        } catch (error) {
+          console.error('重置到列表视图时出错:', error);
+        }
+      });
     }
   }
 }
