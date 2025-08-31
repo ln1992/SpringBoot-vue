@@ -34,7 +34,7 @@
       :class="{ active: activeItem === 'business-diagram' }"
       @click="selectItem('business-diagram')"
     >
-      业务流程图
+      业务经办流程图
     </div>
   </div>
 </template>
