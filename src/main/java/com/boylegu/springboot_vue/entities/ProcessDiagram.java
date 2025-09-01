@@ -1,3 +1,4 @@
+// src/main/java/com/boylegu/springboot_vue/entities/ProcessDiagram.java
 package com.boylegu.springboot_vue.entities;
 
 import com.fasterxml.jackson.annotation.*;
@@ -5,13 +6,9 @@ import javax.persistence.*;
 import java.util.Base64;
 import java.util.Objects;
 
-@MappedSuperclass
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public abstract class ProcessDiagram {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+@Entity
+@Inheritance(strategy = InheritanceType.JOINED)
+public abstract class ProcessDiagram extends BaseEntity {
     @Column(name = "image_name", unique = true)
     private String imageName;
 
@@ -24,28 +21,17 @@ public abstract class ProcessDiagram {
     @Column(name = "image_type")
     private ImageType imageType;
 
-    // 是否有效（默认为true）- 新增字段
-    @Column(name = "is_valid")
-    private Boolean isValid = true;
-
     // 默认构造函数
     public ProcessDiagram() {}
 
     // Getter和Setter方法
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getImageName() {
         return imageName;
     }
 
     public void setImageName(String imageName) {
         this.imageName = imageName;
+        updateName(); // 自动更新名称
     }
 
     @JsonIgnore
@@ -81,13 +67,19 @@ public abstract class ProcessDiagram {
         }
     }
 
-    // 新增的 isValid 字段的 getter 和 setter 方法
-    public Boolean getIsValid() {
-        return isValid;
+    public void setVersion(Long version) {
+        super.setVersion(version);
+        updateName(); // 自动更新名称
     }
 
-    public void setIsValid(Boolean valid) {
-        isValid = valid;
+    public void updateName() {
+        if (this.imageName != null && this.getVersion() != null) {
+            this.set__name__(this.imageName + "_" + this.getVersion());
+        } else if (this.imageName != null) {
+            this.set__name__(this.imageName);
+        } else {
+            this.set__name__(null);
+        }
     }
 
     // 获取图像数据的Base64 URL，用于前端显示
@@ -105,24 +97,25 @@ public abstract class ProcessDiagram {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ProcessDiagram that = (ProcessDiagram) o;
-        return Objects.equals(id, that.id) &&
-                Objects.equals(imageName, that.imageName) &&
-                imageType == that.imageType &&
-                Objects.equals(isValid, that.isValid);
+        return Objects.equals(getId(), that.getId()) &&
+                Objects.equals(getImageName(), that.getImageName()) &&
+                getImageType() == that.getImageType() &&
+                Objects.equals(get__name__(), that.get__name__());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, imageName, imageType, isValid);
+        return Objects.hash(getId(), getImageName(), getImageType(), get__name__());
     }
 
     @Override
     public String toString() {
         return "ProcessDiagram{" +
-                "id=" + id +
-                ", imageName='" + imageName + '\'' +
-                ", imageType=" + imageType +
-                ", isValid=" + isValid +
+                "id=" + getId() +
+                ", imageName='" + getImageName() + '\'' +
+                ", imageType=" + getImageType() +
+                ", __name__='" + get__name__() + '\'' +
+                ", isValid=" + getIsValid() +
                 '}';
     }
 

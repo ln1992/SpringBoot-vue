@@ -68,17 +68,19 @@ public class Matter {
     @Enumerated(EnumType.STRING)
     private ProvincialDepartmentOffice provincialDepartmentOffice;
 
+    //审批流程图
     @Column(name = "approval_process_diagram_id")
     private Long approvalProcessDiagramId;
 
+    //业务经办流程图
     @Column(name = "business_process_diagram_id")
     private Long businessProcessDiagramId;
 
-    // 是否有效（默认为true）
+    // 版本
     @Column(name = "version")
     private Long version;
 
-    // 是否有效（默认为true）
+    // 是否发布（默认为false）
     @Column(name = "is_publish")
     private Boolean isPublish = false;
 
