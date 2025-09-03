@@ -36,9 +36,10 @@ public class ApprovalProcessDiagramController extends ProcessDiagramController<A
     @PostMapping
     public ResponseEntity<?> createDiagram(
             @RequestParam("imageName") String imageName,
+            @RequestParam(value = "version", required = false) Long version,
             @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
             @RequestParam(value = "isValid", defaultValue = "true") Boolean isValid) {
-        return super.createDiagram(imageName, imageFile, isValid);
+        return super.createDiagram(imageName, version, imageFile, isValid);
     }
 
     // 更新审批流程图
@@ -46,9 +47,10 @@ public class ApprovalProcessDiagramController extends ProcessDiagramController<A
     public ResponseEntity<?> updateDiagram(
             @PathVariable Long id,
             @RequestParam("imageName") String imageName,
+            @RequestParam(value = "version", required = false) Long version,
             @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
             @RequestParam(value = "isValid", defaultValue = "true") Boolean isValid) {
-        return super.updateDiagram(id, imageName, imageFile, isValid);
+        return super.updateDiagram(id, imageName, version, imageFile, isValid);
     }
 
     // 删除审批流程图

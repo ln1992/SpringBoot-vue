@@ -32,6 +32,7 @@
         <div class="table-header">
           <div class="table-cell">ID</div>
           <div class="table-cell">名称</div>
+          <div class="table-cell">版本</div>
           <div class="table-cell">图片类型</div>
           <div class="table-cell">预览</div>
           <div class="table-cell">状态</div>
@@ -46,7 +47,10 @@
         >
           <div class="table-cell">{{ diagram.id }}</div>
           <div class="table-cell diagram-name">
-            {{ diagram.imageName || '未命名' }}
+            {{ diagram.__name__ || diagram.imageName || '未命名' }}
+          </div>
+          <div class="table-cell">
+            {{ diagram.version || '1.0' }}
           </div>
           <div class="table-cell">
             {{ diagram.imageType || '未知' }}
@@ -111,6 +115,11 @@
           <div class="form-group">
             <label>名称 *</label>
             <input type="text" v-model="form.imageName" required>
+          </div>
+
+          <div class="form-group">
+            <label>版本</label>
+            <input type="text" v-model="form.version" placeholder="默认版本为1.0">
           </div>
 
           <div class="form-group">
@@ -181,6 +190,7 @@ export default {
       showDiagramForm: false,
       form: {
         imageName: '',
+        version: '',
         imageFile: null,
         imagePreview: null,
         isValid: true
@@ -233,6 +243,16 @@ export default {
               if (diagram.imageName === undefined || diagram.imageName === null) {
                 diagram.imageName = '';
               }
+
+              // 确保version存在
+              if (diagram.version === undefined || diagram.version === null) {
+                diagram.version = '1.0';
+              }
+
+              // 确保__name__存在
+              if (diagram.__name__ === undefined || diagram.__name__ === null) {
+                diagram.__name__ = diagram.imageName || '';
+              }
             });
           } else {
             throw new Error('服务器返回的不是JSON格式数据');
@@ -274,6 +294,7 @@ export default {
     resetForm() {
       this.form = {
         imageName: '',
+        version: '',
         imageFile: null,
         imagePreview: null,
         isValid: true
@@ -301,6 +322,13 @@ export default {
       try {
         const formData = new FormData();
         formData.append('imageName', this.form.imageName);
+        if (this.form.version) {
+          // 确保传递的是数字类型
+          const versionValue = parseInt(this.form.version);
+          if (!isNaN(versionValue) && versionValue > 0) {
+            formData.append('version', versionValue);
+          }
+        }
         formData.append('isValid', this.form.isValid);
 
         // 如果是新增或者编辑时重新上传了图片
@@ -541,6 +569,10 @@ export default {
   flex: 2;
   color: #409eff;
   font-weight: 500;
+}
+
+.table-cell:nth-child(3) {
+  flex: 0 0 80px;
 }
 
 .preview-image {

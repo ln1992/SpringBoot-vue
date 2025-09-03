@@ -10,17 +10,17 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public abstract class ProcessDiagramController<T extends ProcessDiagram> {
-    
+
     protected static final Logger logger = Logger.getLogger(ProcessDiagramController.class.getName());
-    
+
     protected ProcessDiagramService<T> service;
     protected String entityName;
-    
+
     public ProcessDiagramController(ProcessDiagramService<T> service, String entityName) {
         this.service = service;
         this.entityName = entityName;
     }
-    
+
     // 获取所有流程图
     public ResponseEntity<List<T>> getAllDiagrams() {
         try {
@@ -32,7 +32,7 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
             return ResponseEntity.status(500).build();
         }
     }
-    
+
     // 根据ID获取流程图
     public ResponseEntity<T> getDiagramById(Long id) {
         try {
@@ -47,19 +47,23 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
             return ResponseEntity.status(500).build();
         }
     }
-    
+
     // 创建新的流程图
     public ResponseEntity<?> createDiagram(
             String imageName,
+            Long version,
             MultipartFile imageFile,
             Boolean isValid) {
         try {
             logger.info("Creating " + entityName + " diagram with name: " + imageName);
-            
+
             T diagram = createNewInstance();
             diagram.setImageName(imageName);
+            if (version != null) {
+                diagram.setVersion(version);
+            }
             diagram.setIsValid(isValid);
-            
+
             T savedDiagram = service.saveDiagram(diagram, imageFile);
             logger.info(entityName + " diagram created successfully with ID: " + savedDiagram.getId());
             return ResponseEntity.ok(savedDiagram);
@@ -69,22 +73,26 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
             return ResponseEntity.status(500).body("创建" + entityName + "失败: " + e.getMessage());
         }
     }
-    
+
     // 更新流程图
     public ResponseEntity<?> updateDiagram(
             Long id,
             String imageName,
+            Long version,
             MultipartFile imageFile,
             Boolean isValid) {
         try {
             logger.info("Updating " + entityName + " diagram ID " + id + " with name: " + imageName);
-            
+
             T diagram = service.getDiagramById(id);
             if (diagram != null) {
                 // 更新字段
                 diagram.setImageName(imageName);
+                if (version != null) {
+                    diagram.setVersion(version);
+                }
                 diagram.setIsValid(isValid);
-                
+
                 T updatedDiagram = service.saveDiagram(diagram, imageFile);
                 logger.info(entityName + " diagram updated successfully with ID: " + updatedDiagram.getId());
                 return ResponseEntity.ok(updatedDiagram);
@@ -97,7 +105,7 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
             return ResponseEntity.status(500).body("更新" + entityName + "失败: " + e.getMessage());
         }
     }
-    
+
     // 删除流程图
     public ResponseEntity<Void> deleteDiagram(Long id) {
         try {
@@ -113,7 +121,7 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
             return ResponseEntity.status(500).build();
         }
     }
-    
+
     // 启用流程图
     public ResponseEntity<?> activateDiagram(Long id) {
         try {
@@ -128,7 +136,7 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
             return ResponseEntity.status(500).body("启用" + entityName + "失败: " + e.getMessage());
         }
     }
-    
+
     // 禁用流程图
     public ResponseEntity<?> deactivateDiagram(Long id) {
         try {
@@ -143,7 +151,7 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
             return ResponseEntity.status(500).body("禁用" + entityName + "失败: " + e.getMessage());
         }
     }
-    
+
     // 根据状态获取流程图
     public ResponseEntity<List<T>> getDiagramsByValidStatus(Boolean isValid) {
         try {
@@ -154,7 +162,7 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
             return ResponseEntity.status(500).build();
         }
     }
-    
+
     // 抽象方法，子类需要实现以创建具体实例
     protected abstract T createNewInstance();
 }

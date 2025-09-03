@@ -68,8 +68,15 @@ public abstract class ProcessDiagram extends BaseEntity {
     }
 
     public void setVersion(Long version) {
-        super.setVersion(version);
-        updateName(); // 自动更新名称
+        if (version != null) {
+            super.setVersion(version);
+        } else {
+            // 如果传入 null，则保持当前值或设置默认值
+            if (super.getVersion() == null) {
+                super.setVersion(1L);
+            }
+        }
+        updateName();  // 自动更新名称
     }
 
     public void updateName() {

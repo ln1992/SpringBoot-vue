@@ -20,6 +20,19 @@
           </div>
         </div>
 
+        <!-- 将版本和显示名称放在同一行 -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>版本</label>
+            <input type="text" v-model="form.version" placeholder="默认版本为1.0">
+          </div>
+
+          <div class="form-group">
+            <label>显示名称</label>
+            <input type="text" v-model="form.__name__" disabled>
+          </div>
+        </div>
+
         <div class="form-group">
           <label>上传图像</label>
           <input
@@ -71,6 +84,8 @@ export default {
       form: {
         id: null,
         imageName: '',
+        version: '',
+        __name__: '',
         imageFile: null,
         imagePreview: null,
         imageDataUrl: null,
@@ -87,6 +102,8 @@ export default {
       this.form = {
         id: this.diagram.id,
         imageName: this.diagram.imageName,
+        version: this.diagram.version || '',
+        __name__: this.diagram.__name__ || '',
         imageFile: null,
         imagePreview: null,
         imageDataUrl: this.diagram.imageDataUrl,
@@ -117,6 +134,13 @@ export default {
       try {
         const formData = new FormData();
         formData.append('imageName', this.form.imageName);
+        if (this.form.version) {
+          // 确保传递的是数字类型
+          const versionValue = parseInt(this.form.version);
+          if (!isNaN(versionValue) && versionValue > 0) {
+            formData.append('version', versionValue);
+          }
+        }
         formData.append('isValid', this.form.isValid);
 
         // 如果重新上传了图片
