@@ -1,7 +1,8 @@
 // src/main/java/com/boylegu/springboot_vue/entities/ProcessDiagram.java
 package com.boylegu.springboot_vue.entities;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.persistence.*;
 import java.util.Base64;
 import java.util.Objects;
@@ -16,10 +17,22 @@ public abstract class ProcessDiagram extends BaseEntity {
     @Column(name = "image_data", columnDefinition = "LONGBLOB")
     private byte[] imageData;
 
-    // 使用 ImageType 枚举替代 contentType 字符串
+    // 使用 ImageType 枚举
     @Enumerated(EnumType.STRING)
     @Column(name = "image_type")
     private ImageType imageType;
+
+    // 缓存Base64编码的图像URL以提高性能
+    @Transient
+    private String cachedImageDataUrl;
+
+    // 常量定义
+    @Transient
+    private static final int MAX_IMAGE_SIZE_FOR_BASE64 = 5 * 1024 * 1024; // 5MB
+    @Transient
+    private static final String DATA_URL_PREFIX = "data:";
+    @Transient
+    private static final String BASE64_PREFIX = ";base64,";
 
     // 默认构造函数
     public ProcessDiagram() {}
@@ -41,6 +54,7 @@ public abstract class ProcessDiagram extends BaseEntity {
 
     public void setImageData(byte[] imageData) {
         this.imageData = imageData;
+        this.cachedImageDataUrl = null; // 清除缓存
     }
 
     // 获取 ImageType 枚举
@@ -51,20 +65,7 @@ public abstract class ProcessDiagram extends BaseEntity {
     // 设置 ImageType 枚举
     public void setImageType(ImageType imageType) {
         this.imageType = imageType;
-    }
-
-    // 兼容旧的 getContentType 方法
-    @Transient
-    public String getContentType() {
-        return imageType != null ? imageType.getContentType() : null;
-    }
-
-    // 兼容旧的 setContentType 方法
-    @Transient
-    public void setContentType(String contentType) {
-        if (contentType != null) {
-            this.imageType = ImageType.fromContentType(contentType);
-        }
+        this.cachedImageDataUrl = null; // 清除缓存
     }
 
     public void setVersion(Long version) {
@@ -93,10 +94,56 @@ public abstract class ProcessDiagram extends BaseEntity {
     @Transient
     @JsonProperty("imageDataUrl")
     public String getImageDataUrl() {
-        if (imageData != null && imageType != null && imageData.length > 0) {
-            return "data:" + imageType.getContentType() + ";base64," + Base64.getEncoder().encodeToString(imageData);
+        // 检查缓存是否仍然有效
+        if (cachedImageDataUrl != null && !isImageDataChanged()) {
+            return cachedImageDataUrl;
         }
+
+        try {
+            if (isValidForBase64Encoding()) {
+                cachedImageDataUrl = buildDataUrl();
+                return cachedImageDataUrl;
+            }
+        } catch (Exception e) {
+            // 出现异常时清除缓存并返回null
+            cachedImageDataUrl = null;
+            return null;
+        }
+
+        // 无效情况下清除缓存
+        cachedImageDataUrl = null;
         return null;
+    }
+
+    /**
+     * 检查图像数据是否发生变化
+     * @return 如果数据发生变化返回true，否则返回false
+     */
+    private boolean isImageDataChanged() {
+        return cachedImageDataUrl != null &&
+                (imageData == null || imageType == null);
+    }
+
+    /**
+     * 验证图像数据是否适合进行Base64编码
+     * @return 如果适合编码返回true，否则返回false
+     */
+    private boolean isValidForBase64Encoding() {
+        return imageData != null &&
+                imageType != null &&
+                imageData.length > 0 &&
+                imageData.length <= MAX_IMAGE_SIZE_FOR_BASE64;
+    }
+
+    /**
+     * 构建Data URL
+     * @return Data URL字符串
+     */
+    private String buildDataUrl() {
+        return DATA_URL_PREFIX +
+                imageType.getContentType() +
+                BASE64_PREFIX +
+                Base64.getEncoder().encodeToString(imageData);
     }
 
     @Override
