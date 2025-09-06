@@ -2,8 +2,6 @@
 package com.boylegu.springboot_vue.service;
 
 import com.boylegu.springboot_vue.entities.Material;
-import com.boylegu.springboot_vue.entities.Material.MaterialSource;
-
 import java.util.List;
 
 public interface MaterialService {
@@ -12,7 +10,9 @@ public interface MaterialService {
 
     Material getMaterialById(Long id);
 
-    Material saveMaterial(Material material);
+    Material saveMaterial(Material material) throws IllegalArgumentException;
+
+    Material updateMaterial(Long id, Material materialDetails) throws IllegalArgumentException;
 
     void deleteMaterial(Long id);
 
@@ -22,7 +22,9 @@ public interface MaterialService {
     // 下线材料
     boolean deactivateMaterial(Long id);
 
-    // 添加到接口中
+    // 根据有效性获取材料
     List<Material> getMaterialsByIsValid(Boolean isValid);
 
+    // 检查材料明细和版本号组合是否存在
+    boolean isMaterialDetailAndVersionExists(String materialDetail, Long version, Long excludeId);
 }

@@ -2,14 +2,13 @@
 <template>
   <div class="material-detail-container">
     <div class="header">
-      <h2>编辑材料</h2>
-      <!-- 移除了返回列表按钮 -->
+      <h2>{{ isEditMode ? '编辑材料' : '新增材料' }}</h2>
     </div>
 
     <div class="material-detail-content">
       <form @submit.prevent="handleSubmit">
-        <!-- 将ID和材料明细放在同一行 -->
-        <div class="form-row">
+        <!-- ID和材料明细放在同一行 -->
+        <div class="form-row" v-if="isEditMode">
           <div class="form-group">
             <label>ID:</label>
             <input type="text" v-model="form.id" disabled>
@@ -17,55 +16,102 @@
 
           <div class="form-group">
             <label>材料明细 *</label>
-            <input type="text" v-model="form.materialDetail" required>
+            <input
+              type="text"
+              v-model="form.materialDetail"
+              required
+              :class="{ 'error': errors.materialDetail }"
+            >
+            <div class="error-message" v-if="errors.materialDetail">
+              {{ errors.materialDetail }}
+            </div>
           </div>
         </div>
 
+        <!-- 新增模式下材料明细单独一行 -->
+        <div class="form-group" v-else>
+          <label>材料明细 *</label>
+          <input
+            type="text"
+            v-model="form.materialDetail"
+            required
+            :class="{ 'error': errors.materialDetail }"
+          >
+          <div class="error-message" v-if="errors.materialDetail">
+            {{ errors.materialDetail }}
+          </div>
+        </div>
+
+        <!-- 版本和显示名称放在同一行 -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>版本:</label>
+            <input
+              type="number"
+              v-model.number="form.version"
+              min="1"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>显示名称:</label>
+            <input type="text" v-model="form.__name__" disabled>
+          </div>
+        </div>
+
+        <!-- 审核要点 -->
         <div class="form-group">
           <label>审核要点:</label>
           <textarea v-model="form.reviewPoint"></textarea>
         </div>
 
+        <!-- "智能秒批"判断标准 -->
         <div class="form-group">
           <label>"智能秒批"判断标准:</label>
           <textarea v-model="form.autoApprovalCriteria"></textarea>
         </div>
 
-        <!-- 将是否共享和材料来源放在同一行，各占一半 -->
+        <!-- 是否共享和材料来源放在同一行 -->
         <div class="form-row">
-          <div class="form-group half-width">
+          <div class="form-group">
             <label>是否共享:</label>
-            <select v-model="form.isShared">
+            <select v-model="form.shared">
               <option :value="true">是</option>
               <option :value="false">否</option>
             </select>
           </div>
 
-          <div class="form-group half-width">
+          <div class="form-group">
             <label>材料来源:</label>
             <select v-model="form.materialSource">
               <option value="PERSONAL_SUBMISSION">申请人自备</option>
               <option value="SYSTEM_AUTO_SHARED">系统自动获取</option>
+              <option value="WANG_SHAN_PROCESSING">网上办理</option>
             </select>
           </div>
         </div>
 
-        <!-- 将办理方式及材料信息获取方式说明和是否适用告知承诺放在同一行，各占一半 -->
+        <!-- 办理方式及材料信息获取方式说明和是否适用告知承诺放在同一行 -->
         <div class="form-row">
-          <div class="form-group half-width">
+          <div class="form-group">
             <label>办理方式及材料信息获取方式说明:</label>
-            <input type="text" v-model="form.processingMethodAndInfoAccess">
+            <select v-model="form.processingMethodAndInfoAccess">
+              <option value="ONLINE_PROCESSING">网上办理，线上提交材料</option>
+              <option value="SYSTEM_AUTO_WITH_FALLBACK">系统自动获取，如数据不全则需申请者提交</option>
+              <option value="PAPER_CERTIFICATE">纸质证书需申请者提交</option>
+            </select>
           </div>
 
-          <div class="form-group half-width">
+          <div class="form-group">
             <label>是否适用告知承诺:</label>
-            <select v-model="form.isEligibleForPromise">
+            <select v-model="form.eligibleForPromise">
               <option :value="true">是</option>
               <option :value="false">否</option>
             </select>
           </div>
         </div>
 
+        <!-- 是否有效 -->
         <div class="form-group">
           <label>是否有效:</label>
           <select v-model="form.isValid">
@@ -76,7 +122,7 @@
 
         <div class="form-actions">
           <button type="button" @click="goBack" class="back-btn-form">返回</button>
-          <button type="submit" class="save-btn">保存</button>
+          <button type="submit" class="save-btn" :disabled="submitting">{{ submitting ? '保存中...' : (isEditMode ? '保存' : '创建') }}</button>
         </div>
       </form>
     </div>
@@ -86,81 +132,126 @@
 <script>
 const API_BASE_URL = 'http://localhost:8000/api/materials';
 const API_UPDATE = (id) => `${API_BASE_URL}/${id}`;
+const API_CREATE = API_BASE_URL;
 
 export default {
   name: 'MaterialDetail',
   props: {
     material: {
       type: Object,
-      required: true
-    }
-  },
-  data() {
-    return {
-      form: {
+      default: () => ({
         id: null,
         materialDetail: '',
         reviewPoint: '',
         autoApprovalCriteria: '',
-        isShared: false,
+        shared: false,
         materialSource: 'PERSONAL_SUBMISSION',
-        processingMethodAndInfoAccess: '',
-        isEligibleForPromise: false,
-        isValid: true
-      }
+        processingMethodAndInfoAccess: 'ONLINE_PROCESSING',
+        eligibleForPromise: false,
+        isValid: true,
+        version: 1,
+        __name__: ''
+      })
+    }
+  },
+  data() {
+    return {
+      form: { ...this.material },
+      errors: {},
+      submitting: false
     };
   },
-  created() {
-    // 初始化表单数据
-    this.resetForm();
+  computed: {
+    isEditMode() {
+      return !!this.material.id;
+    }
+  },
+  watch: {
+    material: {
+      handler(newVal) {
+        this.form = { ...newVal };
+      },
+      deep: true
+    }
   },
   methods: {
-    resetForm() {
-      this.form = {
-        id: this.material.id,
-        materialDetail: this.material.materialDetail,
-        reviewPoint: this.material.reviewPoint,
-        autoApprovalCriteria: this.material.autoApprovalCriteria,
-        isShared: this.material.isShared,
-        materialSource: this.material.materialSource,
-        processingMethodAndInfoAccess: this.material.processingMethodAndInfoAccess,
-        isEligibleForPromise: this.material.isEligibleForPromise,
-        isValid: this.material.isValid
-      };
-    },
-
-    // 返回列表
     goBack() {
-      console.log('MaterialDetail: 返回按钮被点击');
       this.$emit('back');
     },
 
-    // 表单提交处理
-    async handleSubmit() {
-      console.log('MaterialDetail: 保存按钮被点击，表单数据:', this.form);
-      try {
-        const response = await fetch(API_UPDATE(this.form.id), {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(this.form)
-        });
+    validateForm() {
+      this.errors = {};
 
-        console.log('MaterialDetail: 收到响应:', response.status);
+      if (!this.form.materialDetail || this.form.materialDetail.trim() === '') {
+        this.errors.materialDetail = '材料明细不能为空';
+        return false;
+      }
+
+      // 验证版本号
+      if (this.form.version && (isNaN(this.form.version) || this.form.version < 1)) {
+        this.errors.version = '版本号必须是大于0的数字';
+        return false;
+      }
+
+      return true;
+    },
+
+    async handleSubmit() {
+      // 防止重复提交
+      if (this.submitting) {
+        return;
+      }
+
+      if (!this.validateForm()) {
+        return;
+      }
+
+      this.submitting = true;
+
+      try {
+        // 确保版本号存在且为正整数
+        if (!this.form.version || this.form.version < 1) {
+          this.form.version = 1;
+        }
+
+        let response;
+
+        if (this.isEditMode) {
+          response = await fetch(API_UPDATE(this.form.id), {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(this.form)
+          });
+        } else {
+          response = await fetch(API_CREATE, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(this.form)
+          });
+        }
+
         if (response.ok) {
           const updatedMaterial = await response.json();
-          console.log('MaterialDetail: 更新成功，返回数据:', updatedMaterial);
           this.$emit('material-updated', updatedMaterial);
-          alert('材料更新成功');
+
+          // 直接显示成功提示，不使用setTimeout
+          alert(this.isEditMode ? '材料更新成功' : '材料创建成功');
+
+          // 更新表单数据为返回的数据，保持在当前界面
+          this.form = { ...updatedMaterial };
         } else {
           const errorText = await response.text();
-          console.error('MaterialDetail: 更新失败:', response.status, errorText);
-          alert('更新失败: ' + response.status + ' - ' + errorText);
+          alert((this.isEditMode ? '更新' : '创建') + '失败: ' + errorText);
         }
       } catch (error) {
-        console.error('MaterialDetail: 保存材料出错:', error);
+        console.error('保存材料出错:', error);
         alert('保存失败: ' + error.message);
+      } finally {
+        this.submitting = false;
       }
     }
   }
@@ -170,7 +261,7 @@ export default {
 <style scoped>
 .material-detail-container {
   padding: 20px;
-  max-width: 1200px;
+  max-width: 800px;
   margin: 0 auto;
   position: relative;
   z-index: 1001;
@@ -197,9 +288,8 @@ export default {
   z-index: 1001;
 }
 
-/* 表单样式 */
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 .form-row {
@@ -209,17 +299,7 @@ export default {
 
 .form-row .form-group {
   flex: 1;
-  margin-bottom: 15px;
-}
-
-/* 调整ID字段的宽度 */
-.form-row .form-group:first-child {
-  flex: 0 0 120px; /* ID字段更窄 */
-}
-
-/* 半宽字段样式 */
-.form-row .form-group.half-width {
-  flex: 1;
+  margin-bottom: 20px;
 }
 
 .form-group label {
@@ -233,20 +313,35 @@ export default {
 .form-group textarea,
 .form-group select {
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 12px;
   border: 1px solid #dcdfe6;
   border-radius: 4px;
   font-size: 14px;
   box-sizing: border-box;
 }
 
+.form-group input.error {
+  border-color: #f56c6c;
+}
+
 .form-group textarea {
-  min-height: 60px;
+  min-height: 80px;
   resize: vertical;
 }
 
+.error-message {
+  color: #f56c6c;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.form-group input:disabled {
+  background-color: #f5f7fa;
+  cursor: not-allowed;
+}
+
 .form-actions {
-  margin-top: 20px;
+  margin-top: 30px;
   text-align: right;
   position: relative;
   z-index: 1002;
@@ -254,7 +349,7 @@ export default {
 
 .form-actions button {
   margin-left: 10px;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
@@ -270,6 +365,11 @@ export default {
 
 .form-actions button[type="button"]:hover {
   background-color: #a6a9ad;
+}
+
+.form-actions button:disabled {
+  background-color: #a0a0a0;
+  cursor: not-allowed;
 }
 
 .back-btn-form {
@@ -288,7 +388,7 @@ export default {
   border: none;
 }
 
-.save-btn:hover {
+.save-btn:hover:not(:disabled) {
   background-color: #85ce61;
 }
 
@@ -300,11 +400,6 @@ export default {
   .form-row {
     flex-direction: column;
     gap: 0;
-  }
-
-  /* 在移动端恢复ID字段的默认宽度 */
-  .form-row .form-group:first-child {
-    flex: 1;
   }
 
   .form-actions {

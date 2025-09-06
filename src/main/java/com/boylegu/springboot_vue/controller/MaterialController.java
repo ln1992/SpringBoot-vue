@@ -65,6 +65,9 @@ public class MaterialController {
             Material savedMaterial = materialService.saveMaterial(material);
             logger.info("Material created successfully with ID: " + savedMaterial.getId());
             return ResponseEntity.ok(savedMaterial);
+        } catch (IllegalArgumentException e) {
+            logger.severe("Duplicate material detail and version: " + e.getMessage());
+            return ResponseEntity.badRequest().body("创建失败: " + e.getMessage());
         } catch (Exception e) {
             logger.severe("Error creating material: " + e.getMessage());
             e.printStackTrace();
@@ -83,24 +86,17 @@ public class MaterialController {
 
         try {
             logger.info("Updating material ID " + id + " with data: " + materialDetails);
-            Material material = materialService.getMaterialById(id);
-            if (material != null) {
-                // 更新字段
-                material.setMaterialDetail(materialDetails.getMaterialDetail());
-                material.setReviewPoint(materialDetails.getReviewPoint());
-                material.setAutoApprovalCriteria(materialDetails.getAutoApprovalCriteria());
-                material.setShared(materialDetails.getShared());
-                material.setMaterialSource(materialDetails.getMaterialSource());
-                material.setProcessingMethodAndInfoAccess(materialDetails.getProcessingMethodAndInfoAccess());
-                material.setEligibleForPromise(materialDetails.getEligibleForPromise());
-                material.setIsValid(materialDetails.getIsValid());
+            Material updatedMaterial = materialService.updateMaterial(id, materialDetails);
 
-                Material updatedMaterial = materialService.saveMaterial(material);
+            if (updatedMaterial != null) {
                 logger.info("Material updated successfully with ID: " + updatedMaterial.getId());
                 return ResponseEntity.ok(updatedMaterial);
             } else {
                 return ResponseEntity.notFound().build();
             }
+        } catch (IllegalArgumentException e) {
+            logger.severe("Duplicate material detail and version: " + e.getMessage());
+            return ResponseEntity.badRequest().body("更新失败: " + e.getMessage());
         } catch (Exception e) {
             logger.severe("Error updating material with id " + id + ": " + e.getMessage());
             e.printStackTrace();
@@ -110,7 +106,7 @@ public class MaterialController {
 
     // 删除材料
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteMaterial(@PathVariable Long id) {
+    public ResponseEntity<?> deleteMaterial(@PathVariable Long id) {
         try {
             Material material = materialService.getMaterialById(id);
             if (material != null) {
@@ -121,7 +117,7 @@ public class MaterialController {
             }
         } catch (Exception e) {
             logger.severe("Error deleting material with id " + id + ": " + e.getMessage());
-            return ResponseEntity.status(500).build();
+            return ResponseEntity.status(500).body("删除材料失败: " + e.getMessage());
         }
     }
 
@@ -157,6 +153,7 @@ public class MaterialController {
         }
     }
 
+    // 根据有效性状态获取材料
     @GetMapping("/search/valid")
     public ResponseEntity<List<Material>> getValidMaterials(@RequestParam Boolean isValid) {
         try {

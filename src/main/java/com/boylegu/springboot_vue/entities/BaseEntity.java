@@ -18,8 +18,6 @@ public abstract class BaseEntity {
     @Column(name = "__name__")
     private String __name__;
 
-    // 版本号，用于乐观锁控制
-    @Version
     @Column(name = "version")
     private Long version;
 

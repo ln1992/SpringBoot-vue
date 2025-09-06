@@ -1,19 +1,19 @@
+// src/main/java/com/boylegu/springboot_vue/entities/Material.java
 package com.boylegu.springboot_vue.entities;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
 
 /**
  * 材料类 - 用于描述各种申请或办理材料的信息
  */
 @Entity
-@Table(name = "material")
-public class Material {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+@Table(name = "material",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"material_detail", "version"}))
+public class Material extends BaseEntity {
     // 材料明细
-    @Column(name = "material_detail", unique = true)
+    @Column(name = "material_detail", nullable = false)
+    @NotBlank(message = "材料明细不能为空")
     private String materialDetail;
 
     // 审核要点
@@ -26,7 +26,7 @@ public class Material {
 
     // 是否共享
     @Column(name = "is_shared")
-    private Boolean isShared;
+    private Boolean isShared = false;
 
     // 材料来源
     @Column(name = "material_source")
@@ -35,11 +35,12 @@ public class Material {
 
     // 办理方式及材料信息获取方式说明
     @Column(name = "processing_method_and_info_access")
-    private String processingMethodAndInfoAccess;
+    @Enumerated(EnumType.STRING)
+    private ProcessingMethodAndInfoAccess processingMethodAndInfoAccess;
 
     // 是否适用告知承诺
     @Column(name = "is_eligible_for_promise")
-    private Boolean isEligibleForPromise;
+    private Boolean isEligibleForPromise = false;
 
     // 是否有效（默认为true）
     @Column(name = "is_valid")
@@ -50,7 +51,7 @@ public class Material {
 
     // 完整参数构造函数
     public Material(String materialDetail, String reviewPoint, String autoApprovalCriteria,
-                    Boolean isShared, MaterialSource materialSource, String processingMethodAndInfoAccess,
+                    Boolean isShared, MaterialSource materialSource, ProcessingMethodAndInfoAccess processingMethodAndInfoAccess,
                     Boolean isEligibleForPromise) {
         this.materialDetail = materialDetail;
         this.reviewPoint = reviewPoint;
@@ -62,21 +63,37 @@ public class Material {
         this.isValid = true; // 设置默认值为true
     }
 
-    // getter和setter方法
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getMaterialDetail() {
-        return materialDetail;
+    @Override
+    public void setVersion(Long version) {
+        if (version != null) {
+            super.setVersion(version);
+        } else {
+            // 如果传入 null，则保持当前值或设置默认值
+            if (super.getVersion() == null) {
+                super.setVersion(1L);
+            }
+        }
+        updateName(); // 自动更新名称
     }
 
     public void setMaterialDetail(String materialDetail) {
         this.materialDetail = materialDetail;
+        updateName(); // 自动更新名称
+    }
+
+    public void updateName() {
+        if (this.materialDetail != null && this.getVersion() != null) {
+            this.set__name__(this.materialDetail + "_" + this.getVersion());
+        } else if (this.materialDetail != null) {
+            this.set__name__(this.materialDetail);
+        } else {
+            this.set__name__(null);
+        }
+    }
+
+    // getter和setter方法
+    public String getMaterialDetail() {
+        return materialDetail;
     }
 
     public String getReviewPoint() {
@@ -95,12 +112,22 @@ public class Material {
         this.autoApprovalCriteria = autoApprovalCriteria;
     }
 
+    // 修复 isShared 字段的 getter/setter 方法
     public Boolean getShared() {
         return isShared;
     }
 
     public void setShared(Boolean shared) {
         isShared = shared;
+    }
+
+    // 修复 isEligibleForPromise 字段的 getter/setter 方法
+    public Boolean getEligibleForPromise() {
+        return isEligibleForPromise;
+    }
+
+    public void setEligibleForPromise(Boolean eligibleForPromise) {
+        isEligibleForPromise = eligibleForPromise;
     }
 
     public MaterialSource getMaterialSource() {
@@ -111,20 +138,12 @@ public class Material {
         this.materialSource = materialSource;
     }
 
-    public String getProcessingMethodAndInfoAccess() {
+    public ProcessingMethodAndInfoAccess getProcessingMethodAndInfoAccess() {
         return processingMethodAndInfoAccess;
     }
 
-    public void setProcessingMethodAndInfoAccess(String processingMethodAndInfoAccess) {
+    public void setProcessingMethodAndInfoAccess(ProcessingMethodAndInfoAccess processingMethodAndInfoAccess) {
         this.processingMethodAndInfoAccess = processingMethodAndInfoAccess;
-    }
-
-    public Boolean getEligibleForPromise() {
-        return isEligibleForPromise;
-    }
-
-    public void setEligibleForPromise(Boolean eligibleForPromise) {
-        isEligibleForPromise = eligibleForPromise;
     }
 
     public Boolean getIsValid() {
@@ -138,30 +157,51 @@ public class Material {
     @Override
     public String toString() {
         return "Material{" +
-                "id=" + id +
+                "id=" + getId() +
                 ", materialDetail='" + materialDetail + '\'' +
                 ", reviewPoint='" + reviewPoint + '\'' +
                 ", autoApprovalCriteria='" + autoApprovalCriteria + '\'' +
                 ", isShared=" + isShared +
                 ", materialSource=" + materialSource +
-                ", processingMethodAndInfoAccess='" + processingMethodAndInfoAccess + '\'' +
+                ", processingMethodAndInfoAccess=" + processingMethodAndInfoAccess +
                 ", isEligibleForPromise=" + isEligibleForPromise +
                 ", isValid=" + isValid +
+                ", __name__='" + get__name__() + '\'' +
+                ", version=" + getVersion() +
                 '}';
     }
 
     public enum MaterialSource {
         PERSONAL_SUBMISSION("申请人自备"),
-        SYSTEM_AUTO_SHARED("系统自动获取");
+        SYSTEM_AUTO_SHARED("系统自动获取"),
+        WANG_SHAN_PROCESSING("网上办理");
 
-        private final String label;
+        private final String description;
 
-        MaterialSource(String label) {
-            this.label = label;
+        MaterialSource(String description) {
+            this.description = description;
         }
 
-        public String getLabel() {
-            return label;
+        @Override
+        public String toString() {
+            return description;
+        }
+    }
+
+    public enum ProcessingMethodAndInfoAccess {
+        ONLINE_PROCESSING("网上办理，线上提交材料"),
+        SYSTEM_AUTO_WITH_FALLBACK("系统自动获取，如数据不全则需申请者提交"),
+        PAPER_CERTIFICATE("纸质证书需申请者提交");
+
+        private final String description;
+
+        ProcessingMethodAndInfoAccess(String description) {
+            this.description = description;
+        }
+
+        @Override
+        public String toString() {
+            return description;
         }
     }
 }
