@@ -77,14 +77,14 @@
           <div class="table-cell">{{ getProcessingMethodText(material.processingMethodAndInfoAccess) || '-' }}</div>
           <div class="table-cell">{{ material.eligibleForPromise ? '是' : '否' }}</div>
           <div class="table-cell">
-            <span :class="['status-badge', material.isValid ? 'status-active' : 'status-inactive']">
-              {{ material.isValid ? '已上线' : '已下线' }}
+            <span :class="['status-badge', material.valid ? 'status-active' : 'status-inactive']">
+              {{ material.valid ? '已上线' : '已下线' }}
             </span>
           </div>
           <div class="table-cell action-cell">
             <div class="action-buttons">
               <button
-                v-if="material.isValid"
+                v-if="material.valid"
                 class="offline-btn"
                 @click.stop="toggleMaterialStatus(material.id, false)"
               >
@@ -197,7 +197,7 @@ export default {
       // 状态筛选
       if (this.filterStatus !== 'all') {
         const isValid = this.filterStatus === 'active';
-        result = result.filter(material => material.isValid === isValid);
+        result = result.filter(material => material.valid === isValid);
       }
 
       // 关键词搜索
@@ -346,11 +346,11 @@ export default {
           // 更新材料状态
           const index = this.materials.findIndex(m => m.id === id);
           if (index !== -1) {
-            this.materials[index].isValid = isValid;
+            this.materials[index].valid = isValid;
 
             // 如果正在查看这个材料，也更新selectedMaterial中的状态
             if (this.selectedMaterial && this.selectedMaterial.id === id) {
-              this.selectedMaterial.isValid = isValid;
+              this.selectedMaterial.valid = isValid;
             }
           }
           this.filterMaterials();

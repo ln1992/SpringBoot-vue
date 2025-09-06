@@ -38,8 +38,8 @@ public class MaterialServiceImpl implements MaterialService {
         }
 
         // 设置默认值
-        if (material.getIsValid() == null) {
-            material.setIsValid(true);
+        if (material.getValid() == null) {
+            material.setValid(true);
         }
 
         // 更新名称
@@ -73,7 +73,7 @@ public class MaterialServiceImpl implements MaterialService {
         existingMaterial.setMaterialSource(materialDetails.getMaterialSource());
         existingMaterial.setProcessingMethodAndInfoAccess(materialDetails.getProcessingMethodAndInfoAccess());
         existingMaterial.setEligibleForPromise(materialDetails.getEligibleForPromise()); // 修复字段名
-        existingMaterial.setIsValid(materialDetails.getIsValid());
+        existingMaterial.setValid(materialDetails.getValid());
 
         // 处理版本号
         if (materialDetails.getVersion() != null) {
@@ -95,7 +95,7 @@ public class MaterialServiceImpl implements MaterialService {
     public boolean activateMaterial(Long id) {
         Material material = getMaterialById(id);
         if (material != null) {
-            material.setIsValid(true);
+            material.setValid(true);
             materialRepository.save(material);
             return true;
         }
@@ -106,7 +106,7 @@ public class MaterialServiceImpl implements MaterialService {
     public boolean deactivateMaterial(Long id) {
         Material material = getMaterialById(id);
         if (material != null) {
-            material.setIsValid(false);
+            material.setValid(false);
             materialRepository.save(material);
             return true;
         }

@@ -62,7 +62,7 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
             if (version != null) {
                 diagram.setVersion(version);
             }
-            diagram.setIsValid(isValid);
+            diagram.setValid(isValid);
 
             T savedDiagram = service.saveDiagram(diagram, imageFile);
             logger.info(entityName + " diagram created successfully with ID: " + savedDiagram.getId());
@@ -91,7 +91,7 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
                 if (version != null) {
                     diagram.setVersion(version);
                 }
-                diagram.setIsValid(isValid);
+                diagram.setValid(isValid);
 
                 T updatedDiagram = service.saveDiagram(diagram, imageFile);
                 logger.info(entityName + " diagram updated successfully with ID: " + updatedDiagram.getId());

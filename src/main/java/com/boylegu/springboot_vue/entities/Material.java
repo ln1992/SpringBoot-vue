@@ -146,14 +146,6 @@ public class Material extends BaseEntity {
         this.processingMethodAndInfoAccess = processingMethodAndInfoAccess;
     }
 
-    public Boolean getIsValid() {
-        return isValid;
-    }
-
-    public void setIsValid(Boolean valid) {
-        isValid = valid;
-    }
-
     @Override
     public String toString() {
         return "Material{" +

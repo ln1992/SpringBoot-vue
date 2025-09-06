@@ -67,7 +67,7 @@ public class ApprovalProcessDiagramServiceImpl implements ApprovalProcessDiagram
         Optional<ApprovalProcessDiagram> diagramOptional = approvalProcessDiagramRepository.findById(id);
         if (diagramOptional.isPresent()) {
             ApprovalProcessDiagram diagram = diagramOptional.get();
-            diagram.setIsValid(true);
+            diagram.setValid(true);
             approvalProcessDiagramRepository.save(diagram);
             return true;
         }
@@ -79,7 +79,7 @@ public class ApprovalProcessDiagramServiceImpl implements ApprovalProcessDiagram
         Optional<ApprovalProcessDiagram> diagramOptional = approvalProcessDiagramRepository.findById(id);
         if (diagramOptional.isPresent()) {
             ApprovalProcessDiagram diagram = diagramOptional.get();
-            diagram.setIsValid(false);
+            diagram.setValid(false);
             approvalProcessDiagramRepository.save(diagram);
             return true;
         }

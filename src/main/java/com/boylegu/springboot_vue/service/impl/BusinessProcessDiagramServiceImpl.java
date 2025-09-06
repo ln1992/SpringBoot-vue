@@ -67,7 +67,7 @@ public class BusinessProcessDiagramServiceImpl implements BusinessProcessDiagram
         Optional<BusinessProcessDiagram> diagramOptional = businessProcessDiagramRepository.findById(id);
         if (diagramOptional.isPresent()) {
             BusinessProcessDiagram diagram = diagramOptional.get();
-            diagram.setIsValid(true);
+            diagram.setValid(true);
             businessProcessDiagramRepository.save(diagram);
             return true;
         }
@@ -79,7 +79,7 @@ public class BusinessProcessDiagramServiceImpl implements BusinessProcessDiagram
         Optional<BusinessProcessDiagram> diagramOptional = businessProcessDiagramRepository.findById(id);
         if (diagramOptional.isPresent()) {
             BusinessProcessDiagram diagram = diagramOptional.get();
-            diagram.setIsValid(false);
+            diagram.setValid(false);
             businessProcessDiagramRepository.save(diagram);
             return true;
         }

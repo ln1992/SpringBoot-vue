@@ -52,7 +52,7 @@
 
         <div class="form-group">
           <label>状态:</label>
-          <select v-model="form.isValid">
+          <select v-model="form.valid">
             <option :value="true">已上线</option>
             <option :value="false">已下线</option>
           </select>
@@ -89,7 +89,7 @@ export default {
         imageFile: null,
         imagePreview: null,
         imageDataUrl: null,
-        isValid: true
+        valid: true
       }
     };
   },
@@ -107,7 +107,7 @@ export default {
         imageFile: null,
         imagePreview: null,
         imageDataUrl: this.diagram.imageDataUrl,
-        isValid: this.diagram.isValid
+        valid: this.diagram.valid
       };
     },
 
@@ -141,7 +141,8 @@ export default {
             formData.append('version', versionValue);
           }
         }
-        formData.append('isValid', this.form.isValid);
+        // 修复：使用 'isValid' 而不是 'valid'
+        formData.append('isValid', this.form.valid);
 
         // 如果重新上传了图片
         if (this.form.imageFile) {

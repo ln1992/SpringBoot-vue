@@ -1,6 +1,7 @@
 // src/main/java/com/boylegu/springboot_vue/entities/BaseEntity.java
 package com.boylegu.springboot_vue.entities;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.persistence.*;
 import java.util.Objects;
 
@@ -44,11 +45,11 @@ public abstract class BaseEntity {
         this.__name__ = __name__;
     }
 
-    public Boolean getIsValid() {
+    public Boolean getValid() {
         return isValid;
     }
 
-    public void setIsValid(Boolean valid) {
+    public void setValid(Boolean valid) {
         isValid = valid;
     }
 

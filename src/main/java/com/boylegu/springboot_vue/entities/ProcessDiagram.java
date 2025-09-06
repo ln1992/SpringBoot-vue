@@ -169,7 +169,7 @@ public abstract class ProcessDiagram extends BaseEntity {
                 ", imageName='" + getImageName() + '\'' +
                 ", imageType=" + getImageType() +
                 ", __name__='" + get__name__() + '\'' +
-                ", isValid=" + getIsValid() +
+                ", isValid=" + getValid() +
                 '}';
     }
 

@@ -65,14 +65,14 @@
             <span v-else>无预览</span>
           </div>
           <div class="table-cell">
-            <span :class="['status-badge', diagram.isValid ? 'status-active' : 'status-inactive']">
-              {{ diagram.isValid ? '已上线' : '已下线' }}
+            <span :class="['status-badge', diagram.valid ? 'status-active' : 'status-inactive']">
+              {{ diagram.valid ? '已上线' : '已下线' }}
             </span>
           </div>
           <div class="table-cell">
             <div class="action-buttons">
               <button
-                v-if="diagram.isValid"
+                v-if="diagram.valid"
                 class="offline-btn"
                 @click.stop="toggleDiagramStatus(diagram.id, false)"
               >
@@ -136,7 +136,7 @@
 
           <div class="form-group">
             <label>状态:</label>
-            <select v-model="form.isValid">
+            <select v-model="form.valid">
               <option :value="true">已上线</option>
               <option :value="false">已下线</option>
             </select>
@@ -193,7 +193,7 @@ export default {
         version: '',
         imageFile: null,
         imagePreview: null,
-        isValid: true
+        valid: true
       }
     };
   },
@@ -235,8 +235,8 @@ export default {
               }
 
               // 确保有状态字段
-              if (diagram.isValid === undefined) {
-                diagram.isValid = true;
+              if (diagram.valid === undefined) {
+                diagram.valid = true;
               }
 
               // 确保imageName存在
@@ -309,7 +309,7 @@ export default {
         version: '',
         imageFile: null,
         imagePreview: null,
-        isValid: true
+        valid: true
       };
     },
 
@@ -341,7 +341,7 @@ export default {
             formData.append('version', versionValue);
           }
         }
-        formData.append('isValid', this.form.isValid);
+        formData.append('valid', this.form.valid);
 
         // 如果是新增或者编辑时重新上传了图片
         if (this.form.imageFile) {

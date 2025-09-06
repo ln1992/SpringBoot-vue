@@ -114,7 +114,7 @@
         <!-- 是否有效 -->
         <div class="form-group">
           <label>是否有效:</label>
-          <select v-model="form.isValid">
+          <select v-model="form.valid">
             <option :value="true">已上线</option>
             <option :value="false">已下线</option>
           </select>
@@ -148,7 +148,7 @@ export default {
         materialSource: 'PERSONAL_SUBMISSION',
         processingMethodAndInfoAccess: 'ONLINE_PROCESSING',
         eligibleForPromise: false,
-        isValid: true,
+        valid: true,
         version: 1,
         __name__: ''
       })
