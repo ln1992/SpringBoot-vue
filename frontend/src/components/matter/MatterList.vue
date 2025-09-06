@@ -64,19 +64,19 @@
           <div class="table-cell">{{ getProvincialDepartmentOfficeDescription(matter.provincialDepartmentOffice) || matter.provincialDepartmentOffice || '-' }}</div>
           <div class="table-cell">{{ matter.version || '-' }}</div>
           <div class="table-cell">
-            <span :class="['status-badge', matter.isPublish ? 'status-active' : 'status-inactive']">
-              {{ matter.isPublish ? '已发布' : '未发布' }}
+            <span :class="['status-badge', matter.publish ? 'status-active' : 'status-inactive']">
+              {{ matter.publish ? '已发布' : '未发布' }}
             </span>
           </div>
           <div class="table-cell">
-            <span :class="['status-badge', matter.isValid ? 'status-active' : 'status-inactive']">
-              {{ matter.isValid ? '已上线' : '已下线' }}
+            <span :class="['status-badge', matter.valid ? 'status-active' : 'status-inactive']">
+              {{ matter.valid ? '已上线' : '已下线' }}
             </span>
           </div>
           <div class="table-cell">
             <div class="action-buttons">
               <!-- 状态操作按钮 -->
-              <template v-if="matter.isValid">
+              <template v-if="matter.valid">
                 <button
                   class="offline-btn"
                   @click.stop="toggleMatterStatus(matter.id, false)"
@@ -100,7 +100,7 @@
               </template>
 
               <!-- 发布操作按钮 -->
-              <template v-if="matter.isValid && !matter.isPublish">
+              <template v-if="matter.valid && !matter.publish">
                 <button
                   class="publish-btn"
                   @click.stop="togglePublishStatus(matter.id, true)"
@@ -108,7 +108,7 @@
                   发布
                 </button>
               </template>
-              <template v-else-if="matter.isValid && matter.isPublish">
+              <template v-else-if="matter.valid && matter.publish">
                 <button
                   class="unpublish-btn"
                   @click.stop="togglePublishStatus(matter.id, false)"
@@ -236,6 +236,12 @@ export default {
           const contentType = response.headers.get('content-type')
           if (contentType && contentType.includes('application/json')) {
             this.matters = await response.json()
+            // 处理后端返回的字段名，映射到前端使用的字段名
+            this.matters = this.matters.map(matter => ({
+              ...matter,
+              isValid: matter.valid,
+              isPublish: matter.publish
+            }))
           } else {
             throw new Error('服务器返回的不是JSON格式数据')
           }
@@ -253,7 +259,7 @@ export default {
     // 获取所有有效材料列表
     async fetchMaterials() {
       try {
-        const response = await fetch(`${API_MATERIALS_URL}/search/valid?isValid=true`);
+        const response = await fetch(`${API_MATERIALS_URL}?valid=true`);
         if (response.ok) {
           this.materialsList = await response.json();
         }
@@ -266,13 +272,13 @@ export default {
     async fetchProcessDiagrams() {
       try {
         // 获取审批流程图
-        const approvalResponse = await fetch('http://localhost:8000/api/process-diagrams/approval/search/valid?isValid=true');
+        const approvalResponse = await fetch('http://localhost:8000/api/process-diagrams/approval?valid=true');
         if (approvalResponse.ok) {
           this.approvalProcessDiagrams = await approvalResponse.json();
         }
 
         // 获取业务流程图
-        const businessResponse = await fetch('http://localhost:8000/api/process-diagrams/business/search/valid?isValid=true');
+        const businessResponse = await fetch('http://localhost:8000/api/process-diagrams/business?valid=true');
         if (businessResponse.ok) {
           this.businessProcessDiagrams = await businessResponse.json();
         }
@@ -321,7 +327,13 @@ export default {
 
     // 显示材料详情
     editMatter(matter) {
-      this.selectedMatter = matter;
+      // 将后端字段名映射回前端字段名
+      const mappedMatter = {
+        ...matter,
+        isValid: matter.valid,
+        isPublish: matter.publish
+      }
+      this.selectedMatter = mappedMatter;
     },
 
     // 返回列表页
@@ -336,19 +348,33 @@ export default {
 
     // 处理事项更新事件
     handleMatterUpdated(updatedMatter) {
+      // 将后端字段名映射回前端字段名
+      const mappedMatter = {
+        ...updatedMatter,
+        isValid: updatedMatter.valid,
+        isPublish: updatedMatter.publish
+      }
+
       // 更新列表中的事项
-      const index = this.matters.findIndex(m => m.id === updatedMatter.id);
+      const index = this.matters.findIndex(m => m.id === mappedMatter.id);
       if (index !== -1) {
-        this.matters.splice(index, 1, updatedMatter);
+        this.matters.splice(index, 1, mappedMatter);
       }
       // 更新选中的事项
-      this.selectedMatter = updatedMatter;
+      this.selectedMatter = mappedMatter;
     },
 
     // 处理新增事项
     async handleMatterAdded(newMatter) {
+      // 将后端字段名映射回前端字段名
+      const mappedMatter = {
+        ...newMatter,
+        isValid: newMatter.valid,
+        isPublish: newMatter.publish
+      }
+
       // 添加到事项列表
-      this.matters.push(newMatter);
+      this.matters.push(mappedMatter);
       // 返回列表页
       this.showAddForm = false;
       // 刷新列表

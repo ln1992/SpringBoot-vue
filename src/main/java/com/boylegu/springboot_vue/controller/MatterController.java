@@ -72,15 +72,15 @@ public class MatterController {
             return ResponseEntity.badRequest().body("验证失败: " + errorMessage);
         } catch (Exception e) {
             logger.severe("Error creating matter: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(500).body("创建事项失败: " + e.getMessage());
         }
     }
 
     // 更新事项
-    // src/main/java/com/boylegu/springboot_vue/controller/MatterController.java
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateMatter(@PathVariable Long id, @RequestBody @Valid Matter matterDetails, BindingResult bindingResult) {
+    public ResponseEntity<?> updateMatter(@PathVariable Long id,
+                                          @RequestBody @Valid Matter matterDetails,
+                                          BindingResult bindingResult) {
         // 处理验证错误
         if (bindingResult.hasErrors()) {
             logger.severe("Validation error updating matter: " + bindingResult.getAllErrors());
@@ -88,29 +88,8 @@ public class MatterController {
         }
 
         try {
-            logger.info("Updating matter ID " + id + " with data: " + matterDetails);
-            Matter matter = matterService.getMatterById(id);
-            if (matter != null) {
-                // 更新字段
-                matter.setMainItemCode(matterDetails.getMainItemCode()); // 新增
-                matter.setSubItemCode(matterDetails.getSubItemCode());   // 新增
-                matter.setGrandchildItemCode(matterDetails.getGrandchildItemCode()); // 新增
-                matter.setMainItemName(matterDetails.getMainItemName());
-                matter.setSubItemName(matterDetails.getSubItemName());
-                matter.setGrandchildItemName(matterDetails.getGrandchildItemName());
-                matter.setBases(matterDetails.getBases());
-                matter.setMaterialIds(matterDetails.getMaterialIds());
-                matter.setLegalTimeLimit(matterDetails.getLegalTimeLimit());
-                matter.setCommittedTimeLimit(matterDetails.getCommittedTimeLimit());
-                matter.setApprovalLevel(matterDetails.getApprovalLevel());
-                matter.setProvincialDepartmentOffice(matterDetails.getProvincialDepartmentOffice());
-                matter.setApprovalProcessDiagramId(matterDetails.getApprovalProcessDiagramId());
-                matter.setBusinessProcessDiagramId(matterDetails.getBusinessProcessDiagramId());
-                matter.setVersion(matterDetails.getVersion());
-                matter.setIsPublish(matterDetails.getIsPublish());
-                matter.setIsValid(matterDetails.getIsValid());
-
-                Matter updatedMatter = matterService.saveMatter(matter);
+            Matter updatedMatter = matterService.updateMatter(id, matterDetails);
+            if (updatedMatter != null) {
                 logger.info("Matter updated successfully with ID: " + updatedMatter.getId());
                 return ResponseEntity.ok(updatedMatter);
             } else {
@@ -118,12 +97,9 @@ public class MatterController {
             }
         } catch (Exception e) {
             logger.severe("Error updating matter with id " + id + ": " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(500).body("更新事项失败: " + e.getMessage());
         }
     }
-
-
 
     // 删除事项
     @DeleteMapping("/{id}")
@@ -154,12 +130,11 @@ public class MatterController {
         }
     }
 
-    // 根据审批层级查询事项列表 - 修复：接收字符串参数并转换为枚举
+    // 根据审批层级查询事项列表
     @GetMapping("/search/approval-level")
     public ResponseEntity<List<Matter>> getMattersByApprovalLevel(@RequestParam String approvalLevel) {
         try {
-            Matter.ApprovalLevel level = Matter.ApprovalLevel.valueOf(approvalLevel);
-            List<Matter> matters = matterService.getMattersByApprovalLevel(level);
+            List<Matter> matters = matterService.getMattersByApprovalLevel(approvalLevel);
             return ResponseEntity.ok(matters);
         } catch (IllegalArgumentException e) {
             logger.severe("Invalid approval level: " + approvalLevel);
@@ -170,13 +145,12 @@ public class MatterController {
         }
     }
 
-    // 根据省厅对口指导处室（单位）查询事项列表 - 修复：接收字符串参数并转换为枚举
+    // 根据省厅对口指导处室（单位）查询事项列表
     @GetMapping("/search/provincial-department-office")
     public ResponseEntity<List<Matter>> getMattersByProvincialDepartmentOffice(
             @RequestParam String provincialDepartmentOffice) {
         try {
-            Matter.ProvincialDepartmentOffice office = Matter.ProvincialDepartmentOffice.valueOf(provincialDepartmentOffice);
-            List<Matter> matters = matterService.getMattersByProvincialDepartmentOffice(office);
+            List<Matter> matters = matterService.getMattersByProvincialDepartmentOffice(provincialDepartmentOffice);
             return ResponseEntity.ok(matters);
         } catch (IllegalArgumentException e) {
             logger.severe("Invalid provincial department office: " + provincialDepartmentOffice);

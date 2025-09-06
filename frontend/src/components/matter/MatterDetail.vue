@@ -41,31 +41,43 @@
           <!-- 主项信息 -->
           <div class="form-group item-code-group">
             <label>主项编号 *</label>
-            <input type="number" v-model.number="form.mainItemCode" required>
+            <input
+              type="number"
+              v-model.number="form.mainItemCode"
+              required
+              :class="{ 'error': errors.mainItemCode }"
+            >
+            <div class="error-message" v-if="errors.mainItemCode">{{ errors.mainItemCode }}</div>
           </div>
           <div class="form-group item-name-group">
             <label>主项名称 *</label>
-            <input type="text" v-model="form.mainItemName" required>
+            <input
+              type="text"
+              v-model="form.mainItemName"
+              required
+              :class="{ 'error': errors.mainItemName }"
+            >
+            <div class="error-message" v-if="errors.mainItemName">{{ errors.mainItemName }}</div>
           </div>
 
           <!-- 子项信息 -->
           <div class="form-group item-code-group">
-            <label>子项编号 *</label>
-            <input type="number" v-model.number="form.subItemCode" required>
+            <label>子项编号</label>
+            <input type="number" v-model.number="form.subItemCode">
           </div>
           <div class="form-group item-name-group">
-            <label>子项名称 *</label>
-            <input type="text" v-model="form.subItemName" required>
+            <label>子项名称</label>
+            <input type="text" v-model="form.subItemName">
           </div>
 
           <!-- 孙项信息 -->
           <div class="form-group item-code-group">
-            <label>孙项编号 *</label>
-            <input type="number" v-model.number="form.grandchildItemCode" required>
+            <label>孙项编号</label>
+            <input type="number" v-model.number="form.grandchildItemCode">
           </div>
           <div class="form-group item-name-group">
-            <label>孙项名称 *</label>
-            <input type="text" v-model="form.grandchildItemName" required>
+            <label>孙项名称</label>
+            <input type="text" v-model="form.grandchildItemName">
           </div>
         </div>
 
@@ -204,15 +216,31 @@
         <div class="form-row time-approval-row">
           <div class="form-group">
             <label>法定时限 (天) *</label>
-            <input type="number" v-model.number="form.legalTimeLimit" required>
+            <input
+              type="number"
+              v-model.number="form.legalTimeLimit"
+              required
+              :class="{ 'error': errors.legalTimeLimit }"
+            >
+            <div class="error-message" v-if="errors.legalTimeLimit">{{ errors.legalTimeLimit }}</div>
           </div>
           <div class="form-group">
             <label>承诺时限 (天) *</label>
-            <input type="number" v-model.number="form.committedTimeLimit" required>
+            <input
+              type="number"
+              v-model.number="form.committedTimeLimit"
+              required
+              :class="{ 'error': errors.committedTimeLimit }"
+            >
+            <div class="error-message" v-if="errors.committedTimeLimit">{{ errors.committedTimeLimit }}</div>
           </div>
           <div class="form-group">
             <label>审批层级 *</label>
-            <select v-model="form.approvalLevel" required>
+            <select
+              v-model="form.approvalLevel"
+              required
+              :class="{ 'error': errors.approvalLevel }"
+            >
               <option value="">请选择审批层级</option>
               <option
                 v-for="level in approvalLevels"
@@ -222,11 +250,16 @@
                 {{ level.description }}
               </option>
             </select>
+            <div class="error-message" v-if="errors.approvalLevel">{{ errors.approvalLevel }}</div>
           </div>
 
           <div class="form-group">
             <label>省厅对口指导处室 *</label>
-            <select v-model="form.provincialDepartmentOffice" required>
+            <select
+              v-model="form.provincialDepartmentOffice"
+              required
+              :class="{ 'error': errors.provincialDepartmentOffice }"
+            >
               <option value="">请选择省厅对口指导处室</option>
               <option
                 v-for="office in provincialDepartmentOffices"
@@ -236,6 +269,7 @@
                 {{ office.description }}
               </option>
             </select>
+            <div class="error-message" v-if="errors.provincialDepartmentOffice">{{ errors.provincialDepartmentOffice }}</div>
           </div>
         </div>
 
@@ -398,6 +432,7 @@ export default {
       businessDiagramSearchQuery: '',
       approvalDiagramSearchResults: [],
       businessDiagramSearchResults: [],
+      errors: {},
       // 审批层级枚举
       approvalLevels: [
         { name: 'PROVINCIAL', description: '省级' },
@@ -523,6 +558,9 @@ export default {
           this.businessDiagramSearchQuery = `${diagram.id} - ${diagram.imageName}`
         }
       }
+
+      // 清空错误信息
+      this.errors = {}
     },
 
     // 返回列表
@@ -830,8 +868,51 @@ export default {
       return diagram ? diagram.imageDataUrl : ''
     },
 
+    // 表单验证
+    validateForm() {
+      this.errors = {};
+
+      // 验证主项名称不能为空
+      if (!this.form.mainItemName || this.form.mainItemName.trim() === '') {
+        this.errors.mainItemName = '主项名称不能为空';
+      }
+
+      // 验证主项编号不能为空
+      if (!this.form.mainItemCode) {
+        this.errors.mainItemCode = '主项编号不能为空';
+      }
+
+      // 验证法定时限和承诺时限
+      if (this.form.legalTimeLimit === null || this.form.legalTimeLimit === undefined) {
+        this.errors.legalTimeLimit = '法定时限不能为空';
+      }
+
+      if (this.form.committedTimeLimit === null || this.form.committedTimeLimit === undefined) {
+        this.errors.committedTimeLimit = '承诺时限不能为空';
+      }
+
+      // 验证审批层级
+      if (!this.form.approvalLevel) {
+        this.errors.approvalLevel = '审批层级不能为空';
+      }
+
+      // 验证省厅对口指导处室
+      if (!this.form.provincialDepartmentOffice) {
+        this.errors.provincialDepartmentOffice = '省厅对口指导处室不能为空';
+      }
+
+      // 返回验证结果
+      return Object.keys(this.errors).length === 0;
+    },
+
     // 表单提交处理
     async handleSubmit() {
+      // 首先进行表单验证
+      if (!this.validateForm()) {
+        alert('请检查表单中的错误信息');
+        return;
+      }
+
       try {
         // 验证并转换materialIds
         const validMaterialIds = this.form.materialIds
@@ -873,21 +954,10 @@ export default {
           provincialDepartmentOffice: this.form.provincialDepartmentOffice,
           approvalProcessDiagramId: isNaN(validApprovalDiagramId) ? null : validApprovalDiagramId,
           businessProcessDiagramId: isNaN(validBusinessDiagramId) ? null : validBusinessDiagramId,
-          isValid: this.form.isValid,
-          isPublish: this.form.isPublish,
+          valid: this.form.isValid,  // 修复：使用后端字段名
+          publish: this.form.isPublish,  // 修复：使用后端字段名
           // 添加材料详细信息
           materials: this.selectedMaterials.filter(material => material.id !== null)
-        }
-
-        // 验证必填字段
-        if (!matterData.mainItemName || !matterData.subItemName || !matterData.grandchildItemName) {
-          alert('主项名称、子项名称和孙项名称不能为空')
-          return
-        }
-
-        if (matterData.legalTimeLimit === null || matterData.committedTimeLimit === null) {
-          alert('法定时限和承诺时限必须填写')
-          return
         }
 
         let response;
@@ -1378,6 +1448,18 @@ export default {
 
 .save-btn:hover {
   background-color: #85ce61;
+}
+
+/* 错误信息样式 */
+.error-message {
+  color: #f56c6c;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+/* 添加输入框错误状态样式 */
+.form-group input.error {
+  border-color: #f56c6c;
 }
 
 @media (max-width: 768px) {

@@ -13,6 +13,8 @@ public interface MatterService {
 
     Matter saveMatter(Matter matter);
 
+    Matter updateMatter(Long id, Matter matterDetails);
+
     void deleteMatter(Long id);
 
     /**
@@ -27,14 +29,14 @@ public interface MatterService {
      * @param approvalLevel 审批层级
      * @return 事项列表
      */
-    List<Matter> getMattersByApprovalLevel(Matter.ApprovalLevel approvalLevel);
+    List<Matter> getMattersByApprovalLevel(String approvalLevel);
 
     /**
      * 根据省厅对口指导处室（单位）查询事项列表
      * @param provincialDepartmentOffice 省厅对口指导处室（单位）
      * @return 事项列表
      */
-    List<Matter> getMattersByProvincialDepartmentOffice(Matter.ProvincialDepartmentOffice provincialDepartmentOffice);
+    List<Matter> getMattersByProvincialDepartmentOffice(String provincialDepartmentOffice);
 
     /**
      * 激活事项（设置为有效）

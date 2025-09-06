@@ -11,10 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 @Service
 @Transactional
 public class MatterServiceImpl implements MatterService {
+
+    private static final Logger logger = Logger.getLogger(MatterServiceImpl.class.getName());
 
     @Autowired
     private MatterRepository matterRepository;
@@ -45,6 +48,36 @@ public class MatterServiceImpl implements MatterService {
     }
 
     @Override
+    public Matter updateMatter(Long id, Matter matterDetails) {
+        Optional<Matter> matterOptional = matterRepository.findById(id);
+        if (matterOptional.isPresent()) {
+            Matter matter = matterOptional.get();
+
+            // 更新字段
+            matter.setMainItemCode(matterDetails.getMainItemCode());
+            matter.setSubItemCode(matterDetails.getSubItemCode());
+            matter.setGrandchildItemCode(matterDetails.getGrandchildItemCode());
+            matter.setMainItemName(matterDetails.getMainItemName());
+            matter.setSubItemName(matterDetails.getSubItemName());
+            matter.setGrandchildItemName(matterDetails.getGrandchildItemName());
+            matter.setBases(matterDetails.getBases());
+            matter.setMaterialIds(matterDetails.getMaterialIds());
+            matter.setLegalTimeLimit(matterDetails.getLegalTimeLimit());
+            matter.setCommittedTimeLimit(matterDetails.getCommittedTimeLimit());
+            matter.setApprovalLevel(matterDetails.getApprovalLevel());
+            matter.setProvincialDepartmentOffice(matterDetails.getProvincialDepartmentOffice());
+            matter.setApprovalProcessDiagramId(matterDetails.getApprovalProcessDiagramId());
+            matter.setBusinessProcessDiagramId(matterDetails.getBusinessProcessDiagramId());
+            matter.setVersion(matterDetails.getVersion());
+            matter.setPublish(matterDetails.getPublish());
+            matter.setValid(matterDetails.getValid());
+
+            return matterRepository.save(matter);
+        }
+        return null;
+    }
+
+    @Override
     public void deleteMatter(Long id) {
         matterRepository.deleteById(id);
     }
@@ -57,14 +90,26 @@ public class MatterServiceImpl implements MatterService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Matter> getMattersByApprovalLevel(Matter.ApprovalLevel approvalLevel) {
-        return matterRepository.findByApprovalLevel(approvalLevel);
+    public List<Matter> getMattersByApprovalLevel(String approvalLevel) {
+        try {
+            Matter.ApprovalLevel level = Matter.ApprovalLevel.valueOf(approvalLevel);
+            return matterRepository.findByApprovalLevel(level);
+        } catch (IllegalArgumentException e) {
+            logger.severe("Invalid approval level: " + approvalLevel);
+            throw e;
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Matter> getMattersByProvincialDepartmentOffice(Matter.ProvincialDepartmentOffice provincialDepartmentOffice) {
-        return matterRepository.findByProvincialDepartmentOffice(provincialDepartmentOffice);
+    public List<Matter> getMattersByProvincialDepartmentOffice(String provincialDepartmentOffice) {
+        try {
+            Matter.ProvincialDepartmentOffice office = Matter.ProvincialDepartmentOffice.valueOf(provincialDepartmentOffice);
+            return matterRepository.findByProvincialDepartmentOffice(office);
+        } catch (IllegalArgumentException e) {
+            logger.severe("Invalid provincial department office: " + provincialDepartmentOffice);
+            throw e;
+        }
     }
 
     @Override
@@ -72,7 +117,7 @@ public class MatterServiceImpl implements MatterService {
         Optional<Matter> matterOptional = matterRepository.findById(id);
         if (matterOptional.isPresent()) {
             Matter matter = matterOptional.get();
-            matter.setIsValid(true);
+            matter.setValid(true);
             return matterRepository.save(matter);
         }
         return null;
@@ -83,7 +128,7 @@ public class MatterServiceImpl implements MatterService {
         Optional<Matter> matterOptional = matterRepository.findById(id);
         if (matterOptional.isPresent()) {
             Matter matter = matterOptional.get();
-            matter.setIsValid(false);
+            matter.setValid(false);
             return matterRepository.save(matter);
         }
         return null;
@@ -94,7 +139,7 @@ public class MatterServiceImpl implements MatterService {
         Optional<Matter> matterOptional = matterRepository.findById(id);
         if (matterOptional.isPresent()) {
             Matter matter = matterOptional.get();
-            matter.setIsPublish(true);
+            matter.setPublish(true);
             return matterRepository.save(matter);
         }
         return null;
@@ -105,7 +150,7 @@ public class MatterServiceImpl implements MatterService {
         Optional<Matter> matterOptional = matterRepository.findById(id);
         if (matterOptional.isPresent()) {
             Matter matter = matterOptional.get();
-            matter.setIsPublish(false);
+            matter.setPublish(false);
             return matterRepository.save(matter);
         }
         return null;

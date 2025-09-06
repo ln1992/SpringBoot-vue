@@ -2,6 +2,8 @@
 package com.boylegu.springboot_vue.entities;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 /**
@@ -9,32 +11,32 @@ import java.util.List;
  */
 @Entity
 @Table(name = "matter")
-public class Matter {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Matter extends BaseEntity {
+    // ID 字段继承自 BaseEntity
 
-    // 主项编号
+    // 主项编号 - 必填
     @Column(name = "main_item_code")
+    @NotNull(message = "主项编号不能为空")
     private Long mainItemCode;
 
-    // 子项编号
+    // 子项编号 - 可选
     @Column(name = "sub_item_code")
     private Long subItemCode;
 
-    // 孙项编号
+    // 孙项编号 - 可选
     @Column(name = "grandchild_item_code")
     private Long grandchildItemCode;
 
-    // 主项名称
+    // 主项名称 - 必填
     @Column(name = "main_item_name")
+    @NotBlank(message = "主项名称不能为空")
     private String mainItemName;
 
-    // 子项名称
+    // 子项名称 - 可选
     @Column(name = "sub_item_name")
     private String subItemName;
 
-    // 孙项名称
+    // 孙项名称 - 可选
     @Column(name = "grandchild_item_name")
     private String grandchildItemName;
 
@@ -45,27 +47,29 @@ public class Matter {
 
     // 材料 ID 列表
     @ElementCollection
-    //@CollectionTable(name = "matter_materials", joinColumns = @JoinColumn(name = "matter_id"))
     @Column(name = "material_id")
-    //@MaterialIdsExist
     private List<Long> materialIds;
 
     // 法定时限
     @Column(name = "legal_time_limit")
+    @NotNull(message = "法定时限不能为空")
     private Long legalTimeLimit;
 
     // 承诺时限
     @Column(name = "committed_time_limit")
+    @NotNull(message = "承诺时限不能为空")
     private Long committedTimeLimit;
 
     // 审批层级
     @Column(name = "approval_level")
     @Enumerated(EnumType.STRING)
+    @NotNull(message = "审批层级不能为空")
     private ApprovalLevel approvalLevel;
 
     // 省厅对口指导处室（单位）
     @Column(name = "provincial_department_office")
     @Enumerated(EnumType.STRING)
+    @NotNull(message = "省厅对口指导处室不能为空")
     private ProvincialDepartmentOffice provincialDepartmentOffice;
 
     //审批流程图
@@ -76,29 +80,14 @@ public class Matter {
     @Column(name = "business_process_diagram_id")
     private Long businessProcessDiagramId;
 
-    // 版本
-    @Column(name = "version")
-    private Long version;
-
     // 是否发布（默认为false）
     @Column(name = "is_publish")
     private Boolean isPublish = false;
 
-    // 是否有效（默认为true）
-    @Column(name = "is_valid")
-    private Boolean isValid = true;
-
     // 默认构造函数
     public Matter() {}
 
-    // Getter和Setter方法
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
+    // Getter和Setter方法 - ID 相关方法继承自 BaseEntity
 
     public Long getMainItemCode() {
         return mainItemCode;
@@ -212,34 +201,18 @@ public class Matter {
         this.businessProcessDiagramId = businessProcessDiagramId;
     }
 
-    public Long getVersion() {
-        return version;
-    }
-
-    public void setVersion(Long version) {
-        this.version = version;
-    }
-
-    public Boolean getIsPublish() {
+    public Boolean getPublish() {
         return isPublish;
     }
 
-    public void setIsPublish(Boolean publish) {
+    public void setPublish(Boolean publish) {
         this.isPublish = publish;
-    }
-
-    public Boolean getIsValid() {
-        return isValid;
-    }
-
-    public void setIsValid(Boolean valid) {
-        this.isValid = valid;
     }
 
     @Override
     public String toString() {
         return "Matter{" +
-                "id=" + id +
+                "id=" + getId() +  // 修复：使用继承的方法
                 ", mainItemCode=" + mainItemCode +
                 ", subItemCode=" + subItemCode +
                 ", grandchildItemCode=" + grandchildItemCode +
@@ -254,11 +227,12 @@ public class Matter {
                 ", provincialDepartmentOffice=" + provincialDepartmentOffice +
                 ", approvalProcessDiagramId=" + approvalProcessDiagramId +
                 ", businessProcessDiagramId=" + businessProcessDiagramId +
-                ", version=" + version +
+                ", version=" + getVersion() +  // 使用继承的方法
                 ", isPublish=" + isPublish +
-                ", isValid=" + isValid +
+                ", isValid=" + getValid() +    // 使用继承的方法
                 '}';
     }
+
     /**
      * 审批层级枚举
      */
