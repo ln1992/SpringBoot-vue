@@ -58,6 +58,17 @@
           </select>
         </div>
 
+        <!-- 时间信息 -->
+        <div class="time-info" v-if="form.createdTime || form.updateTime">
+          <div class="form-group">
+            <label>时间信息:</label>
+            <div class="time-details">
+              <p v-if="form.createdTime">创建时间: {{ formatDateTime(form.createdTime) }}</p>
+              <p v-if="form.updateTime">更新时间: {{ formatDateTime(form.updateTime) }}</p>
+            </div>
+          </div>
+        </div>
+
         <div class="form-actions">
           <button type="button" @click="goBack" class="back-btn-form">返回</button>
           <button type="submit" class="save-btn">保存</button>
@@ -89,7 +100,9 @@ export default {
         imageFile: null,
         imagePreview: null,
         imageDataUrl: null,
-        valid: true
+        valid: true,
+        createdTime: null,
+        updateTime: null
       }
     };
   },
@@ -107,13 +120,39 @@ export default {
         imageFile: null,
         imagePreview: null,
         imageDataUrl: this.diagram.imageDataUrl,
-        valid: this.diagram.valid
+        valid: this.diagram.valid,
+        createdTime: this.diagram.createdTime || null,
+        updateTime: this.diagram.updateTime || null
       };
     },
 
     // 返回列表
     goBack() {
       this.$emit('back');
+    },
+
+    // 格式化日期时间
+    formatDateTime(dateString) {
+      if (!dateString) return '';
+
+      // 如果是已经格式化的字符串 (yyyy-MM-dd HH:mm:ss)
+      if (typeof dateString === 'string' &&
+        dateString.includes('-') &&
+        dateString.includes(':') &&
+        dateString.length === 19) { // "yyyy-MM-dd HH:mm:ss" 长度为19
+        return dateString;
+      }
+
+      // 如果是 Date 对象或其他格式，则进行格式化
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     },
 
     onImageChange(event) {
@@ -272,6 +311,19 @@ export default {
   margin: 5px 0;
   font-size: 12px;
   color: #909399;
+}
+
+/* 时间信息样式 */
+.time-info {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #ebeef5;
+}
+
+.time-details p {
+  margin: 5px 0;
+  color: #909399;
+  font-size: 14px;
 }
 
 .form-actions {

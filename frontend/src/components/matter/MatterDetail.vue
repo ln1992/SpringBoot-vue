@@ -366,6 +366,17 @@
           </div>
         </div>
 
+        <!-- 时间信息 -->
+        <div class="time-info" v-if="form.createdTime || form.updateTime">
+          <div class="form-group">
+            <label>时间信息:</label>
+            <div class="time-details">
+              <p v-if="form.createdTime">创建时间: {{ formatDateTime(form.createdTime) }}</p>
+              <p v-if="form.updateTime">更新时间: {{ formatDateTime(form.updateTime) }}</p>
+            </div>
+          </div>
+        </div>
+
         <div class="form-actions">
           <button type="button" @click="goBack" class="back-btn-form">返回</button>
           <button type="submit" class="save-btn">{{ isEditMode ? '保存' : '创建' }}</button>
@@ -421,7 +432,9 @@ export default {
         isValid: true,
         isPublish: false,
         approvalProcessDiagramId: null,
-        businessProcessDiagramId: null
+        businessProcessDiagramId: null,
+        createdTime: null,
+        updateTime: null
       },
       materialSearchQueries: [],
       materialSearchResults: [],
@@ -483,7 +496,9 @@ export default {
         isValid: this.matter.isValid !== undefined ? this.matter.isValid : true,
         isPublish: this.matter.isPublish !== undefined ? this.matter.isPublish : false,
         approvalProcessDiagramId: this.matter.approvalProcessDiagramId || null,
-        businessProcessDiagramId: this.matter.businessProcessDiagramId || null
+        businessProcessDiagramId: this.matter.businessProcessDiagramId || null,
+        createdTime: this.matter.createdTime || null,
+        updateTime: this.matter.updateTime || null
       }
 
       // 初始化材料搜索查询
@@ -903,6 +918,13 @@ export default {
 
       // 返回验证结果
       return Object.keys(this.errors).length === 0;
+    },
+
+    // 格式化日期时间
+    formatDateTime(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toLocaleString('zh-CN');
     },
 
     // 表单提交处理
@@ -1401,6 +1423,19 @@ export default {
   max-height: 200px;
   border: 1px solid #dcdfe6;
   border-radius: 4px;
+}
+
+/* 时间信息样式 */
+.time-info {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #ebeef5;
+}
+
+.time-details p {
+  margin: 5px 0;
+  color: #909399;
+  font-size: 14px;
 }
 
 .form-actions {

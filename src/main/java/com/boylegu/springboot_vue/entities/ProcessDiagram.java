@@ -164,14 +164,15 @@ public abstract class ProcessDiagram extends BaseEntity {
 
     @Override
     public String toString() {
-        return "ProcessDiagram{" +
-                "id=" + getId() +
-                ", imageName='" + getImageName() + '\'' +
-                ", imageType=" + getImageType() +
+        return "ProcessDiagram{ " +
+                super.toString() +  // 包含父类的所有字段
+                ", imageName='" + imageName + '\'' +
+                ", imageType=" + imageType +
                 ", __name__='" + get__name__() + '\'' +
                 ", isValid=" + getValid() +
                 '}';
     }
+
 
     public enum ImageType {
         JPEG("image/jpeg", ".jpg"),

@@ -148,8 +148,8 @@ public class Material extends BaseEntity {
 
     @Override
     public String toString() {
-        return "Material{" +
-                "id=" + getId() +
+        return "Material{ " +
+                super.toString() +  // 包含父类的所有字段
                 ", materialDetail='" + materialDetail + '\'' +
                 ", reviewPoint='" + reviewPoint + '\'' +
                 ", autoApprovalCriteria='" + autoApprovalCriteria + '\'' +
@@ -158,10 +158,9 @@ public class Material extends BaseEntity {
                 ", processingMethodAndInfoAccess=" + processingMethodAndInfoAccess +
                 ", isEligibleForPromise=" + isEligibleForPromise +
                 ", isValid=" + isValid +
-                ", __name__='" + get__name__() + '\'' +
-                ", version=" + getVersion() +
                 '}';
     }
+
 
     public enum MaterialSource {
         PERSONAL_SUBMISSION("申请人自备"),

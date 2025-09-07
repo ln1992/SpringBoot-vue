@@ -1,8 +1,10 @@
 // src/main/java/com/boylegu/springboot_vue/entities/BaseEntity.java
 package com.boylegu.springboot_vue.entities;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.persistence.*;
+import java.util.Date;
 import java.util.Objects;
 
 /**
@@ -26,8 +28,36 @@ public abstract class BaseEntity {
     @Column(name = "is_valid")
     private Boolean isValid = true;
 
+    // 创建时间
+    @Column(name = "created_time")
+    @Temporal(TemporalType.TIMESTAMP)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date createdTime;
+
+    // 更新时间
+    @Column(name = "update_time")
+    @Temporal(TemporalType.TIMESTAMP)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date updateTime;
+
     // 默认构造函数
     public BaseEntity() {}
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdTime == null) {
+            createdTime = new Date();
+        }
+        if (updateTime == null) {
+            updateTime = new Date();
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updateTime = new Date();
+    }
+
 
     public Long getId() {
         return id;
@@ -61,6 +91,22 @@ public abstract class BaseEntity {
         this.version = version;
     }
 
+    public Date getCreatedTime() {
+        return createdTime;
+    }
+
+    public void setCreatedTime(Date createdTime) {
+        this.createdTime = createdTime;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -69,12 +115,14 @@ public abstract class BaseEntity {
         return Objects.equals(id, that.id) &&
                 Objects.equals(__name__, that.__name__) &&
                 Objects.equals(isValid, that.isValid) &&
-                Objects.equals(version, that.version);
+                Objects.equals(version, that.version) &&
+                Objects.equals(createdTime, that.createdTime) &&
+                Objects.equals(updateTime, that.updateTime);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, __name__, isValid, version);
+        return Objects.hash(id, __name__, isValid, version, createdTime, updateTime);
     }
 
     @Override
@@ -84,6 +132,8 @@ public abstract class BaseEntity {
                 ", __name__='" + __name__ + '\'' +
                 ", isValid=" + isValid +
                 ", version=" + version +
+                ", createdTime=" + createdTime +
+                ", updateTime=" + updateTime +
                 '}';
     }
 }

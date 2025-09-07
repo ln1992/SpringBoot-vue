@@ -211,8 +211,8 @@ public class Matter extends BaseEntity {
 
     @Override
     public String toString() {
-        return "Matter{" +
-                "id=" + getId() +  // 修复：使用继承的方法
+        return "Matter{ " +
+                super.toString() +  // 直接包含父类的所有字段
                 ", mainItemCode=" + mainItemCode +
                 ", subItemCode=" + subItemCode +
                 ", grandchildItemCode=" + grandchildItemCode +
@@ -227,9 +227,7 @@ public class Matter extends BaseEntity {
                 ", provincialDepartmentOffice=" + provincialDepartmentOffice +
                 ", approvalProcessDiagramId=" + approvalProcessDiagramId +
                 ", businessProcessDiagramId=" + businessProcessDiagramId +
-                ", version=" + getVersion() +  // 使用继承的方法
                 ", isPublish=" + isPublish +
-                ", isValid=" + getValid() +    // 使用继承的方法
                 '}';
     }
 
