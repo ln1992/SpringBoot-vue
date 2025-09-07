@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/process-diagrams/business")
-@CrossOrigin(origins = "*") // 允许跨域访问
+@CrossOrigin(origins = "*")
 public class BusinessProcessDiagramController extends ProcessDiagramController<BusinessProcessDiagram> {
 
     @Autowired
@@ -75,10 +75,5 @@ public class BusinessProcessDiagramController extends ProcessDiagramController<B
     @GetMapping("/search/valid")
     public ResponseEntity<List<BusinessProcessDiagram>> getDiagramsByValidStatus(@RequestParam Boolean isValid) {
         return super.getDiagramsByValidStatus(isValid);
-    }
-
-    @Override
-    protected BusinessProcessDiagram createNewInstance() {
-        return new BusinessProcessDiagram();
     }
 }

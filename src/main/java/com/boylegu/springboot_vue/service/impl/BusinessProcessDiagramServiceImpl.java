@@ -31,6 +31,28 @@ public class BusinessProcessDiagramServiceImpl implements BusinessProcessDiagram
     }
 
     @Override
+    public BusinessProcessDiagram createDiagram(String imageName, Long version, MultipartFile imageFile, Boolean isValid) {
+        BusinessProcessDiagram diagram = createNewInstance();
+        diagram.setImageName(imageName);
+        diagram.setVersion(version);
+        diagram.setValid(isValid);
+        return saveDiagram(diagram, imageFile);
+    }
+
+    @Override
+    public BusinessProcessDiagram updateDiagram(Long id, String imageName, Long version, MultipartFile imageFile, Boolean isValid) {
+        BusinessProcessDiagram diagram = getDiagramById(id);
+        if (diagram == null) {
+            throw new RuntimeException("Diagram not found with id: " + id);
+        }
+
+        diagram.setImageName(imageName);
+        diagram.setVersion(version);
+        diagram.setValid(isValid);
+        return saveDiagram(diagram, imageFile);
+    }
+
+    // 这是一个额外的公共方法，不是接口中定义的，用于保存图表和处理文件上传
     public BusinessProcessDiagram saveDiagram(BusinessProcessDiagram diagram, MultipartFile imageFile) {
         try {
             if (imageFile != null && !imageFile.isEmpty()) {
@@ -84,5 +106,10 @@ public class BusinessProcessDiagramServiceImpl implements BusinessProcessDiagram
             return true;
         }
         return false;
+    }
+
+    @Override
+    public BusinessProcessDiagram createNewInstance() {
+        return new BusinessProcessDiagram();
     }
 }

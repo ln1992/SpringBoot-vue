@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/process-diagrams/approval")
-@CrossOrigin(origins = "*") // 允许跨域访问
+@CrossOrigin(origins = "*")
 public class ApprovalProcessDiagramController extends ProcessDiagramController<ApprovalProcessDiagram> {
 
     @Autowired
@@ -75,10 +75,5 @@ public class ApprovalProcessDiagramController extends ProcessDiagramController<A
     @GetMapping("/search/valid")
     public ResponseEntity<List<ApprovalProcessDiagram>> getDiagramsByValidStatus(@RequestParam Boolean isValid) {
         return super.getDiagramsByValidStatus(isValid);
-    }
-
-    @Override
-    protected ApprovalProcessDiagram createNewInstance() {
-        return new ApprovalProcessDiagram();
     }
 }

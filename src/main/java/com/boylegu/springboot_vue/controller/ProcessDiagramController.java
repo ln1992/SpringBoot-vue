@@ -56,20 +56,11 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
             Boolean isValid) {
         try {
             logger.info("Creating " + entityName + " diagram with name: " + imageName);
-
-            T diagram = createNewInstance();
-            diagram.setImageName(imageName);
-            if (version != null) {
-                diagram.setVersion(version);
-            }
-            diagram.setValid(isValid);
-
-            T savedDiagram = service.saveDiagram(diagram, imageFile);
+            T savedDiagram = service.createDiagram(imageName, version, imageFile, isValid);
             logger.info(entityName + " diagram created successfully with ID: " + savedDiagram.getId());
             return ResponseEntity.ok(savedDiagram);
         } catch (Exception e) {
             logger.severe("Error creating " + entityName + " diagram: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(500).body("创建" + entityName + "失败: " + e.getMessage());
         }
     }
@@ -83,25 +74,11 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
             Boolean isValid) {
         try {
             logger.info("Updating " + entityName + " diagram ID " + id + " with name: " + imageName);
-
-            T diagram = service.getDiagramById(id);
-            if (diagram != null) {
-                // 更新字段
-                diagram.setImageName(imageName);
-                if (version != null) {
-                    diagram.setVersion(version);
-                }
-                diagram.setValid(isValid);
-
-                T updatedDiagram = service.saveDiagram(diagram, imageFile);
-                logger.info(entityName + " diagram updated successfully with ID: " + updatedDiagram.getId());
-                return ResponseEntity.ok(updatedDiagram);
-            } else {
-                return ResponseEntity.notFound().build();
-            }
+            T updatedDiagram = service.updateDiagram(id, imageName, version, imageFile, isValid);
+            logger.info(entityName + " diagram updated successfully with ID: " + updatedDiagram.getId());
+            return ResponseEntity.ok(updatedDiagram);
         } catch (Exception e) {
             logger.severe("Error updating " + entityName + " diagram with id " + id + ": " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(500).body("更新" + entityName + "失败: " + e.getMessage());
         }
     }
@@ -109,13 +86,8 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
     // 删除流程图
     public ResponseEntity<Void> deleteDiagram(Long id) {
         try {
-            T diagram = service.getDiagramById(id);
-            if (diagram != null) {
-                service.deleteDiagram(id);
-                return ResponseEntity.ok().build();
-            } else {
-                return ResponseEntity.notFound().build();
-            }
+            service.deleteDiagram(id);
+            return ResponseEntity.ok().build();
         } catch (Exception e) {
             logger.severe("Error deleting " + entityName + " diagram with id " + id + ": " + e.getMessage());
             return ResponseEntity.status(500).build();
@@ -162,7 +134,4 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
             return ResponseEntity.status(500).build();
         }
     }
-
-    // 抽象方法，子类需要实现以创建具体实例
-    protected abstract T createNewInstance();
 }

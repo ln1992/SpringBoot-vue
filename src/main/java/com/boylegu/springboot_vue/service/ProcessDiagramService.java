@@ -11,7 +11,9 @@ public interface ProcessDiagramService<T extends ProcessDiagram> {
 
     T getDiagramById(Long id);
 
-    T saveDiagram(T diagram, MultipartFile imageFile);
+    T createDiagram(String imageName, Long version, MultipartFile imageFile, Boolean isValid);
+
+    T updateDiagram(Long id, String imageName, Long version, MultipartFile imageFile, Boolean isValid);
 
     void deleteDiagram(Long id);
 
@@ -19,6 +21,8 @@ public interface ProcessDiagramService<T extends ProcessDiagram> {
 
     boolean deactivateDiagram(Long id);
 
-    // 添加这个方法
     List<T> getDiagramsByIsValid(Boolean isValid);
+
+    // 工厂方法，用于创建新实例
+    T createNewInstance();
 }

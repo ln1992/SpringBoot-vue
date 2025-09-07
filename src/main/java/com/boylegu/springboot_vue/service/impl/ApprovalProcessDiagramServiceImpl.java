@@ -31,6 +31,28 @@ public class ApprovalProcessDiagramServiceImpl implements ApprovalProcessDiagram
     }
 
     @Override
+    public ApprovalProcessDiagram createDiagram(String imageName, Long version, MultipartFile imageFile, Boolean isValid) {
+        ApprovalProcessDiagram diagram = createNewInstance();
+        diagram.setImageName(imageName);
+        diagram.setVersion(version);
+        diagram.setValid(isValid);
+        return saveDiagram(diagram, imageFile);
+    }
+
+    @Override
+    public ApprovalProcessDiagram updateDiagram(Long id, String imageName, Long version, MultipartFile imageFile, Boolean isValid) {
+        ApprovalProcessDiagram diagram = getDiagramById(id);
+        if (diagram == null) {
+            throw new RuntimeException("Diagram not found with id: " + id);
+        }
+
+        diagram.setImageName(imageName);
+        diagram.setVersion(version);
+        diagram.setValid(isValid);
+        return saveDiagram(diagram, imageFile);
+    }
+
+    // 这是一个额外的公共方法，不是接口中定义的，用于保存图表和处理文件上传
     public ApprovalProcessDiagram saveDiagram(ApprovalProcessDiagram diagram, MultipartFile imageFile) {
         try {
             if (imageFile != null && !imageFile.isEmpty()) {
@@ -84,5 +106,10 @@ public class ApprovalProcessDiagramServiceImpl implements ApprovalProcessDiagram
             return true;
         }
         return false;
+    }
+
+    @Override
+    public ApprovalProcessDiagram createNewInstance() {
+        return new ApprovalProcessDiagram();
     }
 }
