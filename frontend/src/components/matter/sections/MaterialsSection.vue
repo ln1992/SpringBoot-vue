@@ -14,61 +14,72 @@
               <th class="material-col-auto-approval">智能秒批判断标准</th>
               <th class="material-col-shared">是否共享</th>
               <th class="material-col-source">材料来源</th>
-              <th class="material-col-processing">办理方式说明</th>
-              <th class="material-col-notification">适用告知承诺</th>
+              <th class="material-col-processing">办理方式及材料信息获取方式说明</th>
+              <th class="material-col-notification">是否适用告知承诺</th>
               <th class="material-col-action">操作</th>
             </tr>
             </thead>
             <tbody>
             <tr v-for="(material, index) in materials" :key="index">
               <td>
-                <!-- 带搜索功能的材料选择 -->
-                <div class="material-autocomplete">
-                  <input
-                    :ref="'materialInput' + index"
-                    type="text"
-                    :value="material.materialDetail"
-                    @input="onMaterialInput(index, $event.target.value)"
-                    @focus="showDropdown(index, $event.target.value)"
-                    @blur="hideDropdown(index)"
-                    placeholder="输入材料名称搜索或选择"
-                    class="material-input"
-                  />
-                  <div
-                    v-if="dropdownVisible[index]"
-                    class="material-dropdown"
-                  >
+                <!-- materialDetail 字段改为可输入的下拉选择 -->
+                <div class="material-detail-autocomplete-container">
+                  <div class="material-detail-input-wrapper">
+                    <input
+                      :ref="'materialInput' + index"
+                      type="text"
+                      v-model="materialSearchQueries[index]"
+                      placeholder="输入或选择材料明细"
+                      class="material-detail-input"
+                      @input="onMaterialSearchInput(index, $event)"
+                      @focus="showMaterialDropdown(index)"
+                      @blur="hideMaterialDropdown(index)"
+                    />
                     <div
-                      v-for="item in filteredMaterials[index]"
-                      :key="item.id"
-                      @mousedown="selectMaterial(index, item)"
-                      class="material-option"
+                      v-if="showMaterialDropdownList[index]"
+                      class="material-dropdown-list"
                     >
-                      {{ item.id }} - {{ item.materialDetail }}
-                    </div>
-                    <div v-if="filteredMaterials[index] && filteredMaterials[index].length === 0" class="no-results">
-                      无匹配结果
+                      <div
+                        v-for="availableMaterial in filteredMaterialsList[index]"
+                        :key="availableMaterial.id"
+                        class="material-dropdown-item"
+                        @mousedown="selectMaterialFromDropdown(index, availableMaterial)"
+                      >
+                        {{ availableMaterial.id }} - {{ availableMaterial.__name__ }}
+                      </div>
+                      <div
+                        v-if="filteredMaterialsList[index] && filteredMaterialsList[index].length === 0"
+                        class="no-results"
+                      >
+                        无匹配结果
+                      </div>
                     </div>
                   </div>
                 </div>
               </td>
               <td>
+                <!-- reviewPoint 字段改为只读显示 -->
                 <span class="readonly-field">{{ material.reviewPoint }}</span>
               </td>
               <td>
+                <!-- autoApprovalCriteria 字段改为只读显示 -->
                 <span class="readonly-field">{{ material.autoApprovalCriteria }}</span>
               </td>
               <td>
-                <span class="readonly-field">{{ material.isShared ? '是' : '否' }}</span>
+                <!-- shared 字段改为只读显示 -->
+                <span class="readonly-field">{{ material.shared ? '是' : '否' }}</span>
               </td>
               <td>
-                <span class="readonly-field">{{ getMaterialSourceLabel(material.source || material.materialSource) }}</span>
+                <!-- materialSource 字段改为只读显示 -->
+                <span class="readonly-field">{{ getMaterialSourceLabel(material.materialSource) }}</span>
               </td>
               <td>
-                <span class="readonly-field">{{ material.processingMethodAndInfoAccess }}</span>
+                <!-- processingMethodAndInfoAccess 字段改为只读显示 -->
+                <span class="readonly-field">{{ getProcessingMethodLabel(material.processingMethodAndInfoAccess) }}</span>
               </td>
               <td>
-                <span class="readonly-field">{{ material.isEligibleForPromise ? '是' : '否' }}</span>
+                <!-- eligibleForPromise 字段改为只读显示 -->
+                <span class="readonly-field">{{ material.eligibleForPromise ? '是' : '否' }}</span>
               </td>
               <td>
                 <button
@@ -111,8 +122,9 @@ export default {
   },
   data() {
     return {
-      dropdownVisible: [],
-      filteredMaterials: []
+      showMaterialDropdownList: [], // 控制材料下拉列表显示
+      filteredMaterialsList: [], // 过滤后的材料列表
+      materialSearchQueries: [] // 材料搜索查询文本
     }
   },
   created() {
@@ -128,78 +140,104 @@ export default {
   },
   methods: {
     initializeState() {
-      this.dropdownVisible = new Array(this.materials.length).fill(false)
-      this.filteredMaterials = this.materials.map(() => [...this.materialsList])
+      this.showMaterialDropdownList = new Array(this.materials.length).fill(false)
+      this.filteredMaterialsList = this.materials.map(() => [...this.materialsList])
+      // 初始化搜索查询文本为材料的 __name__
+      this.materialSearchQueries = this.materials.map(material =>
+        material.__name__ ? `${material.id} - ${material.__name__}` : (material.materialDetail || ''))
     },
 
     addMaterial() {
       this.$emit('add-material')
       this.$nextTick(() => {
-        this.dropdownVisible.push(false)
-        this.filteredMaterials.push([...this.materialsList])
+        this.showMaterialDropdownList.push(false)
+        this.filteredMaterialsList.push([...this.materialsList])
+        this.materialSearchQueries.push('')
       })
     },
 
     removeMaterial(index) {
       this.$emit('remove-material', index)
-      this.dropdownVisible.splice(index, 1)
-      this.filteredMaterials.splice(index, 1)
+      this.showMaterialDropdownList.splice(index, 1)
+      this.filteredMaterialsList.splice(index, 1)
+      this.materialSearchQueries.splice(index, 1)
     },
 
-    onMaterialInput(index, value) {
-      // 更新材料明细
-      const material = { ...this.materials[index] }
-      material.materialDetail = value
-      this.$emit('update-material', index, material)
+    // 处理材料搜索输入
+    onMaterialSearchInput(index, event) {
+      const query = event.target.value;
 
-      // 过滤材料列表
-      this.filterMaterials(index, value)
+      // 更新搜索查询文本
+      this.$set(this.materialSearchQueries, index, query);
+
+      // 触发过滤
+      this.filterMaterials(index, query);
     },
 
-    showDropdown(index, currentValue) {
-      this.$set(this.dropdownVisible, index, true)
-      // 显示所有材料作为初始建议或根据当前值过滤
-      this.filterMaterials(index, currentValue || '')
+    // 显示材料下拉列表
+    showMaterialDropdown(index) {
+      this.$set(this.showMaterialDropdownList, index, true)
+      // 显示所有材料作为初始建议
+      this.$set(this.filteredMaterialsList, index, [...this.materialsList])
     },
 
-    hideDropdown(index) {
+    // 隐藏材料下拉列表
+    hideMaterialDropdown(index) {
       setTimeout(() => {
-        this.$set(this.dropdownVisible, index, false)
-      }, 200)
+        this.$set(this.showMaterialDropdownList, index, false)
+      }, 200) // 延迟隐藏，确保点击选项时能正常选择
     },
 
+    // 过滤材料列表
     filterMaterials(index, value) {
-      if (!this.filteredMaterials[index]) {
-        this.$set(this.filteredMaterials, index, [])
+      if (!this.filteredMaterialsList[index]) {
+        this.$set(this.filteredMaterialsList, index, [])
       }
 
       if (value.trim() === '') {
-        this.$set(this.filteredMaterials, index, [...this.materialsList])
+        this.$set(this.filteredMaterialsList, index, [...this.materialsList])
       } else {
+        // 统一转换为小写进行比较
+        const searchValue = value.toLowerCase()
         const filtered = this.materialsList.filter(item =>
-          item.materialDetail.toLowerCase().includes(value.toLowerCase()) ||
-          item.id.toString().includes(value)
+          (item.__name__ && item.__name__.toLowerCase().includes(searchValue)) ||
+          (item.id && item.id.toString().includes(searchValue)) ||
+          (item.materialDetail && item.materialDetail.toLowerCase().includes(searchValue))
         )
-        this.$set(this.filteredMaterials, index, filtered)
+        this.$set(this.filteredMaterialsList, index, filtered)
       }
     },
 
-    selectMaterial(index, selectedMaterial) {
-      // 更新材料的所有字段
-      const material = { ...this.materials[index] }
-      material.id = selectedMaterial.id
-      material.materialDetail = selectedMaterial.materialDetail
-      material.reviewPoint = selectedMaterial.reviewPoint || ''
-      material.autoApprovalCriteria = selectedMaterial.autoApprovalCriteria || ''
-      material.isShared = selectedMaterial.isShared || false
-      material.source = selectedMaterial.source || selectedMaterial.materialSource || ''
-      material.processingMethodAndInfoAccess = selectedMaterial.processingMethodAndInfoAccess || ''
-      material.isEligibleForPromise = selectedMaterial.isEligibleForPromise || false
+    // 从下拉列表选择材料
+    selectMaterialFromDropdown(index, selectedMaterial) {
+      // 更新材料的其他字段
+      const updatedMaterial = { ...this.materials[index] }
+      updatedMaterial.materialDetail = selectedMaterial.materialDetail
+      updatedMaterial.reviewPoint = selectedMaterial.reviewPoint || ''
+      updatedMaterial.autoApprovalCriteria = selectedMaterial.autoApprovalCriteria || ''
+      updatedMaterial.shared = selectedMaterial.shared || false  // 修复字段名
+      updatedMaterial.materialSource = selectedMaterial.materialSource || ''
+      updatedMaterial.processingMethodAndInfoAccess = selectedMaterial.processingMethodAndInfoAccess || ''
+      updatedMaterial.eligibleForPromise = selectedMaterial.eligibleForPromise || false  // 修复字段名
+      updatedMaterial.id = selectedMaterial.id
+      updatedMaterial.__name__ = selectedMaterial.__name__ || ''
 
-      this.$emit('update-material', index, material)
+      this.$emit('update-material', index, updatedMaterial)
+
+      // 更新搜索查询文本
+      this.$set(this.materialSearchQueries, index,
+        selectedMaterial.__name__ ? `${selectedMaterial.id} - ${selectedMaterial.__name__}` : selectedMaterial.materialDetail)
 
       // 隐藏下拉列表
-      this.$set(this.dropdownVisible, index, false)
+      this.$set(this.showMaterialDropdownList, index, false)
+
+      // 聚焦到下一个字段或保持焦点在当前输入框
+      this.$nextTick(() => {
+        const nextInput = this.$refs['materialInput' + index]
+        if (nextInput && nextInput[0]) {
+          nextInput[0].focus()
+        }
+      })
     },
 
     getMaterialSourceLabel(sourceValue) {
@@ -212,6 +250,18 @@ export default {
       }
 
       return sourceMap[sourceValue] || sourceValue
+    },
+
+    getProcessingMethodLabel(methodValue) {
+      if (!methodValue) return ''
+
+      const methodMap = {
+        'ONLINE_PROCESSING': '网上办理，线上提交材料',
+        'SYSTEM_AUTO_WITH_FALLBACK': '系统自动获取，如数据不全则需申请者提交',
+        'PAPER_CERTIFICATE': '纸质证书需申请者提交'
+      }
+
+      return methodMap[methodValue] || methodValue
     }
   }
 }
@@ -245,23 +295,23 @@ export default {
 
 /* 材料列宽度定义 */
 .material-col-detail {
-  width: 18%;
+  width: 25%; /* 增加材料明细列宽度 */
 }
 
 .material-col-review {
-  width: 18%;
+  width: 15%;
 }
 
 .material-col-auto-approval {
-  width: 10%;
+  width: 8%;
 }
 
 .material-col-shared {
-  width: 7%;
+  width: 7%; /* 是否共享列宽度调整为7% */
 }
 
 .material-col-source {
-  width: 10%;
+  width: 8%;
 }
 
 .material-col-processing {
@@ -269,11 +319,11 @@ export default {
 }
 
 .material-col-notification {
-  width: 7%;
+  width: 10%; /* 是否适用告知承诺列宽度调整为10% */
 }
 
 .material-col-action {
-  width: 15%;
+  width: 8%; /* 操作列进一步缩窄 */
 }
 
 .materials-table td input,
@@ -321,13 +371,17 @@ export default {
   background-color: #66b1ff;
 }
 
-/* 材料自动完成样式 */
-.material-autocomplete {
+/* 材料明细自动完成样式 */
+.material-detail-autocomplete-container {
   position: relative;
   width: 100%;
 }
 
-.material-input {
+.material-detail-input-wrapper {
+  position: relative;
+}
+
+.material-detail-input {
   width: 100%;
   padding: 6px 8px;
   border: 1px solid #dcdfe6;
@@ -336,7 +390,7 @@ export default {
   box-sizing: border-box;
 }
 
-.material-dropdown {
+.material-dropdown-list {
   position: absolute;
   top: 100%;
   left: 0;
@@ -350,12 +404,12 @@ export default {
   z-index: 1000;
 }
 
-.material-option {
+.material-dropdown-item {
   padding: 8px 12px;
   cursor: pointer;
 }
 
-.material-option:hover {
+.material-dropdown-item:hover {
   background-color: #f5f7fa;
 }
 
@@ -401,13 +455,30 @@ export default {
     font-size: 13px;
   }
 
-  .material-dropdown {
+  .material-dropdown-list {
     max-height: 150px;
   }
 
-  .material-option {
+  .material-dropdown-item {
     padding: 6px 10px;
     font-size: 12px;
+  }
+
+  /* 调整移动端列宽 */
+  .material-col-detail {
+    width: 25%;
+  }
+
+  .material-col-shared {
+    width: 7%;
+  }
+
+  .material-col-notification {
+    width: 10%;
+  }
+
+  .material-col-action {
+    width: 8%;
   }
 }
 </style>

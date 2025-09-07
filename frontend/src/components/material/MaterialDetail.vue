@@ -1,4 +1,4 @@
-<!-- src/components/material/MaterialDetail.vue (重构后) -->
+<!-- src/components/material/MaterialDetail.vue -->
 <template>
   <div class="material-detail-container">
     <div class="header">
@@ -184,3 +184,45 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.material-detail-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1001;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header h2 {
+  color: #303133;
+  margin: 0;
+}
+
+.material-detail-content {
+  background-color: white;
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1001;
+}
+
+/* 防止页面自动滚动到底部 */
+.material-detail-content form {
+  scroll-behavior: auto;
+}
+
+@media (max-width: 768px) {
+  .material-detail-container {
+    padding: 10px;
+  }
+}
+</style>

@@ -7,29 +7,27 @@
         <!-- 审批流程图 -->
         <div class="process-diagram-section">
           <div class="process-diagram-selection">
-            <div class="diagram-select-wrapper" ref="approvalWrapper">
+            <div class="diagram-select-wrapper">
               <label class="diagram-type-label">审批流程图:</label>
               <input
                 type="text"
                 class="diagram-search-input"
                 placeholder="搜索审批流程图..."
-                :value="approvalDiagramSearchQuery"
-                @input="onApprovalDiagramSearchInput"
+                v-model="approvalDiagramSearchQuery"
+                @input="onApprovalDiagramSearchInput($event.target.value)"
                 @focus="onApprovalDiagramSearchFocus"
-                @blur="hideApprovalDropdown"
               >
               <div
                 class="diagram-search-dropdown"
-                :class="{ 'dropdown-up': showApprovalDropdownUp }"
-                v-if="showApprovalDropdown && approvalDiagramSearchResults.length > 0"
+                v-if="approvalDiagramSearchResults.length > 0"
               >
                 <div
                   class="diagram-search-option"
                   v-for="diagram in approvalDiagramSearchResults"
                   :key="diagram.id"
-                  @mousedown="selectApprovalDiagram(diagram)"
+                  @click="selectApprovalDiagram(diagram)"
                 >
-                  {{ diagram.id }} - {{ diagram.imageName }}
+                  {{ diagram.id }} - {{ diagram.__name__ }}
                 </div>
               </div>
             </div>
@@ -53,29 +51,27 @@
         <!-- 业务流程图 -->
         <div class="process-diagram-section">
           <div class="process-diagram-selection">
-            <div class="diagram-select-wrapper" ref="businessWrapper">
+            <div class="diagram-select-wrapper">
               <label class="diagram-type-label">业务经办流程图:</label>
               <input
                 type="text"
                 class="diagram-search-input"
                 placeholder="搜索业务经办流程图..."
-                :value="businessDiagramSearchQuery"
-                @input="onBusinessDiagramSearchInput"
+                v-model="businessDiagramSearchQuery"
+                @input="onBusinessDiagramSearchInput($event.target.value)"
                 @focus="onBusinessDiagramSearchFocus"
-                @blur="hideBusinessDropdown"
               >
               <div
                 class="diagram-search-dropdown"
-                :class="{ 'dropdown-up': showBusinessDropdownUp }"
-                v-if="showBusinessDropdown && businessDiagramSearchResults.length > 0"
+                v-if="businessDiagramSearchResults.length > 0"
               >
                 <div
                   class="diagram-search-option"
                   v-for="diagram in businessDiagramSearchResults"
                   :key="diagram.id"
-                  @mousedown="selectBusinessDiagram(diagram)"
+                  @click="selectBusinessDiagram(diagram)"
                 >
-                  {{ diagram.id }} - {{ diagram.imageName }}
+                  {{ diagram.id }} - {{ diagram.__name__ }}
                 </div>
               </div>
             </div>
@@ -126,23 +122,19 @@ export default {
       approvalDiagramSearchQuery: '',
       businessDiagramSearchQuery: '',
       approvalDiagramSearchResults: [],
-      businessDiagramSearchResults: [],
-      showApprovalDropdown: false,
-      showBusinessDropdown: false,
-      showApprovalDropdownUp: false,
-      showBusinessDropdownUp: false
+      businessDiagramSearchResults: []
     }
   },
   watch: {
     approvalDiagramId: {
       handler(newVal) {
         if (newVal) {
-          const diagram = this.approvalDiagrams.find(d => d.id === newVal);
+          const diagram = this.approvalDiagrams.find(d => d.id === newVal)
           if (diagram) {
-            this.approvalDiagramSearchQuery = `${diagram.id} - ${diagram.imageName}`;
+            this.approvalDiagramSearchQuery = `${diagram.id} - ${diagram.__name__}`
           }
         } else {
-          this.approvalDiagramSearchQuery = '';
+          this.approvalDiagramSearchQuery = ''
         }
       },
       immediate: true
@@ -150,134 +142,104 @@ export default {
     businessDiagramId: {
       handler(newVal) {
         if (newVal) {
-          const diagram = this.businessDiagrams.find(d => d.id === newVal);
+          const diagram = this.businessDiagrams.find(d => d.id === newVal)
           if (diagram) {
-            this.businessDiagramSearchQuery = `${diagram.id} - ${diagram.imageName}`;
+            this.businessDiagramSearchQuery = `${diagram.id} - ${diagram.__name__}`
           }
         } else {
-          this.businessDiagramSearchQuery = '';
+          this.businessDiagramSearchQuery = ''
         }
       },
       immediate: true
     }
   },
   methods: {
-    onApprovalDiagramSearchInput(event) {
-      const query = event.target.value;
-      this.approvalDiagramSearchQuery = query;
-
+    // 处理审批流程图搜索输入
+    onApprovalDiagramSearchInput(query) {
       if (query.trim() === '') {
-        this.approvalDiagramSearchResults = [...this.approvalDiagrams];
-        this.showApprovalDropdown = true;
-        return;
+        this.approvalDiagramSearchResults = []
+        return
       }
 
+      // 过滤流程图列表
       const filtered = this.approvalDiagrams.filter(diagram =>
         diagram.id.toString().includes(query) ||
-        (diagram.imageName && diagram.imageName.toLowerCase().includes(query.toLowerCase()))
-      );
+        (diagram.__name__ && diagram.__name__.includes(query))
+      )
 
-      this.approvalDiagramSearchResults = filtered;
-      this.showApprovalDropdown = true;
+      this.approvalDiagramSearchResults = filtered
     },
 
-    onApprovalDiagramSearchFocus(event) {
-      this.checkDropdownDirection(event.target, 'approval');
-      this.showApprovalDropdown = true;
+    // 审批流程图搜索框获得焦点时显示所有流程图
+    onApprovalDiagramSearchFocus() {
+      // 如果搜索框为空，显示所有流程图
       if (!this.approvalDiagramSearchQuery || this.approvalDiagramSearchQuery.trim() === '') {
-        this.approvalDiagramSearchResults = [...this.approvalDiagrams];
+        this.approvalDiagramSearchResults = [...this.approvalDiagrams]
       }
     },
 
-    checkDropdownDirection(inputElement, type) {
-      const wrapper = type === 'approval' ? this.$refs.approvalWrapper : this.$refs.businessWrapper;
-      if (!wrapper) return;
-
-      const rect = wrapper.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const spaceBelow = viewportHeight - rect.bottom;
-      const dropdownHeight = 200; // 预估下拉列表高度
-
-      if (type === 'approval') {
-        this.showApprovalDropdownUp = spaceBelow < dropdownHeight;
-      } else {
-        this.showBusinessDropdownUp = spaceBelow < dropdownHeight;
-      }
-    },
-
-    hideApprovalDropdown() {
-      setTimeout(() => {
-        this.showApprovalDropdown = false;
-      }, 200);
-    },
-
+    // 选择审批流程图
     selectApprovalDiagram(diagram) {
-      this.$emit('update:approval-diagram', diagram.id);
-      this.approvalDiagramSearchQuery = `${diagram.id} - ${diagram.imageName}`;
-      this.showApprovalDropdown = false;
+      this.$emit('update:approval-diagram', diagram.id)
+      this.approvalDiagramSearchQuery = `${diagram.id} - ${diagram.__name__}`
+      this.approvalDiagramSearchResults = []
     },
 
+    // 清除审批流程图选择
     clearApprovalDiagram() {
-      this.$emit('clear:approval-diagram');
-      this.approvalDiagramSearchQuery = '';
-      this.approvalDiagramSearchResults = [];
-      this.showApprovalDropdown = false;
+      this.$emit('clear:approval-diagram')
+      this.approvalDiagramSearchQuery = ''
+      this.approvalDiagramSearchResults = []
     },
 
-    onBusinessDiagramSearchInput(event) {
-      const query = event.target.value;
-      this.businessDiagramSearchQuery = query;
-
+    // 处理业务流程图搜索输入
+    onBusinessDiagramSearchInput(query) {
       if (query.trim() === '') {
-        this.businessDiagramSearchResults = [...this.businessDiagrams];
-        this.showBusinessDropdown = true;
-        return;
+        this.businessDiagramSearchResults = []
+        return
       }
 
+      // 过滤流程图列表
       const filtered = this.businessDiagrams.filter(diagram =>
         diagram.id.toString().includes(query) ||
-        (diagram.imageName && diagram.imageName.toLowerCase().includes(query.toLowerCase()))
-      );
+        (diagram.__name__ && diagram.__name__.includes(query))
+      )
 
-      this.businessDiagramSearchResults = filtered;
-      this.showBusinessDropdown = true;
+      this.businessDiagramSearchResults = filtered
     },
 
-    onBusinessDiagramSearchFocus(event) {
-      this.checkDropdownDirection(event.target, 'business');
-      this.showBusinessDropdown = true;
+    // 业务流程图搜索框获得焦点时显示所有流程图
+    onBusinessDiagramSearchFocus() {
+      // 如果搜索框为空，显示所有流程图
       if (!this.businessDiagramSearchQuery || this.businessDiagramSearchQuery.trim() === '') {
-        this.businessDiagramSearchResults = [...this.businessDiagrams];
+        this.businessDiagramSearchResults = [...this.businessDiagrams]
       }
     },
 
-    hideBusinessDropdown() {
-      setTimeout(() => {
-        this.showBusinessDropdown = false;
-      }, 200);
-    },
-
+    // 选择业务流程图
     selectBusinessDiagram(diagram) {
-      this.$emit('update:business-diagram', diagram.id);
-      this.businessDiagramSearchQuery = `${diagram.id} - ${diagram.imageName}`;
-      this.showBusinessDropdown = false;
+      this.$emit('update:business-diagram', diagram.id)
+      this.businessDiagramSearchQuery = `${diagram.id} - ${diagram.__name__}`
+      this.businessDiagramSearchResults = []
     },
 
+    // 清除业务流程图选择
     clearBusinessDiagram() {
-      this.$emit('clear:business-diagram');
-      this.businessDiagramSearchQuery = '';
-      this.businessDiagramSearchResults = [];
-      this.showBusinessDropdown = false;
+      this.$emit('clear:business-diagram')
+      this.businessDiagramSearchQuery = ''
+      this.businessDiagramSearchResults = []
     },
 
+    // 获取审批流程图URL
     getApprovalProcessDiagramUrl(id) {
-      const diagram = this.approvalDiagrams.find(d => d.id === parseInt(id));
-      return diagram ? diagram.imageDataUrl : '';
+      const diagram = this.approvalDiagrams.find(d => d.id === id)
+      return diagram ? diagram.imageDataUrl : ''
     },
 
+    // 获取业务流程图URL
     getBusinessProcessDiagramUrl(id) {
-      const diagram = this.businessDiagrams.find(d => d.id === parseInt(id));
-      return diagram ? diagram.imageDataUrl : '';
+      const diagram = this.businessDiagrams.find(d => d.id === id)
+      return diagram ? diagram.imageDataUrl : ''
     }
   }
 }
@@ -335,14 +297,6 @@ export default {
   max-height: 200px;
   overflow-y: auto;
   z-index: 100;
-}
-
-.diagram-search-dropdown.dropdown-up {
-  top: auto;
-  bottom: 100%;
-  border-top: 1px solid #dcdfe6;
-  border-bottom: none;
-  border-radius: 4px 4px 0 0;
 }
 
 .diagram-search-option {
