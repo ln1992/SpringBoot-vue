@@ -132,16 +132,7 @@
 <script>
 // 引入MaterialDetail组件
 import MaterialDetail from './MaterialDetail.vue';
-
-// API端点常量
-const API_BASE_URL = 'http://localhost:8000/api/materials';
-const API_GET_ALL = `${API_BASE_URL}`;
-const API_CREATE = `${API_BASE_URL}`;
-const API_GET_BY_ID = (id) => `${API_BASE_URL}/${id}`;
-const API_UPDATE = (id) => `${API_BASE_URL}/${id}`;
-const API_DELETE = (id) => `${API_BASE_URL}/${id}`;
-const API_ACTIVATE = (id) => `${API_BASE_URL}/${id}/activate`;
-const API_DEACTIVATE = (id) => `${API_BASE_URL}/${id}/deactivate`;
+import { materialService } from '../../api';
 
 export default {
   name: 'MaterialList',
@@ -170,19 +161,8 @@ export default {
       this.error = null;
 
       try {
-        const response = await fetch(API_GET_ALL);
-
-        if (response.ok) {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            this.materials = await response.json();
-            this.filterMaterials();
-          } else {
-            throw new Error('服务器返回的不是JSON格式数据');
-          }
-        } else {
-          this.error = `HTTP Error: ${response.status} ${response.statusText}`;
-        }
+        this.materials = await materialService.getAllMaterials();
+        this.filterMaterials();
       } catch (error) {
         this.error = error.message || '网络错误';
         console.error('获取材料列表出错:', error);
@@ -275,7 +255,7 @@ export default {
     },
 
     // 处理材料保存事件
-    handleMaterialSaved(savedMaterial) {
+    async handleMaterialSaved(savedMaterial) {
       // 如果是新增材料，添加到列表中
       if (!this.editingMaterial) {
         this.materials.push(savedMaterial);
@@ -300,24 +280,18 @@ export default {
       }
 
       try {
-        const response = await fetch(API_DELETE(id), {
-          method: 'DELETE'
-        });
+        await materialService.deleteMaterial(id);
+        
+        // 从列表中移除材料
+        this.materials = this.materials.filter(material => material.id !== id);
+        this.filterMaterials();
 
-        if (response.ok) {
-          // 从列表中移除材料
-          this.materials = this.materials.filter(material => material.id !== id);
-          this.filterMaterials();
-
-          // 如果正在查看被删除的材料，则返回列表
-          if (this.selectedMaterial && this.selectedMaterial.id === id) {
-            this.selectedMaterial = null;
-          }
-
-          alert('材料删除成功');
-        } else {
-          alert('删除失败: ' + response.status);
+        // 如果正在查看被删除的材料，则返回列表
+        if (this.selectedMaterial && this.selectedMaterial.id === id) {
+          this.selectedMaterial = null;
         }
+
+        alert('材料删除成功');
       } catch (error) {
         console.error('删除材料出错:', error);
         alert('删除失败: ' + error.message);
@@ -327,39 +301,28 @@ export default {
     // 切换材料状态（上线/下线）
     async toggleMaterialStatus(id, isValid) {
       try {
-        let response;
         let action = isValid ? '上线' : '下线';
 
         if (isValid) {
           // 上线材料
-          response = await fetch(API_ACTIVATE(id), {
-            method: 'PUT'
-          });
+          await materialService.activateMaterial(id);
         } else {
           // 下线材料
-          response = await fetch(API_DEACTIVATE(id), {
-            method: 'PUT'
-          });
+          await materialService.deactivateMaterial(id);
         }
 
-        if (response.ok) {
-          // 更新材料状态
-          const index = this.materials.findIndex(m => m.id === id);
-          if (index !== -1) {
-            this.materials[index].valid = isValid;
+        // 更新材料状态
+        const index = this.materials.findIndex(m => m.id === id);
+        if (index !== -1) {
+          this.materials[index].valid = isValid;
 
-            // 如果正在查看这个材料，也更新selectedMaterial中的状态
-            if (this.selectedMaterial && this.selectedMaterial.id === id) {
-              this.selectedMaterial.valid = isValid;
-            }
+          // 如果正在查看这个材料，也更新selectedMaterial中的状态
+          if (this.selectedMaterial && this.selectedMaterial.id === id) {
+            this.selectedMaterial.valid = isValid;
           }
-          this.filterMaterials();
-          alert(`材料已${action}`);
-        } else if (response.status === 404) {
-          alert('材料不存在');
-        } else {
-          alert(`${action}失败: ${response.status}`);
         }
+        this.filterMaterials();
+        alert(`材料已${action}`);
       } catch (error) {
         console.error(`更新材料状态出错:`, error);
         alert(`${action}失败: ${error.message}`);

@@ -75,10 +75,7 @@ import TimeAndApprovalSection from './sections/TimeAndApprovalSection.vue'
 import ProcessDiagramsSection from './sections/ProcessDiagramsSection.vue'
 import TimeInfoSection from './sections/TimeInfoSection.vue'
 import ActionButtons from './sections/ActionButtons.vue'
-
-const API_BASE_URL = 'http://localhost:8000/api/matters'
-const API_UPDATE = (id) => `${API_BASE_URL}/${id}`
-const API_CREATE = API_BASE_URL
+import { matterService } from '../../api';
 
 export default {
   name: 'MatterDetail',
@@ -296,30 +293,16 @@ export default {
         let response
 
         if (this.isEditMode) {
-          response = await fetch(API_UPDATE(this.form.id), {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(matterData)
-          })
+          response = await matterService.updateMatter(this.form.id, matterData);
         } else {
-          response = await fetch(API_CREATE, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(matterData)
-          })
+          response = await matterService.createMatter(matterData);
         }
 
-        if (response.ok) {
-          const updatedMatter = await response.json()
-          this.$emit('matter-updated', updatedMatter)
-          alert(this.isEditMode ? '事项更新成功' : '事项创建成功')
-        } else {
-          const errorText = await response.text()
-          alert((this.isEditMode ? '更新' : '创建') + '失败: ' + errorText)
-        }
+        this.$emit('matter-updated', response);
+        alert(this.isEditMode ? '事项更新成功' : '事项创建成功');
       } catch (error) {
-        console.error('保存事项出错:', error)
-        alert('保存失败: ' + error.message)
+        console.error('保存事项出错:', error);
+        alert('保存失败: ' + error.message);
       }
     },
 

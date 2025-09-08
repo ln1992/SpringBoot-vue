@@ -79,8 +79,11 @@
 </template>
 
 <script>
-const API_BASE_URL = 'http://localhost:8000/api/process-diagrams/business';
-const API_UPDATE = (id) => `${API_BASE_URL}/${id}`;
+import { processDiagramService } from '../../api';
+
+// API端点常量
+const API_GET_BY_ID = (id) => `/api/process-diagrams/business/${id}`;
+const API_UPDATE = (id) => `/api/process-diagrams/business/${id}`;
 
 export default {
   name: 'BusinessProcessDiagramDetail',
@@ -96,34 +99,43 @@ export default {
         id: null,
         imageName: '',
         version: '',
-        __name__: '',
         imageFile: null,
         imagePreview: null,
         imageDataUrl: null,
         valid: true,
+        __name__: '',
         createdTime: null,
         updateTime: null
-      }
+      },
+      originalImageData: null
     };
   },
-  created() {
-    // 初始化表单数据
-    this.resetForm();
+  watch: {
+    diagram: {
+      handler(newVal) {
+        this.initializeForm(newVal);
+      },
+      deep: true,
+      immediate: true
+    }
   },
   methods: {
-    resetForm() {
+    initializeForm(diagram) {
       this.form = {
-        id: this.diagram.id,
-        imageName: this.diagram.imageName,
-        version: this.diagram.version || '',
-        __name__: this.diagram.__name__ || '',
+        id: diagram.id,
+        imageName: diagram.imageName || '',
+        version: diagram.version || '',
         imageFile: null,
         imagePreview: null,
-        imageDataUrl: this.diagram.imageDataUrl,
-        valid: this.diagram.valid,
-        createdTime: this.diagram.createdTime || null,
-        updateTime: this.diagram.updateTime || null
+        imageDataUrl: diagram.imageDataUrl || null,
+        valid: diagram.valid !== undefined ? diagram.valid : true,
+        __name__: diagram.__name__ || '',
+        createdTime: diagram.createdTime || null,
+        updateTime: diagram.updateTime || null
       };
+
+      // 保存原始图像数据
+      this.originalImageData = diagram.imageData || null;
     },
 
     // 返回列表
@@ -188,33 +200,23 @@ export default {
           formData.append('imageFile', this.form.imageFile);
         }
 
-        const response = await fetch(API_UPDATE(this.form.id), {
-          method: 'PUT',
-          body: formData
-        });
+        const updatedDiagram = await processDiagramService.updateBusinessProcessDiagram(this.form.id, formData);
 
-        if (response.ok) {
-          const updatedDiagram = await response.json();
-
-          // 重建图像数据URL
-          if (updatedDiagram.imageData && updatedDiagram.imageType) {
-            const contentTypes = {
-              'JPEG': 'image/jpeg',
-              'PNG': 'image/png',
-              'GIF': 'image/gif',
-              'BMP': 'image/bmp',
-              'SVG': 'image/svg+xml'
-            };
-            const contentType = contentTypes[updatedDiagram.imageType] || 'image/jpeg';
-            updatedDiagram.imageDataUrl = `data:${contentType};base64,${updatedDiagram.imageData}`;
-          }
-
-          this.$emit('diagram-updated', updatedDiagram);
-          alert('业务流程图更新成功');
-        } else {
-          const errorText = await response.text();
-          alert('更新失败: ' + response.status + ' - ' + errorText);
+        // 重建图像数据URL
+        if (updatedDiagram.imageData && updatedDiagram.imageType) {
+          const contentTypes = {
+            'JPEG': 'image/jpeg',
+            'PNG': 'image/png',
+            'GIF': 'image/gif',
+            'BMP': 'image/bmp',
+            'SVG': 'image/svg+xml'
+          };
+          const contentType = contentTypes[updatedDiagram.imageType] || 'image/jpeg';
+          updatedDiagram.imageDataUrl = `data:${contentType};base64,${updatedDiagram.imageData}`;
         }
+
+        this.$emit('diagram-updated', updatedDiagram);
+        alert('业务流程图更新成功');
       } catch (error) {
         console.error('保存业务流程图出错:', error);
         alert('保存失败: ' + error.message);

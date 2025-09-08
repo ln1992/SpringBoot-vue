@@ -1,0 +1,96 @@
+import http from './http';
+import ENDPOINTS from './endpoints';
+
+class MatterService {
+  // 获取所有事项
+  async getAllMatters() {
+    try {
+      const response = await http.get(ENDPOINTS.MATTERS);
+      return response.data;
+    } catch (error) {
+      throw new Error(`获取事项列表失败: ${error.message}`);
+    }
+  }
+
+  // 根据ID获取事项
+  async getMatterById(id) {
+    try {
+      const response = await http.get(ENDPOINTS.MATTERS_BY_ID(id));
+      return response.data;
+    } catch (error) {
+      throw new Error(`获取事项失败: ${error.message}`);
+    }
+  }
+
+  // 创建事项
+  async createMatter(matter) {
+    try {
+      const response = await http.post(ENDPOINTS.MATTERS, matter);
+      return response.data;
+    } catch (error) {
+      throw new Error(`创建事项失败: ${error.message}`);
+    }
+  }
+
+  // 更新事项
+  async updateMatter(id, matter) {
+    try {
+      const response = await http.put(ENDPOINTS.MATTERS_BY_ID(id), matter);
+      return response.data;
+    } catch (error) {
+      throw new Error(`更新事项失败: ${error.message}`);
+    }
+  }
+
+  // 删除事项
+  async deleteMatter(id) {
+    try {
+      const response = await http.delete(ENDPOINTS.MATTERS_BY_ID(id));
+      return response.data;
+    } catch (error) {
+      throw new Error(`删除事项失败: ${error.message}`);
+    }
+  }
+
+  // 激活事项
+  async activateMatter(id) {
+    try {
+      const response = await http.put(ENDPOINTS.MATTERS_ACTIVATE(id));
+      return response.data;
+    } catch (error) {
+      throw new Error(`激活事项失败: ${error.message}`);
+    }
+  }
+
+  // 停用事项
+  async deactivateMatter(id) {
+    try {
+      const response = await http.put(ENDPOINTS.MATTERS_DEACTIVATE(id));
+      return response.data;
+    } catch (error) {
+      throw new Error(`停用事项失败: ${error.message}`);
+    }
+  }
+
+  // 发布事项
+  async publishMatter(id) {
+    try {
+      const response = await http.put(ENDPOINTS.MATTERS_PUBLISH(id));
+      return response.data;
+    } catch (error) {
+      throw new Error(`发布事项失败: ${error.message}`);
+    }
+  }
+
+  // 取消发布事项
+  async unpublishMatter(id) {
+    try {
+      const response = await http.put(ENDPOINTS.MATTERS_UNPUBLISH(id));
+      return response.data;
+    } catch (error) {
+      throw new Error(`取消发布事项失败: ${error.message}`);
+    }
+  }
+}
+
+export default new MatterService();

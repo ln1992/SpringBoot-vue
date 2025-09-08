@@ -44,6 +44,7 @@
 </template>
 
 <script>
+import { materialService } from '../../api';
 import BasicInfo from './sections/BasicInfo.vue'
 import ReviewInfo from './sections/ReviewInfo.vue'
 import SourceAndSharing from './sections/SourceAndSharing.vue'
@@ -51,10 +52,6 @@ import ProcessingInfo from './sections/ProcessingInfo.vue'
 import StatusSection from './sections/StatusSection.vue'
 import TimeInfo from './sections/TimeInfo.vue'
 import FormActions from './sections/FormActions.vue'
-
-const API_BASE_URL = 'http://localhost:8000/api/materials'
-const API_UPDATE = (id) => `${API_BASE_URL}/${id}`
-const API_CREATE = API_BASE_URL
 
 export default {
   name: 'MaterialDetail',
@@ -89,10 +86,24 @@ export default {
   },
   data() {
     return {
-      form: { ...this.material },
+      form: {
+        id: null,
+        materialDetail: '',
+        version: 1,
+        reviewPoint: '',
+        autoApprovalCriteria: '',
+        shared: false,
+        materialSource: 'PERSONAL_SUBMISSION',
+        processingMethodAndInfoAccess: 'ONLINE_PROCESSING',
+        eligibleForPromise: false,
+        valid: true,
+        createdTime: null,
+        updateTime: null,
+        __name__: ''
+      },
       errors: {},
       submitting: false
-    }
+    };
   },
   computed: {
     isEditMode() {
@@ -104,7 +115,14 @@ export default {
       handler(newVal) {
         this.form = { ...newVal }
       },
-      deep: true
+      deep: true,
+      immediate: true
+    }
+  },
+  mounted() {
+    // 确保在组件挂载时初始化表单
+    if (this.material) {
+      this.form = { ...this.material };
     }
   },
   methods: {
@@ -139,46 +157,32 @@ export default {
     },
 
     async handleSubmit() {
-      if (this.submitting) return
+      if (this.submitting) return;
 
-      if (!this.validateForm()) return
+      if (!this.validateForm()) return;
 
-      this.submitting = true
+      this.submitting = true;
 
       try {
         if (!this.form.version || this.form.version < 1) {
-          this.form.version = 1
+          this.form.version = 1;
         }
 
-        let response
+        let response;
         if (this.isEditMode) {
-          response = await fetch(API_UPDATE(this.form.id), {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(this.form)
-          })
+          response = await materialService.updateMaterial(this.form.id, this.form);
         } else {
-          response = await fetch(API_CREATE, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(this.form)
-          })
+          response = await materialService.createMaterial(this.form);
         }
 
-        if (response.ok) {
-          const updatedMaterial = await response.json()
-          this.$emit('material-updated', updatedMaterial)
-          alert(this.isEditMode ? '材料更新成功' : '材料创建成功')
-          this.form = { ...updatedMaterial }
-        } else {
-          const errorText = await response.text()
-          alert((this.isEditMode ? '更新' : '创建') + '失败: ' + errorText)
-        }
+        this.$emit('material-updated', response);
+        alert(this.isEditMode ? '材料更新成功' : '材料创建成功');
+        this.form = { ...response };
       } catch (error) {
-        console.error('保存材料出错:', error)
-        alert('保存失败: ' + error.message)
+        console.error('保存材料出错:', error);
+        alert('保存失败: ' + error.message);
       } finally {
-        this.submitting = false
+        this.submitting = false;
       }
     }
   }

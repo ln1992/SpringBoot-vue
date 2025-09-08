@@ -165,16 +165,7 @@
 <script>
 // 引入详情组件
 import ApprovalProcessDiagramDetail from './ApprovalProcessDiagramDetail.vue';
-
-// API端点常量
-const API_BASE_URL = 'http://localhost:8000/api/process-diagrams/approval';
-const API_GET_ALL = `${API_BASE_URL}`;
-const API_CREATE = `${API_BASE_URL}`;
-const API_GET_BY_ID = (id) => `${API_BASE_URL}/${id}`;
-const API_UPDATE = (id) => `${API_BASE_URL}/${id}`;
-const API_DELETE = (id) => `${API_BASE_URL}/${id}`;
-const API_ACTIVATE = (id) => `${API_BASE_URL}/${id}/activate`;
-const API_DEACTIVATE = (id) => `${API_BASE_URL}/${id}/deactivate`;
+import { processDiagramService } from '../../api';
 
 export default {
   name: 'ApprovalProcessDiagramList',
@@ -207,59 +198,42 @@ export default {
       this.selectedDiagram = null;
 
       try {
-        const response = await fetch(API_GET_ALL, {
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+        this.diagrams = await processDiagramService.getApprovalProcessDiagrams();
+        
+        // 为每个流程图添加图像数据URL
+        this.diagrams.forEach(diagram => {
+          // 使用后端提供的getImageDataUrl方法
+          if (diagram.imageDataUrl) {
+            diagram.imageDataUrl = diagram.imageDataUrl;
+          } else if (diagram.imageData && diagram.imageType) {
+            // 根据imageType生成Base64 URL
+            const contentType = this.getContentTypeByImageType(diagram.imageType);
+            diagram.imageDataUrl = `data:${contentType};base64,${diagram.imageData}`;
+          } else if (diagram.imageData && diagram.contentType) {
+            // 后备方案：使用contentType字段（兼容旧数据）
+            diagram.imageDataUrl = `data:${diagram.contentType};base64,${diagram.imageData}`;
+          }
+
+          // 确保有状态字段
+          if (diagram.valid === undefined) {
+            diagram.valid = true;
+          }
+
+          // 确保imageName存在
+          if (diagram.imageName === undefined || diagram.imageName === null) {
+            diagram.imageName = '';
+          }
+
+          // 确保version存在
+          if (diagram.version === undefined || diagram.version === null) {
+            diagram.version = '1.0';
+          }
+
+          // 确保__name__存在
+          if (diagram.__name__ === undefined || diagram.__name__ === null) {
+            diagram.__name__ = diagram.imageName || '';
           }
         });
-
-        if (response.ok) {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const data = await response.json();
-            this.diagrams = Array.isArray(data) ? data : [];
-
-            // 为每个流程图添加图像数据URL
-            this.diagrams.forEach(diagram => {
-              // 使用后端提供的getImageDataUrl方法
-              if (diagram.imageDataUrl) {
-                diagram.imageDataUrl = diagram.imageDataUrl;
-              } else if (diagram.imageData && diagram.imageType) {
-                // 根据imageType生成Base64 URL
-                const contentType = this.getContentTypeByImageType(diagram.imageType);
-                diagram.imageDataUrl = `data:${contentType};base64,${diagram.imageData}`;
-              } else if (diagram.imageData && diagram.contentType) {
-                // 后备方案：使用contentType字段（兼容旧数据）
-                diagram.imageDataUrl = `data:${diagram.contentType};base64,${diagram.imageData}`;
-              }
-
-              // 确保有状态字段
-              if (diagram.valid === undefined) {
-                diagram.valid = true;
-              }
-
-              // 确保imageName存在
-              if (diagram.imageName === undefined || diagram.imageName === null) {
-                diagram.imageName = '';
-              }
-
-              // 确保version存在
-              if (diagram.version === undefined || diagram.version === null) {
-                diagram.version = '1.0';
-              }
-
-              // 确保__name__存在
-              if (diagram.__name__ === undefined || diagram.__name__ === null) {
-                diagram.__name__ = diagram.imageName || '';
-              }
-            });
-          } else {
-            throw new Error('服务器返回的不是JSON格式数据');
-          }
-        } else {
-          this.error = `HTTP Error: ${response.status} ${response.statusText}`;
-        }
       } catch (error) {
         this.error = error.message || '网络错误';
         console.error('获取审批流程图列表出错:', error);
@@ -349,19 +323,10 @@ export default {
         }
 
         // 新增流程图
-        const response = await fetch(API_CREATE, {
-          method: 'POST',
-          body: formData
-        });
-
-        if (response.ok) {
-          await this.fetchDiagrams();
-          this.closeForm();
-          alert('审批流程图创建成功');
-        } else {
-          const errorText = await response.text();
-          alert('创建失败: ' + response.status + ' - ' + errorText);
-        }
+        await processDiagramService.createApprovalProcessDiagram(formData);
+        await this.fetchDiagrams();
+        this.closeForm();
+        alert('审批流程图创建成功');
       } catch (error) {
         console.error('保存审批流程图出错:', error);
         alert('保存失败: ' + error.message);
@@ -370,29 +335,18 @@ export default {
 
     async toggleDiagramStatus(id, isValid) {
       try {
-        let response;
         let action = isValid ? '启用' : '禁用';
 
         if (isValid) {
           // 启用流程图
-          response = await fetch(API_ACTIVATE(id), {
-            method: 'PUT'
-          });
+          await processDiagramService.activateApprovalProcessDiagram(id);
         } else {
           // 禁用流程图
-          response = await fetch(API_DEACTIVATE(id), {
-            method: 'PUT'
-          });
+          await processDiagramService.deactivateApprovalProcessDiagram(id);
         }
 
-        if (response.ok) {
-          await this.fetchDiagrams();
-          alert(`流程图已${action}`);
-        } else if (response.status === 404) {
-          alert('流程图不存在');
-        } else {
-          alert(`${action}失败: ${response.status}`);
-        }
+        await this.fetchDiagrams();
+        alert(`流程图已${action}`);
       } catch (error) {
         console.error(`更新流程图状态出错:`, error);
         alert(`${action}失败: ${error.message}`);
@@ -405,20 +359,13 @@ export default {
       }
 
       try {
-        const response = await fetch(API_DELETE(id), {
-          method: 'DELETE'
-        });
-
-        if (response.ok) {
-          await this.fetchDiagrams();
-          // 如果正在查看被删除的流程图，则返回列表
-          if (this.selectedDiagram && this.selectedDiagram.id === id) {
-            this.selectedDiagram = null;
-          }
-          alert('审批流程图删除成功');
-        } else {
-          alert('删除失败: ' + response.status);
+        await processDiagramService.deleteApprovalProcessDiagram(id);
+        await this.fetchDiagrams();
+        // 如果正在查看被删除的流程图，则返回列表
+        if (this.selectedDiagram && this.selectedDiagram.id === id) {
+          this.selectedDiagram = null;
         }
+        alert('审批流程图删除成功');
       } catch (error) {
         console.error('删除审批流程图出错:', error);
         alert('删除失败: ' + error.message);

@@ -79,8 +79,7 @@
 </template>
 
 <script>
-const API_BASE_URL = 'http://localhost:8000/api/process-diagrams/approval';
-const API_UPDATE = (id) => `${API_BASE_URL}/${id}`;
+import { processDiagramService } from '../../api';
 
 export default {
   name: 'ApprovalProcessDiagramDetail',
@@ -96,54 +95,57 @@ export default {
         id: null,
         imageName: '',
         version: '',
-        __name__: '',
         imageFile: null,
         imagePreview: null,
         imageDataUrl: null,
         valid: true,
+        __name__: '',
         createdTime: null,
         updateTime: null
-      }
+      },
+      originalImageData: null
     };
   },
-  created() {
-    // 初始化表单数据
-    this.resetForm();
+  watch: {
+    diagram: {
+      handler(newVal) {
+        this.initializeForm(newVal);
+      },
+      deep: true,
+      immediate: true
+    }
+  },
+  mounted() {
+    // 确保在组件挂载时初始化表单
+    if (this.diagram) {
+      this.initializeForm(this.diagram);
+    }
   },
   methods: {
-    resetForm() {
+    initializeForm(diagram) {
       this.form = {
-        id: this.diagram.id,
-        imageName: this.diagram.imageName,
-        version: this.diagram.version || '',
-        __name__: this.diagram.__name__ || '',
+        id: diagram.id,
+        imageName: diagram.imageName || '',
+        version: diagram.version || '',
         imageFile: null,
         imagePreview: null,
-        imageDataUrl: this.diagram.imageDataUrl,
-        valid: this.diagram.valid,
-        createdTime: this.diagram.createdTime || null,
-        updateTime: this.diagram.updateTime || null
+        imageDataUrl: diagram.imageDataUrl || null,
+        valid: diagram.valid !== undefined ? diagram.valid : true,
+        __name__: diagram.__name__ || '',
+        createdTime: diagram.createdTime || null,
+        updateTime: diagram.updateTime || null
       };
+
+      // 保存原始图像数据
+      this.originalImageData = diagram.imageData || null;
     },
 
-    // 返回列表
     goBack() {
       this.$emit('back');
     },
 
-    // 格式化日期时间
-    formatDateTime(dateString) {
+    formatDate(dateString) {
       if (!dateString) return '';
-
-      // 如果是已经格式化的字符串 (yyyy-MM-dd HH:mm:ss)
-      if (typeof dateString === 'string' &&
-        dateString.includes('-') &&
-        dateString.includes(':') &&
-        dateString.length === 19) { // "yyyy-MM-dd HH:mm:ss" 长度为19
-        return dateString;
-      }
-
-      // 如果是 Date 对象或其他格式，则进行格式化
       const date = new Date(dateString);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -153,6 +155,10 @@ export default {
       const seconds = String(date.getSeconds()).padStart(2, '0');
 
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    },
+
+    formatDateTime(dateString) {
+      return this.formatDate(dateString);
     },
 
     onImageChange(event) {
@@ -188,33 +194,23 @@ export default {
           formData.append('imageFile', this.form.imageFile);
         }
 
-        const response = await fetch(API_UPDATE(this.form.id), {
-          method: 'PUT',
-          body: formData
-        });
+        const updatedDiagram = await processDiagramService.updateApprovalProcessDiagram(this.form.id, formData);
 
-        if (response.ok) {
-          const updatedDiagram = await response.json();
-
-          // 重建图像数据URL
-          if (updatedDiagram.imageData && updatedDiagram.imageType) {
-            const contentTypes = {
-              'JPEG': 'image/jpeg',
-              'PNG': 'image/png',
-              'GIF': 'image/gif',
-              'BMP': 'image/bmp',
-              'SVG': 'image/svg+xml'
-            };
-            const contentType = contentTypes[updatedDiagram.imageType] || 'image/jpeg';
-            updatedDiagram.imageDataUrl = `data:${contentType};base64,${updatedDiagram.imageData}`;
-          }
-
-          this.$emit('diagram-updated', updatedDiagram);
-          alert('审批流程图更新成功');
-        } else {
-          const errorText = await response.text();
-          alert('更新失败: ' + response.status + ' - ' + errorText);
+        // 重建图像数据URL
+        if (updatedDiagram.imageData && updatedDiagram.imageType) {
+          const contentTypes = {
+            'JPEG': 'image/jpeg',
+            'PNG': 'image/png',
+            'GIF': 'image/gif',
+            'BMP': 'image/bmp',
+            'SVG': 'image/svg+xml'
+          };
+          const contentType = contentTypes[updatedDiagram.imageType] || 'image/jpeg';
+          updatedDiagram.imageDataUrl = `data:${contentType};base64,${updatedDiagram.imageData}`;
         }
+
+        this.$emit('diagram-updated', updatedDiagram);
+        alert('审批流程图更新成功');
       } catch (error) {
         console.error('保存审批流程图出错:', error);
         alert('保存失败: ' + error.message);

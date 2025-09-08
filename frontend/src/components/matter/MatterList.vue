@@ -149,18 +149,7 @@
 <script>
 // 引入详情组件
 import MatterDetail from './MatterDetail.vue';
-
-// API端点常量
-const API_BASE_URL = 'http://localhost:8000/api/matters'
-const API_MATERIALS_URL = 'http://localhost:8000/api/materials'
-const API_GET_ALL = API_BASE_URL
-const API_CREATE = API_BASE_URL
-const API_UPDATE = (id) => `${API_BASE_URL}/${id}`
-const API_DELETE = (id) => `${API_BASE_URL}/${id}`
-const API_ACTIVATE = (id) => `${API_BASE_URL}/${id}/activate`
-const API_DEACTIVATE = (id) => `${API_BASE_URL}/${id}/deactivate`
-const API_PUBLISH = (id) => `${API_BASE_URL}/${id}/publish`
-const API_UNPUBLISH = (id) => `${API_BASE_URL}/${id}/unpublish`
+import { matterService, materialService, processDiagramService } from '../../api';
 
 export default {
   name: 'MatterList',
@@ -230,24 +219,13 @@ export default {
       this.selectedMatter = null
 
       try {
-        const response = await fetch(API_GET_ALL)
-
-        if (response.ok) {
-          const contentType = response.headers.get('content-type')
-          if (contentType && contentType.includes('application/json')) {
-            this.matters = await response.json()
-            // 处理后端返回的字段名，映射到前端使用的字段名
-            this.matters = this.matters.map(matter => ({
-              ...matter,
-              isValid: matter.valid,
-              isPublish: matter.publish
-            }))
-          } else {
-            throw new Error('服务器返回的不是JSON格式数据')
-          }
-        } else {
-          this.error = `HTTP Error: ${response.status} ${response.statusText}`
-        }
+        this.matters = await matterService.getAllMatters()
+        // 处理后端返回的字段名，映射到前端使用的字段名
+        this.matters = this.matters.map(matter => ({
+          ...matter,
+          isValid: matter.valid,
+          isPublish: matter.publish
+        }))
       } catch (error) {
         this.error = error.message || '网络错误'
         console.error('获取事项列表出错:', error)
@@ -259,10 +237,9 @@ export default {
     // 获取所有有效材料列表
     async fetchMaterials() {
       try {
-        const response = await fetch(`${API_MATERIALS_URL}?valid=true`);
-        if (response.ok) {
-          this.materialsList = await response.json();
-        }
+        this.materialsList = await materialService.getAllMaterials();
+        // 只保留有效的材料
+        this.materialsList = this.materialsList.filter(material => material.valid);
       } catch (error) {
         console.error('获取材料列表出错:', error);
       }
@@ -272,16 +249,10 @@ export default {
     async fetchProcessDiagrams() {
       try {
         // 获取审批流程图
-        const approvalResponse = await fetch('http://localhost:8000/api/process-diagrams/approval?valid=true');
-        if (approvalResponse.ok) {
-          this.approvalProcessDiagrams = await approvalResponse.json();
-        }
+        this.approvalProcessDiagrams = await processDiagramService.getApprovalProcessDiagrams({ valid: true });
 
         // 获取业务流程图
-        const businessResponse = await fetch('http://localhost:8000/api/process-diagrams/business?valid=true');
-        if (businessResponse.ok) {
-          this.businessProcessDiagrams = await businessResponse.json();
-        }
+        this.businessProcessDiagrams = await processDiagramService.getBusinessProcessDiagrams({ valid: true });
       } catch (error) {
         console.error('获取流程图列表出错:', error);
       }
@@ -383,29 +354,18 @@ export default {
 
     async toggleMatterStatus(id, isValid) {
       try {
-        let response;
         let action = isValid ? '上线' : '下线';
 
         if (isValid) {
           // 上线事项
-          response = await fetch(API_ACTIVATE(id), {
-            method: 'PUT'
-          });
+          await matterService.activateMatter(id);
         } else {
           // 下线事项
-          response = await fetch(API_DEACTIVATE(id), {
-            method: 'PUT'
-          });
+          await matterService.deactivateMatter(id);
         }
 
-        if (response.ok) {
-          await this.fetchMatters();
-          alert(`事项已${action}`);
-        } else if (response.status === 404) {
-          alert('事项不存在');
-        } else {
-          alert(`${action}失败: ${response.status}`);
-        }
+        await this.fetchMatters();
+        alert(`事项已${action}`);
       } catch (error) {
         console.error(`更新事项状态出错:`, error);
         alert(`${action}失败: ${error.message}`);
@@ -414,29 +374,18 @@ export default {
 
     async togglePublishStatus(id, isPublish) {
       try {
-        let response;
         let action = isPublish ? '发布' : '取消发布';
 
         if (isPublish) {
           // 发布事项
-          response = await fetch(API_PUBLISH(id), {
-            method: 'PUT'
-          });
+          await matterService.publishMatter(id);
         } else {
           // 取消发布事项
-          response = await fetch(API_UNPUBLISH(id), {
-            method: 'PUT'
-          });
+          await matterService.unpublishMatter(id);
         }
 
-        if (response.ok) {
-          await this.fetchMatters();
-          alert(`事项已${action}`);
-        } else if (response.status === 404) {
-          alert('事项不存在');
-        } else {
-          alert(`${action}失败: ${response.status}`);
-        }
+        await this.fetchMatters();
+        alert(`事项已${action}`);
       } catch (error) {
         console.error(`更新事项发布状态出错:`, error);
         alert(`${action}失败: ${error.message}`);
@@ -449,20 +398,13 @@ export default {
       }
 
       try {
-        const response = await fetch(API_DELETE(id), {
-          method: 'DELETE'
-        })
-
-        if (response.ok) {
-          await this.fetchMatters()
-          // 如果正在查看被删除的事项，则返回列表
-          if (this.selectedMatter && this.selectedMatter.id === id) {
-            this.selectedMatter = null
-          }
-          alert('事项删除成功')
-        } else {
-          alert('删除失败: ' + response.status)
+        await matterService.deleteMatter(id);
+        await this.fetchMatters()
+        // 如果正在查看被删除的事项，则返回列表
+        if (this.selectedMatter && this.selectedMatter.id === id) {
+          this.selectedMatter = null
         }
+        alert('事项删除成功')
       } catch (error) {
         console.error('删除事项出错:', error)
         alert('删除失败: ' + error.message)
