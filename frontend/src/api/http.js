@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 创建axios实例
 const http = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: '/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -26,21 +26,7 @@ http.interceptors.response.use(
     return response;
   },
   error => {
-    // 统一处理错误
-    if (error.response) {
-      switch (error.response.status) {
-        case 404:
-          console.error('请求的资源不存在');
-          break;
-        case 500:
-          console.error('服务器内部错误');
-          break;
-        default:
-          console.error(`请求失败: ${error.response.status}`);
-      }
-    } else {
-      console.error('网络错误');
-    }
+    console.error('API请求错误:', error.response || error.message);
     return Promise.reject(error);
   }
 );

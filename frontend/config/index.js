@@ -19,6 +19,12 @@ module.exports = {
     autoOpenBrowser: true,
     assetsSubDirectory: 'statics',
     assetsPublicPath: '/',
-    cssSourceMap: false
+    cssSourceMap: false,
+    proxyTable: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true
+      }
+    }
   }
 }
