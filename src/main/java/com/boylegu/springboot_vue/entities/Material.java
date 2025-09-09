@@ -42,10 +42,6 @@ public class Material extends BaseEntity {
     @Column(name = "is_eligible_for_promise")
     private Boolean isEligibleForPromise = false;
 
-    // 是否有效（默认为true）
-    @Column(name = "is_valid")
-    private Boolean isValid = true;
-
     // 默认构造函数
     public Material() {}
 
@@ -60,7 +56,6 @@ public class Material extends BaseEntity {
         this.materialSource = materialSource;
         this.processingMethodAndInfoAccess = processingMethodAndInfoAccess;
         this.isEligibleForPromise = isEligibleForPromise;
-        this.isValid = true; // 设置默认值为true
     }
 
     @Override
@@ -157,7 +152,6 @@ public class Material extends BaseEntity {
                 ", materialSource=" + materialSource +
                 ", processingMethodAndInfoAccess=" + processingMethodAndInfoAccess +
                 ", isEligibleForPromise=" + isEligibleForPromise +
-                ", isValid=" + isValid +
                 '}';
     }
 

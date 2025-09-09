@@ -195,7 +195,7 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   position: relative;
-  z-index: 1001;
+  z-index: 1; /* 降低z-index值，确保侧边栏可以覆盖 */
 }
 
 .header {
@@ -216,7 +216,7 @@ export default {
   padding: 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   position: relative;
-  z-index: 1001;
+  z-index: 1; /* 降低z-index值，确保侧边栏可以覆盖 */
 }
 
 /* 防止页面自动滚动到底部 */

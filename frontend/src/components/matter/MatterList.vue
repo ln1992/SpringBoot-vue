@@ -20,7 +20,7 @@
         <button @click="fetchMatters">重试</button>
       </div>
 
-      <div class="no-data" v-else-if="matters.length === 0">
+      <div class="no-data" v-else-if="paginatedMatters.length === 0">
         <p>暂无事项数据</p>
         <button class="add-btn" @click="showAddForm = true">新增第一个事项</button>
       </div>
@@ -32,11 +32,11 @@
           <div class="table-cell">主项名称</div>
           <div class="table-cell">子项名称</div>
           <div class="table-cell">孙项名称</div>
+          <div class="table-cell">版本</div>
           <div class="table-cell">法定时限</div>
           <div class="table-cell">承诺时限</div>
           <div class="table-cell">审批层级</div>
           <div class="table-cell">省厅对口指导处室</div>
-          <div class="table-cell">版本</div>
           <div class="table-cell">发布状态</div>
           <div class="table-cell">状态</div>
           <div class="table-cell">操作</div>
@@ -44,7 +44,7 @@
 
         <div
           class="table-row"
-          v-for="matter in matters"
+          v-for="matter in paginatedMatters"
           :key="matter.id"
           @click="editMatter(matter)"
         >
@@ -58,11 +58,11 @@
           <div class="table-cell">
             {{ formatGrandchildItemName(matter.mainItemCode, matter.subItemCode, matter.grandchildItemCode, matter.grandchildItemName) }}
           </div>
+          <div class="table-cell">{{ matter.version || '-' }}</div>
           <div class="table-cell">{{ matter.legalTimeLimit || '-' }}天</div>
           <div class="table-cell">{{ matter.committedTimeLimit || '-' }}天</div>
           <div class="table-cell">{{ getApprovalLevelDescription(matter.approvalLevel) || matter.approvalLevel || '-' }}</div>
           <div class="table-cell">{{ getProvincialDepartmentOfficeDescription(matter.provincialDepartmentOffice) || matter.provincialDepartmentOffice || '-' }}</div>
-          <div class="table-cell">{{ matter.version || '-' }}</div>
           <div class="table-cell">
             <span :class="['status-badge', matter.publish ? 'status-active' : 'status-inactive']">
               {{ matter.publish ? '已发布' : '未发布' }}
@@ -118,6 +118,32 @@
               </template>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- 分页控件 -->
+      <div class="pagination" v-if="paginatedMatters.length > 0">
+        <div class="pagination-controls">
+          <button 
+            :disabled="currentPage === 1" 
+            @click="currentPage > 1 && (currentPage--)">
+            上一页
+          </button>
+          <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页</span>
+          <button 
+            :disabled="currentPage === totalPages" 
+            @click="currentPage < totalPages && (currentPage++)">
+            下一页
+          </button>
+        </div>
+        <div class="page-size-selector">
+          <label>每页显示:</label>
+          <select v-model="pageSize" @change="handlePageSizeChange">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+          </select>
         </div>
       </div>
     </div>
@@ -204,226 +230,166 @@ export default {
         { name: 'PROVINCIAL_PORT_CENTER_MANAGEMENT', description: '省港航中心管理处' },
         { name: 'PROVINCIAL_HIGHWAY_CENTER_CONSTRUCTION', description: '省公路中心建设处' },
         { name: 'PROVINCIAL_HIGHWAY_CENTER_MAINTENANCE', description: '省公路中心养护处' }
-      ]
+      ],
+      currentPage: 1,
+      pageSize: 10 // 每页显示10条记录
+    };
+  },
+  computed: {
+    totalPages() {
+      return Math.ceil(this.matters.length / this.pageSize);
+    },
+    paginatedMatters() {
+      const start = (this.currentPage - 1) * this.pageSize;
+      const end = start + this.pageSize;
+      return this.matters.slice(start, end);
     }
   },
   async mounted() {
-    await this.fetchMatters()
-    await this.fetchMaterials() // 获取材料列表
-    await this.fetchProcessDiagrams() // 获取流程图列表
+    await this.fetchAllData();
   },
   methods: {
-    async fetchMatters() {
-      this.loading = true
-      this.error = null
-      this.selectedMatter = null
+    async fetchAllData() {
+      this.loading = true;
+      this.error = null;
 
       try {
-        this.matters = await matterService.getAllMatters()
-        // 处理后端返回的字段名，映射到前端使用的字段名
-        this.matters = this.matters.map(matter => ({
-          ...matter,
-          isValid: matter.valid,
-          isPublish: matter.publish
-        }))
+        // 并行获取所有数据
+        const [matters, materials, approvalDiagrams, businessDiagrams] = await Promise.all([
+          matterService.getAllMatters(),
+          materialService.getAllMaterials(),
+          processDiagramService.getApprovalProcessDiagrams(),
+          processDiagramService.getBusinessProcessDiagrams()
+        ]);
+
+        this.matters = matters;
+        this.materialsList = materials;
+        this.approvalProcessDiagrams = approvalDiagrams;
+        this.businessProcessDiagrams = businessDiagrams;
       } catch (error) {
-        this.error = error.message || '网络错误'
-        console.error('获取事项列表出错:', error)
+        this.error = error.message || '网络错误';
+        console.error('获取数据出错:', error);
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 
-    // 获取所有有效材料列表
-    async fetchMaterials() {
-      try {
-        this.materialsList = await materialService.getAllMaterials();
-        // 只保留有效的材料
-        this.materialsList = this.materialsList.filter(material => material.valid);
-      } catch (error) {
-        console.error('获取材料列表出错:', error);
-      }
+    async fetchMatters() {
+      await this.fetchAllData();
     },
 
-    // 获取所有有效流程图列表
-    async fetchProcessDiagrams() {
-      try {
-        // 获取审批流程图
-        this.approvalProcessDiagrams = await processDiagramService.getApprovalProcessDiagrams({ valid: true });
-
-        // 获取业务流程图
-        this.businessProcessDiagrams = await processDiagramService.getBusinessProcessDiagrams({ valid: true });
-      } catch (error) {
-        console.error('获取流程图列表出错:', error);
-      }
+    handlePageSizeChange() {
+      // 当页面大小改变时，重置到第一页
+      this.currentPage = 1;
     },
 
     // 获取审批层级描述
-    getApprovalLevelDescription(approvalLevel) {
-      if (!approvalLevel) return ''
-      const level = this.approvalLevels.find(l => l.name === approvalLevel)
-      return level ? level.description : ''
+    getApprovalLevelDescription(level) {
+      const levelItem = this.approvalLevels.find(item => item.name === level);
+      return levelItem ? levelItem.description : level;
     },
 
     // 获取省厅对口指导处室描述
     getProvincialDepartmentOfficeDescription(office) {
-      if (!office) return ''
-      const dept = this.provincialDepartmentOffices.find(o => o.name === office)
-      return dept ? dept.description : ''
+      const officeItem = this.provincialDepartmentOffices.find(item => item.name === office);
+      return officeItem ? officeItem.description : office;
     },
 
-    // 格式化显示主项名称（编号 + 名称）
-    formatMainItemName(code, name) {
-      if (!code && !name) return '-';
-      if (!code) return name;
-      if (!name) return `${code}`;
-      return `${code}.${name}`;
+    // 格式化主项名称
+    formatMainItemName(mainItemCode, mainItemName) {
+      if (!mainItemCode || !mainItemName) return mainItemName || '-';
+      return `${mainItemCode}.${mainItemName}`;
     },
 
-    // 格式化显示子项名称（主项编号.子项编号.子项名称）
-    formatSubItemName(mainCode, subCode, name) {
-      if (!mainCode && !subCode && !name) return '-';
-      if (!mainCode && !subCode) return name || '-';
-      if (!name) return `${mainCode || ''}.${subCode || ''}`;
-      return `${mainCode || ''}.${subCode || ''}.${name}`;
+    // 格式化子项名称
+    formatSubItemName(mainItemCode, subItemCode, subItemName) {
+      if (!mainItemCode || !subItemCode || !subItemName) return subItemName || '-';
+      return `${mainItemCode}.${subItemCode}.${subItemName}`;
     },
 
-    // 格式化显示孙项名称（主项编号.子项编号.孙项编号.孙项名称）
-    formatGrandchildItemName(mainCode, subCode, grandchildCode, name) {
-      if (!mainCode && !subCode && !grandchildCode && !name) return '-';
-      if (!mainCode && !subCode && !grandchildCode) return name || '-';
-      if (!name) return `${mainCode || ''}.${subCode || ''}.${grandchildCode || ''}`;
-      return `${mainCode || ''}.${subCode || ''}.${grandchildCode || ''}.${name}`;
+    // 格式化孙项名称
+    formatGrandchildItemName(mainItemCode, subItemCode, grandchildItemCode, grandchildItemName) {
+      if (!mainItemCode || !subItemCode || !grandchildItemCode || !grandchildItemName) 
+        return grandchildItemName || '-';
+      return `${mainItemCode}.${subItemCode}.${grandchildItemCode}.${grandchildItemName}`;
     },
 
-    // 显示材料详情
     editMatter(matter) {
-      // 将后端字段名映射回前端字段名
-      const mappedMatter = {
-        ...matter,
-        isValid: matter.valid,
-        isPublish: matter.publish
-      }
-      this.selectedMatter = mappedMatter;
+      this.selectedMatter = matter;
     },
 
-    // 返回列表页
     goBackToList() {
       this.selectedMatter = null;
     },
 
-    // 取消新增
     cancelAdd() {
       this.showAddForm = false;
     },
 
-    // 处理事项更新事件
-    handleMatterUpdated(updatedMatter) {
-      // 将后端字段名映射回前端字段名
-      const mappedMatter = {
-        ...updatedMatter,
-        isValid: updatedMatter.valid,
-        isPublish: updatedMatter.publish
+    async toggleMatterStatus(matterId, valid) {
+      try {
+        if (valid) {
+          await matterService.activateMatter(matterId);
+        } else {
+          await matterService.deactivateMatter(matterId);
+        }
+        await this.fetchMatters();
+      } catch (error) {
+        console.error('更新事项状态失败:', error);
+        alert('更新事项状态失败: ' + (error.message || '未知错误'));
       }
-
-      // 更新列表中的事项
-      const index = this.matters.findIndex(m => m.id === mappedMatter.id);
-      if (index !== -1) {
-        this.matters.splice(index, 1, mappedMatter);
-      }
-      // 更新选中的事项
-      this.selectedMatter = mappedMatter;
     },
 
-    // 处理新增事项
-    async handleMatterAdded(newMatter) {
-      // 将后端字段名映射回前端字段名
-      const mappedMatter = {
-        ...newMatter,
-        isValid: newMatter.valid,
-        isPublish: newMatter.publish
+    async togglePublishStatus(matterId, publish) {
+      try {
+        if (publish) {
+          await matterService.publishMatter(matterId);
+        } else {
+          await matterService.unpublishMatter(matterId);
+        }
+        await this.fetchMatters();
+      } catch (error) {
+        console.error('更新发布状态失败:', error);
+        alert('更新发布状态失败: ' + (error.message || '未知错误'));
+      }
+    },
+
+    async deleteMatter(matterId) {
+      if (!confirm('确定要删除这个事项吗？')) {
+        return;
       }
 
-      // 添加到事项列表
-      this.matters.push(mappedMatter);
-      // 返回列表页
-      this.showAddForm = false;
-      // 刷新列表
+      try {
+        await matterService.deleteMatter(matterId);
+        await this.fetchMatters();
+      } catch (error) {
+        console.error('删除事项失败:', error);
+        alert('删除事项失败: ' + (error.message || '未知错误'));
+      }
+    },
+
+    async handleMatterUpdated() {
+      this.selectedMatter = null;
       await this.fetchMatters();
     },
 
-    async toggleMatterStatus(id, isValid) {
-      try {
-        let action = isValid ? '上线' : '下线';
-
-        if (isValid) {
-          // 上线事项
-          await matterService.activateMatter(id);
-        } else {
-          // 下线事项
-          await matterService.deactivateMatter(id);
-        }
-
-        await this.fetchMatters();
-        alert(`事项已${action}`);
-      } catch (error) {
-        console.error(`更新事项状态出错:`, error);
-        alert(`${action}失败: ${error.message}`);
-      }
+    async handleMatterAdded() {
+      this.showAddForm = false;
+      await this.fetchMatters();
     },
 
-    async togglePublishStatus(id, isPublish) {
-      try {
-        let action = isPublish ? '发布' : '取消发布';
-
-        if (isPublish) {
-          // 发布事项
-          await matterService.publishMatter(id);
-        } else {
-          // 取消发布事项
-          await matterService.unpublishMatter(id);
-        }
-
-        await this.fetchMatters();
-        alert(`事项已${action}`);
-      } catch (error) {
-        console.error(`更新事项发布状态出错:`, error);
-        alert(`${action}失败: ${error.message}`);
-      }
-    },
-
-    async deleteMatter(id) {
-      if (!confirm('确定要删除这个事项吗？')) {
-        return
-      }
-
-      try {
-        await matterService.deleteMatter(id);
-        await this.fetchMatters()
-        // 如果正在查看被删除的事项，则返回列表
-        if (this.selectedMatter && this.selectedMatter.id === id) {
-          this.selectedMatter = null
-        }
-        alert('事项删除成功')
-      } catch (error) {
-        console.error('删除事项出错:', error)
-        alert('删除失败: ' + error.message)
-      }
-    },
-
+    // 重置到列表视图的方法（供父组件调用）
     resetToListView() {
       this.selectedMatter = null;
-      this.showMaterialForm = false;
+      this.showAddForm = false;
     }
   }
-}
+};
 </script>
 
 <style scoped>
 .matter-list-container {
   padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
 .header {
@@ -434,8 +400,8 @@ export default {
 }
 
 .header h2 {
-  color: #303133;
   margin: 0;
+  color: #333;
 }
 
 .header-actions {
@@ -443,206 +409,247 @@ export default {
   gap: 10px;
 }
 
-.refresh-btn, .add-btn {
-  background-color: #409eff;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.add-btn {
-  background-color: #67c23a;
-}
-
-.refresh-btn:hover {
-  background-color: #66b1ff;
-}
-
-.add-btn:hover {
-  background-color: #85ce61;
-}
-
-.loading, .error, .no-data {
-  text-align: center;
-  padding: 40px 20px;
-  color: #909399;
-}
-
-.error {
-  color: #f56c6c;
-}
-
-.error button, .no-data button {
-  margin-top: 10px;
-  background-color: #409eff;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
 .matters-table {
-  border: 1px solid #dcdfe6;
+  border: 1px solid #ddd;
   border-radius: 4px;
   overflow: hidden;
+  margin-bottom: 20px;
 }
 
 .table-header {
   display: flex;
-  background-color: #f5f7fa;
+  background-color: #f8f9fa;
   font-weight: bold;
-  border-bottom: 2px solid #dcdfe6;
+  border-bottom: 1px solid #ddd;
 }
 
 .table-row {
   display: flex;
-  border-bottom: 1px solid #dcdfe6;
-  cursor: pointer;
+  border-bottom: 1px solid #eee;
   transition: background-color 0.2s;
+  cursor: pointer;
 }
 
 .table-row:hover {
-  background-color: #f5f7fa;
-}
-
-.table-row:last-child {
-  border-bottom: none;
+  background-color: #f5f5f5;
 }
 
 .table-cell {
   flex: 1;
-  padding: 12px 10px;
-  word-break: break-word;
-  font-size: 14px;
-  color: #606266;
-  min-width: 0;
+  padding: 12px;
+  border-right: 1px solid #eee;
   display: flex;
   align-items: center;
+  min-width: 0; /* 添加此属性以防止内容溢出 */
+  word-wrap: break-word; /* 允许长单词换行 */
+  word-break: break-word; /* 允许单词内换行 */
+  white-space: normal; /* 允许正常换行 */
 }
 
-.table-cell:first-child {
-  flex: 0 0 60px;
+.table-cell:last-child {
+  border-right: none;
 }
 
-/* 主项名称可点击样式 */
 .matter-name {
-  font-weight: 500;
-  color: #409eff;
-}
-
-.matter-name:hover {
-  color: #66b1ff;
+  color: #007bff;
   text-decoration: underline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
-/* 状态标签样式 */
+/* 进一步调整列宽设置，使所有列更窄以便完整显示 */
+.table-cell:nth-child(1) { flex: 0 0 30px; }   /* ID列 */
+.table-cell:nth-child(2) { flex: 1; min-width: 80px; max-width: 120px; } /* 主项名称列 */
+.table-cell:nth-child(3) { flex: 1; min-width: 80px; max-width: 120px; } /* 子项名称列 */
+.table-cell:nth-child(4) { flex: 1; min-width: 80px; max-width: 120px; } /* 孙项名称列 */
+.table-cell:nth-child(5) { flex: 0 0 40px; }  /* 版本列 */
+.table-cell:nth-child(6) { flex: 0 0 50px; }  /* 法定时限列 */
+.table-cell:nth-child(7) { flex: 0 0 50px; }  /* 承诺时限列 */
+.table-cell:nth-child(8) { flex: 0 0 70px; } /* 审批层级列 */
+.table-cell:nth-child(9) { flex: 1; min-width: 100px; max-width: 150px; } /* 省厅对口指导处室列 */
+.table-cell:nth-child(10) { flex: 0 0 50px; } /* 发布状态列 */
+.table-cell:nth-child(11) { flex: 0 0 50px; } /* 状态列 */
+.table-cell:nth-child(12) { flex: 0 0 100px; }/* 操作列 */
+
+/* 特殊处理需要换行的列 */
+.table-cell:nth-child(2),
+.table-cell:nth-child(3),
+.table-cell:nth-child(4),
+.table-cell:nth-child(8),
+.table-cell:nth-child(9) {
+  align-items: flex-start; /* 顶部对齐 */
+}
+
 .status-badge {
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: 12px;
   font-size: 12px;
   font-weight: bold;
 }
 
 .status-active {
-  background-color: #f0f9eb;
-  color: #67c23a;
-  border: 1px solid #c2e7b0;
+  background-color: #d4edda;
+  color: #155724;
 }
 
 .status-inactive {
-  background-color: #fef0f0;
-  color: #f56c6c;
-  border: 1px solid #fbc4c4;
+  background-color: #f8d7da;
+  color: #721c24;
 }
 
-/* 操作按钮样式 */
 .action-buttons {
   display: flex;
   gap: 5px;
   flex-wrap: wrap;
 }
 
-.offline-btn, .online-btn, .delete-btn, .publish-btn, .unpublish-btn {
-  padding: 4px 8px;
-  border-radius: 3px;
+button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
-  border: none;
-  white-space: nowrap;
+  transition: background-color 0.2s;
 }
 
-.offline-btn {
-  background-color: #e6a23c;
+.add-btn {
+  background-color: #28a745;
   color: white;
 }
 
+.add-btn:hover {
+  background-color: #218838;
+}
+
+.refresh-btn {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.refresh-btn:hover {
+  background-color: #138496;
+}
+
+.offline-btn {
+  background-color: #ffc107;
+  color: #212529;
+}
+
 .offline-btn:hover {
-  background-color: #ebb563;
+  background-color: #e0a800;
 }
 
 .online-btn {
-  background-color: #67c23a;
+  background-color: #28a745;
   color: white;
 }
 
 .online-btn:hover {
-  background-color: #85ce61;
+  background-color: #218838;
 }
 
 .delete-btn {
-  background-color: #f56c6c;
+  background-color: #dc3545;
   color: white;
 }
 
 .delete-btn:hover {
-  background-color: #f78989;
+  background-color: #c82333;
 }
 
 .publish-btn {
-  background-color: #409eff;
+  background-color: #007bff;
   color: white;
 }
 
 .publish-btn:hover {
-  background-color: #66b1ff;
+  background-color: #0069d9;
 }
 
 .unpublish-btn {
-  background-color: #909399;
+  background-color: #6c757d;
   color: white;
 }
 
 .unpublish-btn:hover {
-  background-color: #a6a9ad;
+  background-color: #5a6268;
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding: 10px 0;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-size-selector label {
+  font-weight: bold;
+}
+
+.page-size-selector select {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.pagination button {
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.pagination button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.loading,
+.error,
+.no-data {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.loading p,
+.error p,
+.no-data p {
+  margin: 0 0 20px 0;
+  font-size: 16px;
 }
 
 @media (max-width: 768px) {
   .matters-table {
-    font-size: 12px;
+    font-size: 14px;
   }
-
+  
   .table-cell {
-    padding: 8px 5px;
+    padding: 8px;
   }
-
-  .header {
+  
+  .pagination {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .action-buttons {
-    flex-direction: column;
-    gap: 3px;
+    gap: 15px;
   }
 }
 </style>

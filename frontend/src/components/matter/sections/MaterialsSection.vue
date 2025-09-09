@@ -26,7 +26,7 @@
                 <div class="material-detail-autocomplete-container">
                   <div class="material-detail-input-wrapper">
                     <input
-                      :ref="'materialInput' + index"
+                      :ref="el => { materialInputs[index] = el }"
                       type="text"
                       v-model="materialSearchQueries[index]"
                       placeholder="输入或选择材料明细"
@@ -38,6 +38,7 @@
                     <div
                       v-if="showMaterialDropdownList[index]"
                       class="material-dropdown-list"
+                      @mousedown.prevent
                     >
                       <div
                         v-for="availableMaterial in filteredMaterialsList[index]"
@@ -75,7 +76,7 @@
               </td>
               <td>
                 <!-- processingMethodAndInfoAccess 字段改为只读显示 -->
-                <span class="readonly-field">{{ getProcessingMethodLabel(material.processingMethodAndInfoAccess) }}</span>
+                <span class="readonly-field">{{ getProcessingMethodDisplay(material.processingMethodAndInfoAccess) }}</span>
               </td>
               <td>
                 <!-- eligibleForPromise 字段改为只读显示 -->
@@ -124,7 +125,8 @@ export default {
     return {
       showMaterialDropdownList: [], // 控制材料下拉列表显示
       filteredMaterialsList: [], // 过滤后的材料列表
-      materialSearchQueries: [] // 材料搜索查询文本
+      materialSearchQueries: [], // 材料搜索查询文本
+      materialInputs: [] // 材料输入框引用
     }
   },
   created() {
@@ -133,7 +135,9 @@ export default {
   watch: {
     materials: {
       handler() {
-        this.initializeState()
+        this.$nextTick(() => {
+          this.initializeState()
+        })
       },
       deep: true
     }
@@ -145,6 +149,7 @@ export default {
       // 初始化搜索查询文本为材料的 __name__
       this.materialSearchQueries = this.materials.map(material =>
         material.__name__ ? `${material.id} - ${material.__name__}` : (material.materialDetail || ''))
+      this.materialInputs = new Array(this.materials.length).fill(null)
     },
 
     addMaterial() {
@@ -153,6 +158,7 @@ export default {
         this.showMaterialDropdownList.push(false)
         this.filteredMaterialsList.push([...this.materialsList])
         this.materialSearchQueries.push('')
+        this.materialInputs.push(null)
       })
     },
 
@@ -161,6 +167,7 @@ export default {
       this.showMaterialDropdownList.splice(index, 1)
       this.filteredMaterialsList.splice(index, 1)
       this.materialSearchQueries.splice(index, 1)
+      this.materialInputs.splice(index, 1)
     },
 
     // 处理材料搜索输入
@@ -233,9 +240,9 @@ export default {
 
       // 聚焦到下一个字段或保持焦点在当前输入框
       this.$nextTick(() => {
-        const nextInput = this.$refs['materialInput' + index]
-        if (nextInput && nextInput[0]) {
-          nextInput[0].focus()
+        const input = this.materialInputs[index]
+        if (input) {
+          input.focus()
         }
       })
     },
@@ -252,16 +259,22 @@ export default {
       return sourceMap[sourceValue] || sourceValue
     },
 
-    getProcessingMethodLabel(methodValue) {
+    /**
+     * 将processingMethodAndInfoAccess枚举值转换为可读的中文标签
+     * @param {string} methodValue - 枚举值
+     * @returns {string} - 可读的中文标签或原始值
+     */
+    getProcessingMethodDisplay(methodValue) {
       if (!methodValue) return ''
-
+      
       const methodMap = {
         'ONLINE_PROCESSING': '网上办理，线上提交材料',
         'SYSTEM_AUTO_WITH_FALLBACK': '系统自动获取，如数据不全则需申请者提交',
         'PAPER_CERTIFICATE': '纸质证书需申请者提交'
       }
 
-      return methodMap[methodValue] || methodValue
+      // 如果找不到匹配项，返回原始值并添加"（未知类型）"标识
+      return methodMap[methodValue] || `${methodValue}（未知类型）`
     }
   }
 }

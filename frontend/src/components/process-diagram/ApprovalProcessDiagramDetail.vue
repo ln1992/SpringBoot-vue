@@ -53,8 +53,8 @@
         <div class="form-group">
           <label>状态:</label>
           <select v-model="form.valid">
-            <option :value="true">已上线</option>
-            <option :value="false">已下线</option>
+            <option :value="true">上线</option>
+            <option :value="false">下线</option>
           </select>
         </div>
 
@@ -94,16 +94,17 @@ export default {
       form: {
         id: null,
         imageName: '',
-        version: '',
-        imageFile: null,
-        imagePreview: null,
-        imageDataUrl: null,
-        valid: true,
         __name__: '',
+        version: 1,
+        valid: true,
+        imageDataUrl: null,
         createdTime: null,
-        updateTime: null
+        updateTime: null,
+        imageFile: null,
+        imagePreview: null
       },
-      originalImageData: null
+      previewUrl: null,
+      isEditing: false
     };
   },
   watch: {
@@ -123,21 +124,35 @@ export default {
   },
   methods: {
     initializeForm(diagram) {
-      this.form = {
-        id: diagram.id,
-        imageName: diagram.imageName || '',
-        version: diagram.version || '',
-        imageFile: null,
-        imagePreview: null,
-        imageDataUrl: diagram.imageDataUrl || null,
-        valid: diagram.valid !== undefined ? diagram.valid : true,
-        __name__: diagram.__name__ || '',
-        createdTime: diagram.createdTime || null,
-        updateTime: diagram.updateTime || null
-      };
-
-      // 保存原始图像数据
-      this.originalImageData = diagram.imageData || null;
+      if (diagram && diagram.id) {
+        // 编辑模式
+        this.isEditing = true;
+        this.form = {
+          id: diagram.id,
+          imageName: diagram.imageName || '',
+          __name__: diagram.__name__ || '',
+          version: diagram.version || 1,
+          valid: diagram.valid !== undefined ? diagram.valid : true,
+          imageDataUrl: diagram.imageDataUrl || null,
+          createdTime: diagram.createdTime || null,
+          updateTime: diagram.updateTime || null
+        };
+        this.previewUrl = diagram.imageDataUrl || null;
+      } else {
+        // 新增模式
+        this.isEditing = false;
+        this.form = {
+          id: null,
+          imageName: '',
+          __name__: '',
+          version: 1,
+          valid: true,
+          imageDataUrl: null,
+          createdTime: null,
+          updateTime: null
+        };
+        this.previewUrl = null;
+      }
     },
 
     goBack() {
@@ -176,43 +191,36 @@ export default {
 
     // 表单提交处理
     async handleSubmit() {
+      if (!this.form.imageName.trim()) {
+        alert('请输入流程图名称');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('imageName', this.form.imageName);
+      formData.append('version', this.form.version);
+      
+      // 修复：使用 'isValid' 而不是 'valid'
+      formData.append('isValid', this.form.valid);
+      
+      if (this.form.imageFile) {
+        formData.append('imageFile', this.form.imageFile);
+      }
+
       try {
-        const formData = new FormData();
-        formData.append('imageName', this.form.imageName);
-        if (this.form.version) {
-          // 确保传递的是数字类型
-          const versionValue = parseInt(this.form.version);
-          if (!isNaN(versionValue) && versionValue > 0) {
-            formData.append('version', versionValue);
-          }
-        }
-        // 修复：使用 'isValid' 而不是 'valid'
-        formData.append('isValid', this.form.valid);
-
-        // 如果重新上传了图片
-        if (this.form.imageFile) {
-          formData.append('imageFile', this.form.imageFile);
+        let result;
+        if (this.isEditing) {
+          // 更新
+          result = await processDiagramService.updateApprovalProcessDiagram(this.form.id, formData);
+        } else {
+          // 创建
+          result = await processDiagramService.createApprovalProcessDiagram(formData);
         }
 
-        const updatedDiagram = await processDiagramService.updateApprovalProcessDiagram(this.form.id, formData);
-
-        // 重建图像数据URL
-        if (updatedDiagram.imageData && updatedDiagram.imageType) {
-          const contentTypes = {
-            'JPEG': 'image/jpeg',
-            'PNG': 'image/png',
-            'GIF': 'image/gif',
-            'BMP': 'image/bmp',
-            'SVG': 'image/svg+xml'
-          };
-          const contentType = contentTypes[updatedDiagram.imageType] || 'image/jpeg';
-          updatedDiagram.imageDataUrl = `data:${contentType};base64,${updatedDiagram.imageData}`;
-        }
-
-        this.$emit('diagram-updated', updatedDiagram);
-        alert('审批流程图更新成功');
+        this.$emit('diagram-updated', result);
+        this.$emit('back');
       } catch (error) {
-        console.error('保存审批流程图出错:', error);
+        console.error('保存审批流程图失败:', error);
         alert('保存失败: ' + error.message);
       }
     }
@@ -226,7 +234,7 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   position: relative;
-  z-index: 1001;
+  z-index: 1;
 }
 
 .header {
@@ -247,7 +255,7 @@ export default {
   padding: 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   position: relative;
-  z-index: 1001;
+  z-index: 1;
 }
 
 /* 表单样式 */
@@ -326,7 +334,7 @@ export default {
   margin-top: 20px;
   text-align: right;
   position: relative;
-  z-index: 1002;
+  z-index: 1;
 }
 
 .form-actions button {
@@ -336,7 +344,7 @@ export default {
   cursor: pointer;
   font-size: 14px;
   position: relative;
-  z-index: 1003;
+  z-index: 1;
 }
 
 .form-actions button[type="button"] {
@@ -350,48 +358,33 @@ export default {
 }
 
 .back-btn-form {
-  background-color: #909399 !important;
-  color: white !important;
-  border: none !important;
+  background-color: #909399;
+  color: white;
+  border: none;
 }
 
 .back-btn-form:hover {
-  background-color: #a6a9ad !important;
+  background-color: #a0a3a9;
 }
 
 .save-btn {
-  background-color: #67c23a;
+  background-color: #409eff;
   color: white;
   border: none;
 }
 
 .save-btn:hover {
-  background-color: #85ce61;
+  background-color: #66b1ff;
 }
 
 @media (max-width: 768px) {
-  .diagram-detail-container {
-    padding: 10px;
-  }
-
   .form-row {
     flex-direction: column;
     gap: 0;
   }
-
-  /* 在移动端恢复ID字段的默认宽度 */
+  
   .form-row .form-group:first-child {
     flex: 1;
-  }
-
-  .form-actions {
-    display: flex;
-    justify-content: space-between;
-  }
-
-  .form-actions button {
-    flex: 1;
-    margin: 0 5px;
   }
 }
 </style>

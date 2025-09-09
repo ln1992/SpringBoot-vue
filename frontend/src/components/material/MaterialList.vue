@@ -39,7 +39,7 @@
         <button @click="fetchMaterials">重试</button>
       </div>
 
-      <div class="no-data" v-else-if="filteredMaterials.length === 0">
+      <div class="no-data" v-else-if="paginatedMaterials.length === 0">
         <p>暂无材料数据</p>
         <button class="add-btn" @click="showAddMaterialForm">新增第一个材料</button>
       </div>
@@ -62,11 +62,12 @@
 
         <div
           class="table-row"
-          v-for="material in filteredMaterials"
+          v-for="material in paginatedMaterials"
           :key="material.id"
+          @click="viewMaterial(material)"
         >
           <div class="table-cell">{{ material.id }}</div>
-          <div class="table-cell material-name" @click="viewMaterial(material)">
+          <div class="table-cell material-name">
             {{ material.__name__ || '-' }}
           </div>
           <div class="table-cell">{{ material.version || '-' }}</div>
@@ -87,6 +88,7 @@
                 v-if="material.valid"
                 class="offline-btn"
                 @click.stop="toggleMaterialStatus(material.id, false)"
+                :disabled="false"
               >
                 下线
               </button>
@@ -94,18 +96,47 @@
                 <button
                   class="online-btn"
                   @click.stop="toggleMaterialStatus(material.id, true)"
+                  :disabled="false"
                 >
                   上线
                 </button>
                 <button
                   class="delete-btn"
                   @click.stop="deleteMaterial(material.id)"
+                  :disabled="material.valid"
+                  :title="material.valid ? '请先下线材料再删除' : ''"
                 >
                   删除
                 </button>
               </template>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- 分页控件 -->
+      <div class="pagination" v-if="paginatedMaterials.length > 0">
+        <div class="pagination-controls">
+          <button 
+            :disabled="currentPage === 1" 
+            @click.stop="currentPage > 1 && (currentPage--)">
+            上一页
+          </button>
+          <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页 (总计 {{ filteredMaterials.length }} 条)</span>
+          <button 
+            :disabled="currentPage === totalPages" 
+            @click.stop="currentPage < totalPages && (currentPage++)">
+            下一页
+          </button>
+        </div>
+        <div class="page-size-selector">
+          <label>每页显示:</label>
+          <select v-model="pageSize" @change="handlePageSizeChange">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+          </select>
         </div>
       </div>
     </div>
@@ -149,8 +180,20 @@ export default {
       showAddForm: false,
       editingMaterial: null,
       filterStatus: 'all',
-      searchKeyword: ''
+      searchKeyword: '',
+      currentPage: 1,
+      pageSize: 10 // 每页显示10条记录
     };
+  },
+  computed: {
+    totalPages() {
+      return Math.ceil(this.filteredMaterials.length / this.pageSize);
+    },
+    paginatedMaterials() {
+      const start = (this.currentPage - 1) * this.pageSize;
+      const end = start + this.pageSize;
+      return this.filteredMaterials.slice(start, end);
+    }
   },
   async mounted() {
     await this.fetchMaterials();
@@ -159,6 +202,7 @@ export default {
     async fetchMaterials() {
       this.loading = true;
       this.error = null;
+      this.currentPage = 1;
 
       try {
         this.materials = await materialService.getAllMaterials();
@@ -184,11 +228,19 @@ export default {
       if (this.searchKeyword) {
         const keyword = this.searchKeyword.toLowerCase();
         result = result.filter(material =>
-          material.materialDetail && material.materialDetail.toLowerCase().includes(keyword)
+          (material.materialDetail && material.materialDetail.toLowerCase().includes(keyword)) ||
+          (material.__name__ && material.__name__.toLowerCase().includes(keyword))
         );
       }
 
       this.filteredMaterials = result;
+      // 重置到第一页
+      this.currentPage = 1;
+    },
+
+    handlePageSizeChange() {
+      // 当页面大小改变时，重置到第一页
+      this.currentPage = 1;
     },
 
     // 获取材料来源文本
@@ -211,139 +263,98 @@ export default {
       return methodMap[method] || method;
     },
 
-    // 查看材料详情
     viewMaterial(material) {
       this.selectedMaterial = material;
     },
 
-    // 返回列表页
     goBackToList() {
       this.selectedMaterial = null;
     },
 
-    // 处理材料更新事件
-    handleMaterialUpdated(updatedMaterial) {
-      // 更新列表中的材料
-      const index = this.materials.findIndex(m => m.id === updatedMaterial.id);
-      if (index !== -1) {
-        this.materials.splice(index, 1, updatedMaterial);
-      }
-
-      // 更新selectedMaterial为最新的数据，保持在详情页面
-      this.selectedMaterial = updatedMaterial;
-
-      this.filterMaterials();
-      // 不再自动返回列表页面，保持在详情页面
-    },
-
-    // 显示新增材料表单
-    showAddMaterialForm() {
-      this.editingMaterial = null;
-      this.showAddForm = true;
-    },
-
-    // 显示编辑材料表单
-    editMaterial(material) {
-      this.editingMaterial = material;
-      this.showAddForm = true;
-    },
-
-    // 隐藏材料表单
     hideMaterialForm() {
       this.showAddForm = false;
       this.editingMaterial = null;
     },
 
-    // 处理材料保存事件
-    async handleMaterialSaved(savedMaterial) {
-      // 如果是新增材料，添加到列表中
-      if (!this.editingMaterial) {
-        this.materials.push(savedMaterial);
-      } else {
-        // 如果是编辑材料，更新列表中的材料
-        const index = this.materials.findIndex(m => m.id === savedMaterial.id);
-        if (index !== -1) {
-          this.materials.splice(index, 1, savedMaterial);
-        }
-      }
-
-      // 隐藏表单并刷新显示
-      this.hideMaterialForm();
-      this.filterMaterials();
-      alert('材料保存成功');
+    showAddMaterialForm() {
+      this.showAddForm = true;
+      this.editingMaterial = null;
     },
 
-    // 删除材料
-    async deleteMaterial(id) {
+    async toggleMaterialStatus(materialId, valid) {
+      try {
+        console.log('切换材料状态:', materialId, '目标状态:', valid);
+        if (valid) {
+          // 上线材料
+          await materialService.activateMaterial(materialId);
+        } else {
+          // 下线材料
+          await materialService.deactivateMaterial(materialId);
+        }
+        await this.fetchMaterials();
+      } catch (error) {
+        console.error('更新材料状态失败:', error);
+        alert('更新材料状态失败: ' + (error.message || '未知错误'));
+      }
+    },
+
+    async deleteMaterial(materialId) {
+      // 查找要删除的材料
+      const material = this.materials.find(m => m.id === materialId);
+      
+      // 检查材料是否已下线，只有已下线的材料才能删除
+      if (material && material.valid) {
+        alert('只能删除已下线的材料，请先下线该材料再删除。');
+        return;
+      }
+
       if (!confirm('确定要删除这个材料吗？')) {
         return;
       }
 
       try {
-        await materialService.deleteMaterial(id);
-        
-        // 从列表中移除材料
-        this.materials = this.materials.filter(material => material.id !== id);
-        this.filterMaterials();
-
-        // 如果正在查看被删除的材料，则返回列表
-        if (this.selectedMaterial && this.selectedMaterial.id === id) {
-          this.selectedMaterial = null;
-        }
-
-        alert('材料删除成功');
+        await materialService.deleteMaterial(materialId);
+        await this.fetchMaterials();
       } catch (error) {
-        console.error('删除材料出错:', error);
-        alert('删除失败: ' + error.message);
+        console.error('删除材料失败:', error);
+        alert('删除材料失败: ' + (error.message || '未知错误'));
       }
     },
 
-    // 切换材料状态（上线/下线）
-    async toggleMaterialStatus(id, isValid) {
-      try {
-        let action = isValid ? '上线' : '下线';
-
-        if (isValid) {
-          // 上线材料
-          await materialService.activateMaterial(id);
-        } else {
-          // 下线材料
-          await materialService.deactivateMaterial(id);
-        }
-
-        // 更新材料状态
-        const index = this.materials.findIndex(m => m.id === id);
-        if (index !== -1) {
-          this.materials[index].valid = isValid;
-
-          // 如果正在查看这个材料，也更新selectedMaterial中的状态
-          if (this.selectedMaterial && this.selectedMaterial.id === id) {
-            this.selectedMaterial.valid = isValid;
-          }
-        }
-        this.filterMaterials();
-        alert(`材料已${action}`);
-      } catch (error) {
-        console.error(`更新材料状态出错:`, error);
-        alert(`${action}失败: ${error.message}`);
-      }
+    async handleMaterialSaved(material) {
+      this.showAddForm = false;
+      this.editingMaterial = null;
+      await this.fetchMaterials();
     },
 
-    // 重置到列表视图的方法（供父组件调用）
+    async handleMaterialUpdated() {
+      this.selectedMaterial = null;
+      await this.fetchMaterials();
+    },
+
+    // 添加resetToListView方法，用于从App.vue中调用返回列表视图
     resetToListView() {
       this.selectedMaterial = null;
       this.showAddForm = false;
       this.editingMaterial = null;
     }
+  },
+  watch: {
+    filterStatus() {
+      this.filterMaterials();
+    },
+    searchKeyword() {
+      this.filterMaterials();
+    }
   }
-}
+};
 </script>
 
 <style scoped>
 .material-list-container {
   padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 .header {
@@ -351,13 +362,11 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 10px;
 }
 
 .header h2 {
-  color: #303133;
   margin: 0;
+  color: #333;
 }
 
 .header-actions {
@@ -367,9 +376,12 @@ export default {
 
 .filter-section {
   display: flex;
-  gap: 20px;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
-  flex-wrap: wrap;
+  padding: 15px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
 }
 
 .filter-group,
@@ -381,191 +393,112 @@ export default {
 
 .filter-group label {
   font-weight: bold;
-  color: #303133;
 }
 
 .filter-group select,
 .search-group input {
   padding: 8px 12px;
-  border: 1px solid #dcdfe6;
+  border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
-}
-
-.refresh-btn,
-.add-btn {
-  background-color: #409eff;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.add-btn {
-  background-color: #67c23a;
-}
-
-.refresh-btn:hover {
-  background-color: #66b1ff;
-}
-
-.add-btn:hover {
-  background-color: #85ce61;
-}
-
-.loading,
-.error,
-.no-data {
-  text-align: center;
-  padding: 40px 20px;
-  color: #909399;
-}
-
-.error {
-  color: #f56c6c;
-}
-
-.error button,
-.no-data button {
-  margin-top: 10px;
-  background-color: #409eff;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
 }
 
 .materials-table {
-  border: 1px solid #dcdfe6;
+  border: 1px solid #ddd;
   border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
 }
 
 .table-header {
   display: flex;
-  background-color: #f5f7fa;
+  background-color: #f8f9fa;
   font-weight: bold;
-  border-bottom: 2px solid #dcdfe6;
+  border-bottom: 1px solid #ddd;
 }
 
 .table-row {
   display: flex;
-  border-bottom: 1px solid #dcdfe6;
+  border-bottom: 1px solid #eee;
   transition: background-color 0.2s;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
 .table-row:hover {
-  background-color: #f5f7fa;
-}
-
-.table-row:last-child {
-  border-bottom: none;
+  background-color: #f5f5f5;
 }
 
 .table-cell {
   flex: 1;
-  padding: 12px 10px;
-  word-break: break-word;
-  font-size: 14px;
-  color: #606266;
-  min-width: 0;
+  padding: 12px;
+  border-right: 1px solid #eee;
   display: flex;
   align-items: center;
+  min-width: 0; /* 添加此属性以防止内容溢出 */
+  word-wrap: break-word; /* 允许长单词换行 */
+  word-break: break-word; /* 允许单词内换行 */
+  white-space: normal; /* 允许正常换行 */
 }
 
-/* 特定列的宽度调整 */
-.table-cell:nth-child(1) {
-  /* ID列 */
-  flex: 0 0 60px;
+.table-cell:last-child {
+  border-right: none;
 }
 
-.table-cell:nth-child(2) {
-  /* 材料明细列 - 更长 */
-  flex: 3;
-  cursor: pointer;
-  color: #409eff;
-}
+/* 进一步优化列宽以适应屏幕显示 */
+.table-cell:nth-child(1) { flex: 0 0 30px; }   /* ID列 */
+.table-cell:nth-child(2) { flex: 1; min-width: 80px; max-width: 120px; } /* 材料明细列 */
+.table-cell:nth-child(3) { flex: 0 0 40px; }  /* 版本列 */
+.table-cell:nth-child(4) { flex: 0 0 90px; }  /* 审核要点列 */
+.table-cell:nth-child(5) { flex: 0 0 80px; } /* 智能秒批判断标准列 */
+.table-cell:nth-child(6) { flex: 0 0 50px; }  /* 是否共享列 */
+.table-cell:nth-child(7) { flex: 0 0 80px; } /* 材料来源列 */
+.table-cell:nth-child(8) { flex: 0 0 100px; } /* 办理方式及材料信息获取方式说明列 */
+.table-cell:nth-child(9) { flex: 0 0 60px; } /* 是否适用告知承诺列 */
+.table-cell:nth-child(10) { flex: 0 0 50px; } /* 是否有效列 */
+.table-cell:nth-child(11) { flex: 0 0 90px; }/* 操作列 */
 
-.table-cell:nth-child(3) {
-  /* 版本列 */
-  flex: 0 0 60px;
-}
-
-.table-cell:nth-child(4) {
-  /* 审核要点列 */
-  flex: 1.5;
-}
-
-.table-cell:nth-child(5) {
-  /* "智能秒批"判断标准列 */
-  flex: 1.5;
-}
-
-.table-cell:nth-child(6) {
-  /* 是否共享列 */
-  flex: 0 0 80px;
-}
-
-.table-cell:nth-child(7) {
-  /* 材料来源列 */
-  flex: 1.2;
-}
-
+/* 特殊处理需要换行的列 */
+.table-cell:nth-child(2),
+.table-cell:nth-child(4),
+.table-cell:nth-child(5),
+.table-cell:nth-child(7),
 .table-cell:nth-child(8) {
-  /* 办理方式列 */
-  flex: 1.5;
-}
-
-.table-cell:nth-child(9) {
-  /* 是否适用告知承诺列 - 更短 */
-  flex: 0 0 60px;
-}
-
-.table-cell:nth-child(10) {
-  /* 是否有效列 */
-  flex: 0 0 80px;
-}
-
-.table-cell:nth-child(11) {
-  /* 操作列 */
-  flex: 0 0 150px;
+  align-items: flex-start; /* 顶部对齐 */
 }
 
 .material-name {
-  font-weight: 500;
-}
-
-.table-cell:nth-child(2):hover {
+  color: #007bff;
   text-decoration: underline;
+  z-index: 2;
+  position: relative;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
-/* 状态标签样式 */
+.material-name:hover {
+  color: #0056b3;
+}
+
 .status-badge {
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: 12px;
   font-size: 12px;
   font-weight: bold;
 }
 
 .status-active {
-  background-color: #f0f9eb;
-  color: #67c23a;
-  border: 1px solid #c2e7b0;
+  background-color: #d4edda;
+  color: #155724;
 }
 
 .status-inactive {
-  background-color: #fef0f0;
-  color: #f56c6c;
-  border: 1px solid #fbc4c4;
-}
-
-/* 操作按钮样式 */
-.action-cell {
-  justify-content: flex-start;
+  background-color: #f8d7da;
+  color: #721c24;
 }
 
 .action-buttons {
@@ -574,94 +507,171 @@ export default {
   flex-wrap: wrap;
 }
 
-.offline-btn,
-.online-btn,
-.delete-btn {
-  padding: 4px 8px;
-  border-radius: 3px;
+button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
-  border: none;
-  white-space: nowrap;
+  transition: background-color 0.2s;
+  position: relative;
+  z-index: 2;
 }
 
-.offline-btn {
-  background-color: #e6a23c;
+.add-btn {
+  background-color: #28a745;
   color: white;
 }
 
-.offline-btn:hover {
-  background-color: #ebb563;
+.add-btn:hover {
+  background-color: #218838;
+}
+
+.refresh-btn {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.refresh-btn:hover {
+  background-color: #138496;
 }
 
 .online-btn {
-  background-color: #67c23a;
+  background-color: #28a745;
   color: white;
 }
 
 .online-btn:hover {
-  background-color: #85ce61;
+  background-color: #218838;
+}
+
+.online-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.offline-btn {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.offline-btn:hover {
+  background-color: #e0a800;
+}
+
+.offline-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
 }
 
 .delete-btn {
-  background-color: #f56c6c;
+  background-color: #dc3545;
   color: white;
 }
 
 .delete-btn:hover {
-  background-color: #f78989;
+  background-color: #c82333;
 }
 
-.material-form-container {
-  background-color: white;
+.delete-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
   border-radius: 4px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #dee2e6;
+  position: relative;
+  z-index: 1;
 }
 
-/* 响应式设计 */
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-size-selector label {
+  font-weight: bold;
+}
+
+.page-size-selector select {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.pagination button {
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.pagination button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.loading,
+.error,
+.no-data {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.loading p,
+.error p,
+.no-data p {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+}
+
 @media (max-width: 768px) {
-  .material-list-container {
-    padding: 10px;
+  .materials-table {
+    font-size: 14px;
   }
-
-  .header {
-    flex-direction: column;
-    align-items: stretch;
+  
+  .table-cell {
+    padding: 8px;
   }
-
-  .header-actions {
-    justify-content: center;
-  }
-
+  
   .filter-section {
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
+    align-items: stretch;
   }
-
-  .table-header,
-  .table-row {
+  
+  .pagination {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .pagination-controls {
     flex-wrap: wrap;
-  }
-
-  .table-cell {
-    flex: 0 0 50%;
-    padding: 8px 5px;
-    border-bottom: 1px solid #eee;
-  }
-
-  .table-cell:nth-child(1),
-  .table-cell:nth-child(2) {
-    flex: 0 0 100%;
-  }
-
-  .table-cell:nth-child(11) {
-    flex: 0 0 100%;
-    justify-content: flex-start;
-  }
-
-  .action-buttons {
-    flex-direction: row;
-    justify-content: flex-start;
+    justify-content: center;
+    text-align: center;
   }
 }
 </style>

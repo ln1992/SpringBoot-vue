@@ -52,8 +52,8 @@ import MaterialList from './components/material/MaterialList.vue'
 // 导入事项管理组件
 import MatterList from './components/matter/MatterList.vue'
 // 导入流程图管理组件
-import ApprovalProcessDiagramList from './components/ProcessDiagram/ApprovalProcessDiagramList.vue'
-import BusinessProcessDiagramList from './components/ProcessDiagram/BusinessProcessDiagramList.vue'
+import ApprovalProcessDiagramList from './components/process-diagram/ApprovalProcessDiagramList.vue'
+import BusinessProcessDiagramList from './components/process-diagram/BusinessProcessDiagramList.vue'
 import ElRow from "element-ui/packages/row/src/row";
 
 export default {
