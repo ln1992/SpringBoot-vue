@@ -10,24 +10,29 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
-public class ApprovalProcessDiagramServiceImpl implements ApprovalProcessDiagramService {
+public class ApprovalProcessDiagramServiceImpl extends ProcessDiagramServiceImpl<ApprovalProcessDiagram, ApprovalProcessDiagramRepository> 
+        implements ApprovalProcessDiagramService {
 
     @Autowired
-    private ApprovalProcessDiagramRepository approvalProcessDiagramRepository;
+    public ApprovalProcessDiagramServiceImpl(ApprovalProcessDiagramRepository repository) {
+        super(repository);
+    }
 
     @Override
     public List<ApprovalProcessDiagram> getAllDiagrams() {
-        return approvalProcessDiagramRepository.findAll();
+        return super.getAllDiagrams();
     }
 
     @Override
     public ApprovalProcessDiagram getDiagramById(Long id) {
-        Optional<ApprovalProcessDiagram> diagram = approvalProcessDiagramRepository.findById(id);
-        return diagram.orElse(null);
+        return super.getDiagramById(id);
     }
 
     @Override
@@ -52,64 +57,50 @@ public class ApprovalProcessDiagramServiceImpl implements ApprovalProcessDiagram
         return saveDiagram(diagram, imageFile);
     }
 
-    // 这是一个额外的公共方法，不是接口中定义的，用于保存图表和处理文件上传
-    public ApprovalProcessDiagram saveDiagram(ApprovalProcessDiagram diagram, MultipartFile imageFile) {
-        try {
-            if (imageFile != null && !imageFile.isEmpty()) {
-                diagram.setImageData(imageFile.getBytes());
-
-                // 使用 ImageType 设置 image type
-                String originalFilename = imageFile.getOriginalFilename();
-                if (originalFilename != null && originalFilename.contains(".")) {
-                    String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-                    ProcessDiagram.ImageType imageType = ProcessDiagram.ImageType.fromExtension(extension);
-                    if (imageType != null) {
-                        diagram.setImageType(imageType);
-                    }
-                }
-            }
-            return approvalProcessDiagramRepository.save(diagram);
-        } catch (IOException e) {
-            throw new RuntimeException("保存图片失败", e);
-        }
-    }
-
     @Override
     public void deleteDiagram(Long id) {
-        approvalProcessDiagramRepository.deleteById(id);
+        repository.deleteById(id);
     }
 
     @Override
     public List<ApprovalProcessDiagram> getDiagramsByIsValid(Boolean isValid) {
-        return approvalProcessDiagramRepository.findByIsValid(isValid);
+        return repository.findByIsValid(isValid);
     }
 
     @Override
-    public boolean activateDiagram(Long id) {
-        Optional<ApprovalProcessDiagram> diagramOptional = approvalProcessDiagramRepository.findById(id);
+    public ApprovalProcessDiagram activateDiagram(Long id) {
+        Optional<ApprovalProcessDiagram> diagramOptional = repository.findById(id);
         if (diagramOptional.isPresent()) {
             ApprovalProcessDiagram diagram = diagramOptional.get();
             diagram.setValid(true);
-            approvalProcessDiagramRepository.save(diagram);
-            return true;
+            return repository.save(diagram);
         }
-        return false;
+        return null;
     }
 
     @Override
-    public boolean deactivateDiagram(Long id) {
-        Optional<ApprovalProcessDiagram> diagramOptional = approvalProcessDiagramRepository.findById(id);
+    public ApprovalProcessDiagram deactivateDiagram(Long id) {
+        Optional<ApprovalProcessDiagram> diagramOptional = repository.findById(id);
         if (diagramOptional.isPresent()) {
             ApprovalProcessDiagram diagram = diagramOptional.get();
             diagram.setValid(false);
-            approvalProcessDiagramRepository.save(diagram);
-            return true;
+            return repository.save(diagram);
         }
-        return false;
+        return null;
     }
 
     @Override
     public ApprovalProcessDiagram createNewInstance() {
         return new ApprovalProcessDiagram();
+    }
+
+    public Map<Long, ApprovalProcessDiagram> getApprovalDiagramsMapByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        List<ApprovalProcessDiagram> diagrams = repository.findAllById(ids);
+        return diagrams.stream()
+                .collect(Collectors.toMap(ApprovalProcessDiagram::getId, diagram -> diagram));
     }
 }

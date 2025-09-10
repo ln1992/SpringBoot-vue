@@ -1,4 +1,4 @@
-// src/main/java/com/boylegu/springboot_vue/controller/BaseProcessDiagramController.java
+// src/main/java/com/boylegu/springboot_vue/controller/ProcessDiagramController.java
 package com.boylegu.springboot_vue.controller;
 
 import com.boylegu.springboot_vue.entities.ProcessDiagram;
@@ -97,9 +97,9 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
     // 启用流程图
     public ResponseEntity<?> activateDiagram(Long id) {
         try {
-            boolean success = service.activateDiagram(id);
-            if (success) {
-                return ResponseEntity.ok().build();
+            T diagram = service.activateDiagram(id);
+            if (diagram != null) {
+                return ResponseEntity.ok(diagram);
             } else {
                 return ResponseEntity.notFound().build();
             }
@@ -112,9 +112,9 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
     // 禁用流程图
     public ResponseEntity<?> deactivateDiagram(Long id) {
         try {
-            boolean success = service.deactivateDiagram(id);
-            if (success) {
-                return ResponseEntity.ok().build();
+            T diagram = service.deactivateDiagram(id);
+            if (diagram != null) {
+                return ResponseEntity.ok(diagram);
             } else {
                 return ResponseEntity.notFound().build();
             }
