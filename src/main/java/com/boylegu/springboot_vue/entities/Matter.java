@@ -1,10 +1,13 @@
 // src/main/java/com/boylegu/springboot_vue/entities/Matter.java
 package com.boylegu.springboot_vue.entities;
 
+import org.apache.commons.lang3.StringUtils;
+import java.util.List;
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 事项类 - 包含主项、子项、孙项及相关信息
@@ -87,6 +90,38 @@ public class Matter extends BaseEntity {
     // 默认构造函数
     public Matter() {}
 
+    /**
+     * 更新事项名称
+     * 优先级：孙项名称 > 子项名称 > 主项名称
+     */
+    public void updateName() {
+        String name = "";
+        // 构建名称，优先使用孙项名称，然后是子项名称，最后是主项名称
+        if (this.grandchildItemCode != null && StringUtils.isNotEmpty(this.grandchildItemName)) {
+            // 如果有孙项名称，只使用孙项名称
+            name = String.format("%d.%d.%d.%s", this.mainItemCode, this.subItemCode, this.grandchildItemCode, this.grandchildItemName);
+        } else if (this.subItemCode != null && StringUtils.isNotEmpty(this.subItemName)) {
+            // 如果没有孙项名称但有子项名称，只使用子项名称
+            name = String.format("%d.%d.%s", this.mainItemCode, this.subItemCode, this.subItemName);
+        } else if (this.mainItemCode != null && StringUtils.isNotEmpty(this.mainItemName)) {
+            // 如果只有主项名称，使用主项名称
+            name = String.format("%d.%s", this.mainItemCode, this.mainItemName);
+        }
+        // 如果有版本号，则在名称后加上版本号
+        if (this.getVersion() != null) {
+            name = String.format("%s_v%d", name, this.getVersion());
+        }
+        // 设置名称
+        this.set__name__(name);
+    }
+
+    @Override
+    public void setVersion(Long version) {
+        super.setVersion(version);
+        // 版本号更新时自动更新名称
+        updateName();
+    }
+
     // Getter和Setter方法 - ID 相关方法继承自 BaseEntity
 
     public Long getMainItemCode() {
@@ -95,6 +130,7 @@ public class Matter extends BaseEntity {
 
     public void setMainItemCode(Long mainItemCode) {
         this.mainItemCode = mainItemCode;
+        updateName();
     }
 
     public Long getSubItemCode() {
@@ -103,6 +139,7 @@ public class Matter extends BaseEntity {
 
     public void setSubItemCode(Long subItemCode) {
         this.subItemCode = subItemCode;
+        updateName();
     }
 
     public Long getGrandchildItemCode() {
@@ -111,6 +148,7 @@ public class Matter extends BaseEntity {
 
     public void setGrandchildItemCode(Long grandchildItemCode) {
         this.grandchildItemCode = grandchildItemCode;
+        updateName();
     }
 
     public String getMainItemName() {
@@ -119,6 +157,7 @@ public class Matter extends BaseEntity {
 
     public void setMainItemName(String mainItemName) {
         this.mainItemName = mainItemName;
+        updateName();
     }
 
     public String getSubItemName() {
@@ -127,6 +166,7 @@ public class Matter extends BaseEntity {
 
     public void setSubItemName(String subItemName) {
         this.subItemName = subItemName;
+        updateName();
     }
 
     public String getGrandchildItemName() {
@@ -135,6 +175,7 @@ public class Matter extends BaseEntity {
 
     public void setGrandchildItemName(String grandchildItemName) {
         this.grandchildItemName = grandchildItemName;
+        updateName();
     }
 
     public List<String> getBases() {
