@@ -36,6 +36,13 @@
     >
       业务经办流程图
     </div>
+    <div
+      class="menu-item"
+      :class="{ active: activeItem === 'update-record' }"
+      @click="selectItem('update-record')"
+    >
+      更新记录
+    </div>
   </div>
 </template>
 
@@ -99,16 +106,9 @@ export default {
   }
 
   .menu-item {
-    display: inline-block;
-    width: calc(20% - 1px); /* 5个菜单项 */
-    text-align: center;
-    padding-left: 0;
-    border-right: 1px solid #d1d5da;
-    font-size: 12px;
-  }
-
-  .menu-item:last-child {
-    border-right: none;
+    height: 40px;
+    line-height: 40px;
+    border-bottom: 1px solid #dcdfe6;
   }
 }
 </style>

@@ -8,7 +8,6 @@ import {
     Select,
     Row,
     Col,
-    Pagination,
     Table,
     TableColumn,
     Form,
@@ -35,7 +34,6 @@ Vue.use(Button);
 Vue.use(Select);
 Vue.use(Row);
 Vue.use(Col);
-Vue.use(Pagination);
 Vue.use(Table);
 Vue.use(TableColumn);
 Vue.use(Form);
@@ -53,4 +51,3 @@ new Vue({
     el: '#app',
     render: h => h(App)
 });
-

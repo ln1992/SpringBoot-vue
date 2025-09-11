@@ -29,6 +29,10 @@
         <div v-else-if="selectedMenu === 'business-diagram'">
           <business-process-diagram-list ref="businessDiagramList"></business-process-diagram-list>
         </div>
+        <!-- 添加更新记录视图 -->
+        <div v-else-if="selectedMenu === 'update-record'">
+          <update-record-list ref="updateRecordList"></update-record-list>
+        </div>
       </el-col>
     </el-row>
 
@@ -54,6 +58,8 @@ import MatterList from './components/matter/MatterList.vue'
 // 导入流程图管理组件
 import ApprovalProcessDiagramList from './components/process-diagram/ApprovalProcessDiagramList.vue'
 import BusinessProcessDiagramList from './components/process-diagram/BusinessProcessDiagramList.vue'
+// 导入更新记录组件
+import UpdateRecordList from './components/update-record/UpdateRecordList.vue'
 import ElRow from "element-ui/packages/row/src/row";
 
 export default {
@@ -70,7 +76,9 @@ export default {
     MatterList,
     // 注册流程图管理组件
     ApprovalProcessDiagramList,
-    BusinessProcessDiagramList
+    BusinessProcessDiagramList,
+    // 注册更新记录组件
+    UpdateRecordList
   },
   data() {
     return {
@@ -112,6 +120,11 @@ export default {
             case 'business-diagram':
               if (this.$refs.businessDiagramList && typeof this.$refs.businessDiagramList.resetToListView === 'function') {
                 this.$refs.businessDiagramList.resetToListView();
+              }
+              break;
+            case 'update-record':
+              if (this.$refs.updateRecordList && typeof this.$refs.updateRecordList.resetToListView === 'function') {
+                this.$refs.updateRecordList.resetToListView();
               }
               break;
             default:
