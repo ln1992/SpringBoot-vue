@@ -7,13 +7,20 @@ import com.boylegu.springboot_vue.service.MaterialService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class MaterialServiceImpl implements MaterialService {
 
+    private final MaterialRepository materialRepository;
+
     @Autowired
-    private MaterialRepository materialRepository;
+    public MaterialServiceImpl(MaterialRepository materialRepository) {
+        this.materialRepository = materialRepository;
+    }
 
     @Override
     public List<Material> getAllMaterials() {
@@ -125,5 +132,16 @@ public class MaterialServiceImpl implements MaterialService {
         } else {
             return materialRepository.countByMaterialDetailAndVersion(materialDetail, version) > 0;
         }
+    }
+
+    @Override
+    public Map<Long, Material> getMaterialsMapByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        List<Material> materials = materialRepository.findAllById(ids);
+        return materials.stream()
+                .collect(Collectors.toMap(Material::getId, material -> material));
     }
 }

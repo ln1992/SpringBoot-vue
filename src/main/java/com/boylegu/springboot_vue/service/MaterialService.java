@@ -3,6 +3,7 @@ package com.boylegu.springboot_vue.service;
 
 import com.boylegu.springboot_vue.entities.Material;
 import java.util.List;
+import java.util.Map;
 
 public interface MaterialService {
 

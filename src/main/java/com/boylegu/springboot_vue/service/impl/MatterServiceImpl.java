@@ -155,4 +155,15 @@ public class MatterServiceImpl implements MatterService {
         }
         return null;
     }
+    
+    /**
+     * 根据版本号获取所有事项
+     * @param version 版本号
+     * @return 事项列表
+     */
+    @Override
+    public List<Matter> getMattersByVersionAndValid(Long version) {
+        return matterRepository.findByVersionAndIsValid(version, true);
+    }
+
 }
