@@ -11,6 +11,35 @@
         </div>
       </div>
 
+      <!-- 导出功能区 -->
+      <div class="export-section">
+        <div class="version-input">
+          <label for="version">版本:</label>
+          <input 
+            id="version"
+            type="text" 
+            v-model="exportVersion" 
+            placeholder="请输入版本号"
+          />
+        </div>
+        <div class="export-buttons">
+          <button 
+            class="export-catalog-btn" 
+            @click="exportCatalog"
+            :disabled="!exportVersion"
+          >
+            导出目录
+          </button>
+          <button 
+            class="export-document-btn" 
+            @click="exportDocument"
+            :disabled="!exportVersion"
+          >
+            导出文档
+          </button>
+        </div>
+      </div>
+
       <div class="loading" v-if="loading">
         <p>正在加载事项数据...</p>
       </div>
@@ -232,7 +261,8 @@ export default {
         { name: 'PROVINCIAL_HIGHWAY_CENTER_MAINTENANCE', description: '省公路中心养护处' }
       ],
       currentPage: 1,
-      pageSize: 10 // 每页显示10条记录
+      pageSize: 10, // 每页显示10条记录
+      exportVersion: '' // 导出版本号
     };
   },
   computed: {
@@ -382,6 +412,51 @@ export default {
     resetToListView() {
       this.selectedMatter = null;
       this.showAddForm = false;
+    },
+
+    // 导出目录
+    async exportCatalog() {
+      if (!this.exportVersion) {
+        alert('请输入版本号');
+        return;
+      }
+
+      try {
+        const blob = await matterService.exportMattersCatalog(this.exportVersion);
+        this.downloadBlob(blob, `事项目录_v${this.exportVersion}.docx`);
+      } catch (error) {
+        console.error('导出目录失败:', error);
+        alert('导出目录失败: ' + (error.message || '未知错误'));
+      }
+    },
+
+    // 导出文档
+    async exportDocument() {
+      if (!this.exportVersion) {
+        alert('请输入版本号');
+        return;
+      }
+
+      try {
+        const blob = await matterService.exportMattersDocuments(this.exportVersion);
+        this.downloadBlob(blob, `事项文档_v${this.exportVersion}.docx`);
+      } catch (error) {
+        console.error('导出文档失败:', error);
+        alert('导出文档失败: ' + (error.message || '未知错误'));
+      }
+    },
+
+    // 下载文件
+    downloadBlob(blob, filename) {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     }
   }
 };
@@ -407,6 +482,72 @@ export default {
 .header-actions {
   display: flex;
   gap: 10px;
+}
+
+.export-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.version-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.version-input label {
+  font-weight: bold;
+}
+
+.version-input input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.export-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.export-catalog-btn,
+.export-document-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.export-catalog-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.export-catalog-btn:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.export-document-btn {
+  background-color: #007bff;
+  color: white;
+}
+
+.export-document-btn:hover:not(:disabled) {
+  background-color: #0069d9;
+}
+
+.export-catalog-btn:disabled,
+.export-document-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 .matters-table {
@@ -584,6 +725,8 @@ button {
   align-items: center;
   margin-top: 20px;
   padding: 10px 0;
+  position: relative; /* 添加相对定位 */
+  min-height: 50px; /* 确保有足够的高度 */
 }
 
 .pagination-controls {
@@ -638,6 +781,26 @@ button {
   font-size: 16px;
 }
 
+/* 新增样式：确保分页控件不被遮挡 */
+@media (min-width: 769px) {
+  .pagination {
+    flex-wrap: wrap;
+  }
+  
+  .pagination-controls {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+  
+  .page-size-selector {
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
+  }
+}
+
 @media (max-width: 768px) {
   .matters-table {
     font-size: 14px;
@@ -650,6 +813,11 @@ button {
   .pagination {
     flex-direction: column;
     gap: 15px;
+  }
+  
+  .export-section {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>

@@ -8,7 +8,9 @@ class ProcessDiagramService {
       const response = await http.get(ENDPOINTS.APPROVAL_PROCESS_DIAGRAMS, { params });
       return response.data;
     } catch (error) {
-      throw new Error(`获取审批流程图失败: ${error.message}`);
+      console.error('获取审批流程图失败:', error);
+      // 返回空数组而不是抛出错误，确保即使服务不可用也能继续运行
+      return [];
     }
   }
 
@@ -18,7 +20,9 @@ class ProcessDiagramService {
       const response = await http.get(ENDPOINTS.BUSINESS_PROCESS_DIAGRAMS, { params });
       return response.data;
     } catch (error) {
-      throw new Error(`获取业务流程图失败: ${error.message}`);
+      console.error('获取业务流程图失败:', error);
+      // 返回空数组而不是抛出错误，确保即使服务不可用也能继续运行
+      return [];
     }
   }
   

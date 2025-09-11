@@ -5,7 +5,16 @@ class MatterService {
   // 获取所有事项
   async getAllMatters() {
     try {
-      const response = await http.get(ENDPOINTS.MATTERS);
+      const response = await http.get(ENDPOINTS.MATTERS, {
+        params: {
+          page: 0,
+          size: 1000 // 设置一个较大的数值以获取所有事项
+        }
+      });
+      // 如果返回的是分页数据，提取content字段
+      if (response.data && response.data.content) {
+        return response.data.content;
+      }
       return response.data;
     } catch (error) {
       throw new Error(`获取事项列表失败: ${error.message}`);
@@ -89,6 +98,34 @@ class MatterService {
       return response.data;
     } catch (error) {
       throw new Error(`取消发布事项失败: ${error.message}`);
+    }
+  }
+  
+  // 导出事项目录
+  async exportMattersCatalog(version = null) {
+    try {
+      const params = version ? { version } : {};
+      const response = await http.get(`${ENDPOINTS.MATTERS}/export/catalog`, { 
+        params,
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`导出事项目录失败: ${error.message}`);
+    }
+  }
+  
+  // 导出事项文档
+  async exportMattersDocuments(version = null) {
+    try {
+      const params = version ? { version } : {};
+      const response = await http.get(`${ENDPOINTS.MATTERS}/export/documents`, {
+        params,
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`导出事项文档失败: ${error.message}`);
     }
   }
 }

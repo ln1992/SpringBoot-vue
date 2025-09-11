@@ -90,6 +90,28 @@ public class Matter extends BaseEntity {
     // 默认构造函数
     public Matter() {}
 
+    public String getMainItemCodeName() {
+        if (this.mainItemCode != null && StringUtils.isNotBlank(this.mainItemName)) {
+            return String.format("%d.%s", this.mainItemCode, this.mainItemName);
+        }
+        return "";
+    }
+
+    public String getSubItemCodeName() {
+        if (this.mainItemCode != null && this.subItemCode != null && StringUtils.isNotBlank(this.subItemName)) {
+            return String.format("%d.%d %s", this.mainItemCode, this.subItemCode, this.subItemName);
+        }
+        return "";
+    }
+
+    public String getGrandchildItemCodeName() {
+        if (this.mainItemCode != null && this.subItemCode != null &&
+                this.grandchildItemCode != null && StringUtils.isNotEmpty(this.grandchildItemName)) {
+            return String.format("%d.%d.%d %s", this.mainItemCode, this.subItemCode, this.grandchildItemCode, this.grandchildItemName);
+        }
+        return "";
+    }
+
     /**
      * 更新事项名称
      * 优先级：孙项名称 > 子项名称 > 主项名称

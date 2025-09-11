@@ -3,18 +3,27 @@ package com.boylegu.springboot_vue.controller;
 
 import com.boylegu.springboot_vue.entities.Matter;
 import com.boylegu.springboot_vue.service.MatterService;
+import com.boylegu.springboot_vue.service.MatterExportService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import javax.validation.Valid;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
-import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.springframework.validation.BindingResult;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+import java.util.logging.Logger;
+
 
 @RestController
 @RequestMapping("/api/matters")
@@ -25,6 +34,9 @@ public class MatterController {
 
     @Autowired
     private MatterService matterService;
+
+    @Autowired
+    private MatterExportService matterExportService;
 
     // 获取所有事项
     @GetMapping
@@ -210,6 +222,76 @@ public class MatterController {
             return ResponseEntity.ok(deactivatedMatter);
         } else {
             return ResponseEntity.notFound().build();
+        }
+    }
+    
+    /**
+     * 导出指定版本的有效事项目录
+     */
+    @GetMapping("/export/catalog")
+    public ResponseEntity<byte[]> exportMattersCatalogByVersion(@RequestParam Long version) {
+        logger.info("收到导出事项目录请求，版本号: " + version);
+        
+        try {
+            // 检查版本参数
+            if (version == null || version <= 0) {
+                logger.warning("无效的版本号: " + version);
+                return ResponseEntity.badRequest().build();
+            }
+            
+            List<Matter> matters = matterService.getMattersByVersionAndValid(version);
+            logger.info("找到 " + matters.size() + " 个有效事项");
+            
+            byte[] documentBytes = matterExportService.exportMattersCatalogByVersion(version);
+            logger.info("成功导出版本 " + version + " 的事项目录，文件大小: " + documentBytes.length + " 字节");
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", 
+                    "事项目录_v" + version + ".docx");
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(documentBytes);
+        } catch (Exception e) {
+            logger.severe("导出事项目录失败: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
+    }
+    
+    /**
+     * 导出指定版本的有效事项文档
+     */
+    @GetMapping("/export/documents")
+    public ResponseEntity<byte[]> exportMattersDocumentsByVersion(@RequestParam Long version) {
+        logger.info("收到导出事项文档请求，版本号: " + version);
+        
+        try {
+            // 检查版本参数
+            if (version == null || version <= 0) {
+                logger.warning("无效的版本号: " + version);
+                return ResponseEntity.badRequest().build();
+            }
+            
+            List<Matter> matters = matterService.getMattersByVersionAndValid(version);
+            logger.info("找到 " + matters.size() + " 个有效事项");
+            
+            byte[] documentBytes = matterExportService.exportMattersDocumentsByVersion(version);
+            logger.info("成功导出版本 " + version + " 的事项文档，文件大小: " + documentBytes.length + " 字节");
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", 
+                    "事项文档_v" + version + ".docx");
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(documentBytes);
+        } catch (Exception e) {
+            logger.severe("导出事项文档失败: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
         }
     }
 }

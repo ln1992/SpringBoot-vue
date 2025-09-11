@@ -5,14 +5,11 @@ import com.boylegu.springboot_vue.entities.Material;
 import com.boylegu.springboot_vue.entities.ProcessDiagram;
 import com.boylegu.springboot_vue.entities.ApprovalProcessDiagram;
 import com.boylegu.springboot_vue.entities.BusinessProcessDiagram;
-import com.boylegu.springboot_vue.service.MatterService;
-import com.boylegu.springboot_vue.service.MaterialService;
-import com.boylegu.springboot_vue.service.ApprovalProcessDiagramService;
-import com.boylegu.springboot_vue.service.BusinessProcessDiagramService;
+
+import org.apache.poi.util.StringUtil;
 import org.apache.poi.util.Units;
 import org.apache.poi.xwpf.usermodel.*;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
@@ -44,19 +41,19 @@ public class MatterWordExportUtil {
     private static final int COL_GRANDCHILD_ITEM_NAME = 2;        // 孙项名称
     private static final int COL_BASES = 3;                       // 经办依据
     private static final int COL_MATERIAL_START = 4;              // 材料信息起始列
-    private static final int COL_MATERIAL_ORIGINAL_DETAIL = 4;    // 原材料明细
-    private static final int COL_MATERIAL_CURRENT_DETAIL = 5;     // 现材料明细
-    private static final int COL_MATERIAL_REVIEW_POINT = 6;       // 审核要点
-    private static final int COL_MATERIAL_AUTO_APPROVAL_CRITERIA = 7; // "智能秒批"判断标准
-    private static final int COL_MATERIAL_SHARED = 8;             // 是否共享
-    private static final int COL_MATERIAL_SOURCE = 9;             // 材料来源
-    private static final int COL_MATERIAL_PROCESSING_METHOD = 10; // 办理方式及材料信息获取方式说明
-    private static final int COL_MATERIAL_ELIGIBLE_FOR_PROMISE = 11; // 是否适用告知承诺
-    private static final int COL_MATERIAL_END = 11;               // 材料信息结束列
-    private static final int COL_LEGAL_TIME_LIMIT = 12;           // 法定时限
-    private static final int COL_COMMITTED_TIME_LIMIT = 13;       // 承诺时限
-    private static final int COL_APPROVAL_LEVEL = 14;             // 审批层级
-    private static final int COL_PROVINCIAL_DEPARTMENT = 15;      // 省厅对口指导处室（单位）
+    //private static final int COL_MATERIAL_ORIGINAL_DETAIL = 4;    // 原材料明细
+    private static final int COL_MATERIAL_CURRENT_DETAIL = COL_MATERIAL_START;     // 现材料明细
+    private static final int COL_MATERIAL_REVIEW_POINT = COL_MATERIAL_START + 1;       // 审核要点
+    private static final int COL_MATERIAL_AUTO_APPROVAL_CRITERIA = COL_MATERIAL_START + 2; // "智能秒批"判断标准
+    private static final int COL_MATERIAL_SHARED = COL_MATERIAL_START + 3;             // 是否共享
+    private static final int COL_MATERIAL_SOURCE = COL_MATERIAL_START + 4;             // 材料来源
+    private static final int COL_MATERIAL_PROCESSING_METHOD = COL_MATERIAL_START + 5; // 办理方式及材料信息获取方式说明
+    private static final int COL_MATERIAL_ELIGIBLE_FOR_PROMISE = COL_MATERIAL_START + 6; // 是否适用告知承诺
+    private static final int COL_MATERIAL_END = COL_MATERIAL_START + 6;               // 材料信息结束列
+    private static final int COL_LEGAL_TIME_LIMIT = COL_MATERIAL_END + 1;           // 法定时限
+    private static final int COL_COMMITTED_TIME_LIMIT = COL_MATERIAL_END + 2;       // 承诺时限
+    private static final int COL_APPROVAL_LEVEL = COL_MATERIAL_END + 3;             // 审批层级
+    private static final int COL_PROVINCIAL_DEPARTMENT = COL_MATERIAL_END + 4;      // 省厅对口指导处室（单位）
 
     // 材料信息列数
     private static final int MATERIAL_COLUMN_COUNT = COL_MATERIAL_END - COL_MATERIAL_START + 1;
@@ -115,13 +112,12 @@ public class MatterWordExportUtil {
             for (int i = 0; i < matters.size(); i++) {
                 Matter matter = matters.get(i);
 
-                // 分别构建主项、子项、孙项名称
-                String mainItemName = matter.getMainItemName() != null ? String.format("%s.%s", matter.getMainItemCode(),matter.getMainItemName()) : "";
-                String subItemName = matter.getSubItemName() != null ? String.format("%s.%s", matter.getSubItemCode(),matter.getSubItemName()) : "";
-                String grandchildItemName = matter.getGrandchildItemName() != null ? String.format("%s.%s", matter.getGrandchildItemCode(),matter.getGrandchildItemName()) : "";
+                String mainItemCodeName = matter.getMainItemCodeName();
+                String subItemCodeName = matter.getSubItemCodeName();
+                String grandchildItemCodeName = matter.getGrandchildItemCodeName();
 
                 // 检查是否是新的主项
-                if (matter.getMainItemCode() != null && !matter.getMainItemCode().equals(currentMainItemCode)) {
+                if (StringUtil.isNotBlank(mainItemCodeName) && !matter.getMainItemCode().equals(currentMainItemCode)) {
 
                     XWPFParagraph paragraph = document.createParagraph();
                     // 设置右对齐制表符
@@ -134,7 +130,7 @@ public class MatterWordExportUtil {
 
                     XWPFRun run = paragraph.createRun();
                     // 输出主项 - 只显示主项名称
-                    run.setText(mainItemName);
+                    run.setText(mainItemCodeName);
 
                     // 添加制表符和页码
                     run.addTab();
@@ -146,7 +142,7 @@ public class MatterWordExportUtil {
                 }
 
                 // 检查是否是新的子项
-                if (matter.getSubItemCode() != null && !matter.getSubItemCode().equals(currentSubItemCode)) {
+                if (StringUtil.isNotBlank(subItemCodeName) && !matter.getSubItemCode().equals(currentSubItemCode)) {
 
                     XWPFParagraph paragraph = document.createParagraph();
                     // 设置缩进
@@ -163,7 +159,7 @@ public class MatterWordExportUtil {
                     XWPFRun run = paragraph.createRun();
 
                     // 显示子项名称
-                    run.setText(subItemName);
+                    run.setText(subItemCodeName);
 
                     // 添加制表符和页码
                     run.addTab();
@@ -173,7 +169,7 @@ public class MatterWordExportUtil {
                 }
 
                 // 输出孙项（如果存在）
-                if (matter.getGrandchildItemCode() != null && !grandchildItemName.isEmpty()) {
+                if (StringUtil.isNotBlank(grandchildItemCodeName)) {
                     XWPFParagraph paragraph = document.createParagraph();
 
                     // 设置更大缩进
@@ -190,7 +186,7 @@ public class MatterWordExportUtil {
                     XWPFRun run = paragraph.createRun();
 
                     // 显示完整的孙项名称
-                    run.setText(grandchildItemName);
+                    run.setText(grandchildItemCodeName);
 
                     // 添加制表符和页码
                     run.addTab();
@@ -299,7 +295,7 @@ public class MatterWordExportUtil {
         for (int i = 0; i < 4; i++) {
             setTableCellText(mainTable.getRow(ROW_HEADER_SUB).getCell(i), "");
         }
-        setTableCellText(mainTable.getRow(ROW_HEADER_SUB).getCell(COL_MATERIAL_ORIGINAL_DETAIL), HEADER_MATERIAL_ORIGINAL_DETAIL);
+        //setTableCellText(mainTable.getRow(ROW_HEADER_SUB).getCell(COL_MATERIAL_ORIGINAL_DETAIL), HEADER_MATERIAL_ORIGINAL_DETAIL);
         setTableCellText(mainTable.getRow(ROW_HEADER_SUB).getCell(COL_MATERIAL_CURRENT_DETAIL), HEADER_MATERIAL_CURRENT_DETAIL);
         setTableCellText(mainTable.getRow(ROW_HEADER_SUB).getCell(COL_MATERIAL_REVIEW_POINT), HEADER_MATERIAL_REVIEW_POINT);
         setTableCellText(mainTable.getRow(ROW_HEADER_SUB).getCell(COL_MATERIAL_AUTO_APPROVAL_CRITERIA), HEADER_MATERIAL_AUTO_APPROVAL_CRITERIA);
@@ -314,9 +310,12 @@ public class MatterWordExportUtil {
         }
 
         // 填充基础信息 (在第2行，因为第0和第1行是表头)
-        setTableCellText(mainTable.getRow(ROW_DATA_START).getCell(COL_MAIN_ITEM_NAME), matter.getMainItemName() != null ? matter.getMainItemName() : "");
-        setTableCellText(mainTable.getRow(ROW_DATA_START).getCell(COL_SUB_ITEM_NAME), matter.getSubItemName() != null ? matter.getSubItemName() : "");
-        setTableCellText(mainTable.getRow(ROW_DATA_START).getCell(COL_GRANDCHILD_ITEM_NAME), matter.getGrandchildItemName() != null ? matter.getGrandchildItemName() : "");
+        String mainItemCodeName = matter.getMainItemCodeName();
+        String subItemCodeName = matter.getSubItemCodeName();
+        String grandchildItemCodeName = matter.getGrandchildItemCodeName();
+        setTableCellText(mainTable.getRow(ROW_DATA_START).getCell(COL_MAIN_ITEM_NAME), mainItemCodeName);
+        setTableCellText(mainTable.getRow(ROW_DATA_START).getCell(COL_SUB_ITEM_NAME), subItemCodeName);
+        setTableCellText(mainTable.getRow(ROW_DATA_START).getCell(COL_GRANDCHILD_ITEM_NAME), grandchildItemCodeName);
 
         String bases = matter.getBases() != null && !matter.getBases().isEmpty()
                 ? String.join("\n", matter.getBases())
@@ -342,7 +341,7 @@ public class MatterWordExportUtil {
             // 如果材料存在，则填充材料信息
             if (i < materials.size()) {
                 Material material = materials.get(i);
-                setTableCellText(mainTable.getRow(rowIdx).getCell(COL_MATERIAL_ORIGINAL_DETAIL), material.getMaterialDetail() != null ? material.getMaterialDetail() : "");
+                //setTableCellText(mainTable.getRow(rowIdx).getCell(COL_MATERIAL_ORIGINAL_DETAIL), material.getMaterialDetail() != null ? material.getMaterialDetail() : "");
                 setTableCellText(mainTable.getRow(rowIdx).getCell(COL_MATERIAL_CURRENT_DETAIL), material.getMaterialDetail() != null ? material.getMaterialDetail() : "");
                 setTableCellText(mainTable.getRow(rowIdx).getCell(COL_MATERIAL_REVIEW_POINT), material.getReviewPoint() != null ? material.getReviewPoint() : "");
                 setTableCellText(mainTable.getRow(rowIdx).getCell(COL_MATERIAL_AUTO_APPROVAL_CRITERIA), material.getAutoApprovalCriteria() != null ? material.getAutoApprovalCriteria() : "");
