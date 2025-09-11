@@ -71,16 +71,10 @@ public interface MatterRepository extends JpaRepository<Matter, Long> {
     Matter findByGrandchildItemName(String grandchildItemName);
 
     /**
-     * 根据发布状态查询事项
-     * @param isPublish 发布状态
-     * @return 事项列表
-     */
-    List<Matter> findByIsPublish(Boolean isPublish);
-
-    /**
      * 根据有效性查询事项
+     * @param version 事项版本
      * @param isValid 有效性
      * @return 事项列表
      */
-    List<Matter> findByIsValid(Boolean isValid);
+    List<Matter> findByVersionAndIsValid(Long version, Boolean isValid);
 }

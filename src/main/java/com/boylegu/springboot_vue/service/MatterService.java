@@ -1,4 +1,3 @@
-// src/main/java/com/boylegu/springboot_vue/service/MatterService.java
 package com.boylegu.springboot_vue.service;
 
 import com.boylegu.springboot_vue.entities.Matter;
@@ -65,4 +64,12 @@ public interface MatterService {
      * @return 更新后的事项对象，如果未找到则返回null
      */
     Matter unpublishMatter(Long id);
+
+    /**
+     * 根据版本号获取所有有效事项
+     * @param version 版本号
+     * @return 有效事项列表
+     */
+    List<Matter> getMattersByVersionAndValid(Long version);
+
 }

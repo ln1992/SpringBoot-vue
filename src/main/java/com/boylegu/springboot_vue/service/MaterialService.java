@@ -27,4 +27,7 @@ public interface MaterialService {
 
     // 检查材料明细和版本号组合是否存在
     boolean isMaterialDetailAndVersionExists(String materialDetail, Long version, Long excludeId);
+
+    // 根据ID列表获取材料映射表
+    Map<Long, Material> getMaterialsMapByIds(List<Long> ids);
 }
