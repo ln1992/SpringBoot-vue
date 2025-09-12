@@ -117,14 +117,14 @@
       <!-- 分页控件 -->
       <div class="pagination" v-if="paginatedMaterials.length > 0">
         <div class="pagination-controls">
-          <button 
-            :disabled="currentPage === 1" 
+          <button
+            :disabled="currentPage === 1"
             @click.stop="currentPage > 1 && (currentPage--)">
             上一页
           </button>
           <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页 (总计 {{ filteredMaterials.length }} 条)</span>
-          <button 
-            :disabled="currentPage === totalPages" 
+          <button
+            :disabled="currentPage === totalPages"
             @click.stop="currentPage < totalPages && (currentPage++)">
             下一页
           </button>
@@ -152,7 +152,7 @@
     <!-- 新增/编辑材料表单 -->
     <div class="material-form-container" v-else-if="showAddForm">
       <MaterialDetail
-        :material="editingMaterial || {}"
+        :material="editingMaterial || undefined"
         @back="hideMaterialForm"
         @material-updated="handleMaterialSaved"
       />
@@ -301,7 +301,7 @@ export default {
     async deleteMaterial(materialId) {
       // 查找要删除的材料
       const material = this.materials.find(m => m.id === materialId);
-      
+
       // 检查材料是否已下线，只有已下线的材料才能删除
       if (material && material.valid) {
         alert('只能删除已下线的材料，请先下线该材料再删除。');
@@ -652,22 +652,22 @@ button {
   .materials-table {
     font-size: 14px;
   }
-  
+
   .table-cell {
     padding: 8px;
   }
-  
+
   .filter-section {
     flex-direction: column;
     gap: 15px;
     align-items: stretch;
   }
-  
+
   .pagination {
     flex-direction: column;
     gap: 15px;
   }
-  
+
   .pagination-controls {
     flex-wrap: wrap;
     justify-content: center;
