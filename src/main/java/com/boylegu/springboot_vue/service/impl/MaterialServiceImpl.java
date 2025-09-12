@@ -1,6 +1,7 @@
 // src/main/java/com/boylegu/springboot_vue/service/impl/MaterialServiceImpl.java
 package com.boylegu.springboot_vue.service.impl;
 
+import com.boylegu.springboot_vue.aop.annotation.RecordUpdate;
 import com.boylegu.springboot_vue.entities.Material;
 import com.boylegu.springboot_vue.repository.MaterialRepository;
 import com.boylegu.springboot_vue.service.MaterialService;
@@ -33,6 +34,7 @@ public class MaterialServiceImpl implements MaterialService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.CREATE, description = "创建材料")
     public Material saveMaterial(Material material) throws IllegalArgumentException {
         // 确保版本号不为null
         if (material.getVersion() == null) {
@@ -56,6 +58,7 @@ public class MaterialServiceImpl implements MaterialService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "更新材料")
     public Material updateMaterial(Long id, Material materialDetails) throws IllegalArgumentException {
         Material existingMaterial = getMaterialById(id);
         if (existingMaterial == null) {
@@ -94,30 +97,31 @@ public class MaterialServiceImpl implements MaterialService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.DELETE, description = "删除材料")
     public void deleteMaterial(Long id) {
         materialRepository.deleteById(id);
     }
 
     @Override
-    public boolean activateMaterial(Long id) {
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "激活材料")
+    public Material activateMaterial(Long id) {
         Material material = getMaterialById(id);
         if (material != null) {
             material.setValid(true);
-            materialRepository.save(material);
-            return true;
+            return materialRepository.save(material);
         }
-        return false;
+        return null;
     }
 
     @Override
-    public boolean deactivateMaterial(Long id) {
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "停用材料")
+    public Material deactivateMaterial(Long id) {
         Material material = getMaterialById(id);
         if (material != null) {
             material.setValid(false);
-            materialRepository.save(material);
-            return true;
+            return materialRepository.save(material);
         }
-        return false;
+        return null;
     }
 
     @Override

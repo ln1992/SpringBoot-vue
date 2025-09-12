@@ -125,9 +125,9 @@ public class MaterialController {
     @PutMapping("/{id}/activate")
     public ResponseEntity<?> activateMaterial(@PathVariable Long id) {
         try {
-            boolean success = materialService.activateMaterial(id);
-            if (success) {
-                return ResponseEntity.ok().build();
+            Material material = materialService.activateMaterial(id);
+            if (material != null) {
+                return ResponseEntity.ok(material);
             } else {
                 return ResponseEntity.notFound().build();
             }
@@ -141,9 +141,9 @@ public class MaterialController {
     @PutMapping("/{id}/deactivate")
     public ResponseEntity<?> deactivateMaterial(@PathVariable Long id) {
         try {
-            boolean success = materialService.deactivateMaterial(id);
-            if (success) {
-                return ResponseEntity.ok().build();
+            Material material = materialService.deactivateMaterial(id);
+            if (material != null) {
+                return ResponseEntity.ok(material);
             } else {
                 return ResponseEntity.notFound().build();
             }

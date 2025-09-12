@@ -18,10 +18,10 @@ public interface MaterialService {
     void deleteMaterial(Long id);
 
     // 上线材料
-    boolean activateMaterial(Long id);
+    Material activateMaterial(Long id);
 
     // 下线材料
-    boolean deactivateMaterial(Long id);
+    Material deactivateMaterial(Long id);
 
     // 根据有效性获取材料
     List<Material> getMaterialsByIsValid(Boolean isValid);

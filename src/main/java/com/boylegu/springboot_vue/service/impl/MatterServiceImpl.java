@@ -1,6 +1,7 @@
 // src/main/java/com/boylegu/springboot_vue/service/impl/MatterServiceImpl.java
 package com.boylegu.springboot_vue.service.impl;
 
+import com.boylegu.springboot_vue.aop.annotation.RecordUpdate;
 import com.boylegu.springboot_vue.entities.Matter;
 import com.boylegu.springboot_vue.repository.MatterRepository;
 import com.boylegu.springboot_vue.service.MatterService;
@@ -35,6 +36,7 @@ public class MatterServiceImpl implements MatterService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.CREATE, description = "创建事项")
     public Matter saveMatter(Matter matter) {
         // 创建新的ArrayList避免ConcurrentModificationException
         if (matter.getBases() != null) {
@@ -48,6 +50,7 @@ public class MatterServiceImpl implements MatterService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "更新事项")
     public Matter updateMatter(Long id, Matter matterDetails) {
         Optional<Matter> matterOptional = matterRepository.findById(id);
         if (matterOptional.isPresent()) {
@@ -71,6 +74,9 @@ public class MatterServiceImpl implements MatterService {
             matter.setVersion(matterDetails.getVersion());
             matter.setPublish(matterDetails.getPublish());
             matter.setValid(matterDetails.getValid());
+            
+            // 确保更新名称
+            matter.updateName();
 
             return matterRepository.save(matter);
         }
@@ -78,6 +84,7 @@ public class MatterServiceImpl implements MatterService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.DELETE, description = "删除事项")
     public void deleteMatter(Long id) {
         matterRepository.deleteById(id);
     }
@@ -113,6 +120,7 @@ public class MatterServiceImpl implements MatterService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "激活事项")
     public Matter activateMatter(Long id) {
         Optional<Matter> matterOptional = matterRepository.findById(id);
         if (matterOptional.isPresent()) {
@@ -124,6 +132,7 @@ public class MatterServiceImpl implements MatterService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "停用事项")
     public Matter deactivateMatter(Long id) {
         Optional<Matter> matterOptional = matterRepository.findById(id);
         if (matterOptional.isPresent()) {
@@ -135,6 +144,7 @@ public class MatterServiceImpl implements MatterService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "发布事项")
     public Matter publishMatter(Long id) {
         Optional<Matter> matterOptional = matterRepository.findById(id);
         if (matterOptional.isPresent()) {
@@ -146,6 +156,7 @@ public class MatterServiceImpl implements MatterService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "取消发布事项")
     public Matter unpublishMatter(Long id) {
         Optional<Matter> matterOptional = matterRepository.findById(id);
         if (matterOptional.isPresent()) {

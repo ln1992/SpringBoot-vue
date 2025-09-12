@@ -117,7 +117,7 @@ public class Matter extends BaseEntity {
      * 优先级：孙项名称 > 子项名称 > 主项名称
      */
     public void updateName() {
-        String name = "";
+        String name = "default_name";
         // 构建名称，优先使用孙项名称，然后是子项名称，最后是主项名称
         if (this.grandchildItemCode != null && StringUtils.isNotEmpty(this.grandchildItemName)) {
             // 如果有孙项名称，只使用孙项名称

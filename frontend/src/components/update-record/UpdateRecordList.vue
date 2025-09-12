@@ -264,7 +264,9 @@ export default {
 <style scoped>
 .update-record-list-container {
   padding: 20px;
-  /* 移除底部边距，使用全局布局解决遮挡问题 */
+  /* 添加相对定位和z-index确保容器在最上层 */
+  position: relative;
+  z-index: 1001;
 }
 
 .header {
@@ -341,6 +343,9 @@ export default {
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 20px;
+  /* 确保表格在容器内正确显示 */
+  position: relative;
+  z-index: 1002;
 }
 
 .table-header {
@@ -354,6 +359,9 @@ export default {
   border-top: 1px solid #ebeef5;
   cursor: pointer;
   transition: background-color 0.2s;
+  /* 确保表格行可以正确响应鼠标事件 */
+  position: relative;
+  z-index: 1003;
 }
 
 .table-row:hover {
@@ -407,7 +415,7 @@ export default {
   gap: 10px;
   /* 使用z-index确保分页控件在最上层，不被页脚遮挡 */
   position: relative;
-  z-index: 1001;
+  z-index: 1004;
   background-color: white;
 }
 
