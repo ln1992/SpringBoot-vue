@@ -9,8 +9,9 @@ import java.util.Objects;
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"image_name", "version"}))
 public abstract class ProcessDiagram extends BaseEntity {
-    @Column(name = "image_name", unique = true)
+    @Column(name = "image_name")
     private String imageName;
 
     @Lob

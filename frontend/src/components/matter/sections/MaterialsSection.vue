@@ -218,16 +218,18 @@ export default {
     // 从下拉列表选择材料
     selectMaterialFromDropdown(index, selectedMaterial) {
       // 更新材料的其他字段
-      const updatedMaterial = { ...this.materials[index] }
-      updatedMaterial.materialDetail = selectedMaterial.materialDetail
-      updatedMaterial.reviewPoint = selectedMaterial.reviewPoint || ''
-      updatedMaterial.autoApprovalCriteria = selectedMaterial.autoApprovalCriteria || ''
-      updatedMaterial.shared = selectedMaterial.shared || false  // 修复字段名
-      updatedMaterial.materialSource = selectedMaterial.materialSource || ''
-      updatedMaterial.processingMethodAndInfoAccess = selectedMaterial.processingMethodAndInfoAccess || ''
-      updatedMaterial.eligibleForPromise = selectedMaterial.eligibleForPromise || false  // 修复字段名
-      updatedMaterial.id = selectedMaterial.id
-      updatedMaterial.__name__ = selectedMaterial.__name__ || ''
+      const updatedMaterial = { 
+        ...this.materials[index],
+        materialDetail: selectedMaterial.materialDetail,
+        reviewPoint: selectedMaterial.reviewPoint || '',
+        autoApprovalCriteria: selectedMaterial.autoApprovalCriteria || '',
+        shared: selectedMaterial.shared || false,
+        materialSource: selectedMaterial.materialSource || '',
+        processingMethodAndInfoAccess: selectedMaterial.processingMethodAndInfoAccess || '',
+        eligibleForPromise: selectedMaterial.eligibleForPromise || false,
+        id: selectedMaterial.id,
+        __name__: selectedMaterial.__name__ || ''
+      };
 
       this.$emit('update-material', index, updatedMaterial)
 

@@ -4,6 +4,9 @@ package com.boylegu.springboot_vue.controller;
 import com.boylegu.springboot_vue.entities.ProcessDiagram;
 import com.boylegu.springboot_vue.service.ProcessDiagramService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -21,7 +24,8 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
         this.entityName = entityName;
     }
 
-    // 获取所有流程图
+    // 获取所有流程图（用于拷贝功能）
+    @GetMapping("/all")
     public ResponseEntity<List<T>> getAllDiagrams() {
         try {
             List<T> diagrams = service.getAllDiagrams();
@@ -34,7 +38,8 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
     }
 
     // 根据ID获取流程图
-    public ResponseEntity<T> getDiagramById(Long id) {
+    @GetMapping("/{id}")
+    public ResponseEntity<T> getDiagramById(@PathVariable Long id) {
         try {
             T diagram = service.getDiagramById(id);
             if (diagram != null) {
@@ -50,10 +55,10 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
 
     // 创建新的流程图
     public ResponseEntity<?> createDiagram(
-            String imageName,
-            Long version,
-            MultipartFile imageFile,
-            Boolean isValid) {
+            @RequestParam("imageName") String imageName,
+            @RequestParam(value = "version", defaultValue = "1") Long version,
+            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+            @RequestParam(value = "isValid", defaultValue = "true") Boolean isValid) {
         try {
             logger.info("Creating " + entityName + " diagram with name: " + imageName);
             T savedDiagram = service.createDiagram(imageName, version, imageFile, isValid);
@@ -67,11 +72,11 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
 
     // 更新流程图
     public ResponseEntity<?> updateDiagram(
-            Long id,
-            String imageName,
-            Long version,
-            MultipartFile imageFile,
-            Boolean isValid) {
+            @PathVariable Long id,
+            @RequestParam("imageName") String imageName,
+            @RequestParam(value = "version", required = false) Long version,
+            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+            @RequestParam(value = "isValid", required = false) Boolean isValid) {
         try {
             logger.info("Updating " + entityName + " diagram ID " + id + " with name: " + imageName);
             T updatedDiagram = service.updateDiagram(id, imageName, version, imageFile, isValid);
@@ -84,7 +89,7 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
     }
 
     // 删除流程图
-    public ResponseEntity<Void> deleteDiagram(Long id) {
+    public ResponseEntity<Void> deleteDiagram(@PathVariable Long id) {
         try {
             service.deleteDiagram(id);
             return ResponseEntity.ok().build();
@@ -95,7 +100,7 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
     }
 
     // 启用流程图
-    public ResponseEntity<?> activateDiagram(Long id) {
+    public ResponseEntity<?> activateDiagram(@PathVariable Long id) {
         try {
             T diagram = service.activateDiagram(id);
             if (diagram != null) {
@@ -110,7 +115,7 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
     }
 
     // 禁用流程图
-    public ResponseEntity<?> deactivateDiagram(Long id) {
+    public ResponseEntity<?> deactivateDiagram(@PathVariable Long id) {
         try {
             T diagram = service.deactivateDiagram(id);
             if (diagram != null) {
@@ -125,7 +130,7 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
     }
 
     // 根据状态获取流程图
-    public ResponseEntity<List<T>> getDiagramsByValidStatus(Boolean isValid) {
+    public ResponseEntity<List<T>> getDiagramsByValidStatus(@RequestParam Boolean isValid) {
         try {
             List<T> diagrams = service.getDiagramsByIsValid(isValid);
             return ResponseEntity.ok(diagrams);

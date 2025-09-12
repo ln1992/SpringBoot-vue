@@ -1,13 +1,51 @@
-<!-- src/components/processdiagram/BusinessProcessDiagramDetail.vue -->
+<!-- src/components/process-diagram/BusinessProcessDiagramDetail.vue -->
 <template>
   <div class="diagram-detail-container">
     <div class="header">
-      <h2>编辑业务流程图</h2>
+      <h2>{{ isEditMode ? '编辑业务流程图' : '新增业务流程图' }}</h2>
     </div>
 
     <div class="diagram-detail-content">
+      <!-- 流程图拷贝选择区域 -->
+      <div class="copy-section" v-if="!isEditMode">
+        <div class="form-group">
+          <label for="copyDiagram">拷贝流程图:</label>
+          <div class="diagram-copy-container">
+            <input
+              type="text"
+              v-model="diagramSearchQuery"
+              placeholder="输入或选择要拷贝的流程图"
+              class="diagram-search-input"
+              @input="onDiagramSearchInput"
+              @focus="showDiagramDropdown = true"
+              @blur="hideDiagramDropdown"
+            />
+            <div
+              v-if="showDiagramDropdown && allDiagrams && allDiagrams.length > 0"
+              class="diagram-dropdown-list"
+              @mousedown.prevent
+            >
+              <div
+                v-for="availableDiagram in filteredDiagrams"
+                :key="availableDiagram.id"
+                class="diagram-dropdown-item"
+                @mousedown="selectDiagramFromDropdown(availableDiagram)"
+              >
+                {{ availableDiagram.__name__ }}
+              </div>
+              <div
+                v-if="filteredDiagrams && filteredDiagrams.length === 0"
+                class="no-results"
+              >
+                无匹配结果
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <form @submit.prevent="handleSubmit">
-        <!-- 将ID和名称放在同一行 -->
+        <!-- 基本信息表单行：包含ID、名称、版本和图片类型 -->
         <div class="form-row">
           <div class="form-group">
             <label>ID:</label>
@@ -18,18 +56,15 @@
             <label>名称 *</label>
             <input type="text" v-model="form.imageName" required>
           </div>
-        </div>
 
-        <!-- 将版本和显示名称放在同一行 -->
-        <div class="form-row">
           <div class="form-group">
             <label>版本</label>
             <input type="text" v-model="form.version" placeholder="默认版本为1.0">
           </div>
 
           <div class="form-group">
-            <label>显示名称</label>
-            <input type="text" v-model="form.__name__" disabled>
+            <label>图片类型</label>
+            <input type="text" :value="form.imageType || '未指定'" disabled>
           </div>
         </div>
 
@@ -40,13 +75,15 @@
             accept="image/*"
             @change="onImageChange"
           />
-          <div v-if="form.imagePreview" class="image-preview">
-            <img :src="form.imagePreview" alt="预览图像" />
-            <p>新图像预览</p>
-          </div>
-          <div v-else-if="form.imageDataUrl" class="image-preview">
-            <img :src="form.imageDataUrl" alt="当前图像" />
-            <p>当前图像</p>
+          <div v-if="form.imagePreview || form.imageDataUrl" class="image-container">
+            <div v-if="form.imagePreview" class="image-preview">
+              <img :src="form.imagePreview" alt="预览图像" />
+              <div class="image-label">新图像预览</div>
+            </div>
+            <div v-else-if="form.imageDataUrl" class="image-preview">
+              <img :src="form.imageDataUrl" alt="当前图像" />
+              <div class="image-label">当前图像</div>
+            </div>
           </div>
         </div>
 
@@ -70,8 +107,10 @@
         </div>
 
         <div class="form-actions">
-          <button type="button" @click="goBack" class="back-btn-form">返回</button>
-          <button type="submit" class="save-btn">保存</button>
+          <button type="button" class="back-btn-form" @click="goBack">返回</button>
+          <button type="button" class="save-btn" @click="handleSubmit">
+            {{ isEditMode ? '保存' : '创建' }}
+          </button>
         </div>
       </form>
     </div>
@@ -95,94 +134,147 @@ export default {
   },
   data() {
     return {
+      // 修复：将form数据移到data中，移除computed中的form
       form: {
         id: null,
         imageName: '',
+        __name__: '',
         version: 1,
-        imageFile: null,
         valid: true,
-        imageDataUrl: null
+        imageDataUrl: null,
+        imageData: null,
+        createdTime: null,
+        updateTime: null,
+        imageType: null
       },
-      previewUrl: null,
-      isEditing: false
+      // 拷贝功能相关数据
+      allDiagrams: [],
+      diagramSearchQuery: '',
+      showDiagramDropdown: false,
+      filteredDiagrams: []
     };
+  },
+  computed: {
+    isEditMode() {
+      return !!this.diagram.id;
+    },
+    imageData() {
+      // 如果有新的图片数据，优先使用新图片数据
+      if (this.form.imageData) {
+        return this.form.imageData;
+      }
+      // 否则返回null
+      return null;
+    }
   },
   watch: {
     diagram: {
       handler(newVal) {
-        this.initializeForm(newVal);
+        if (newVal) {
+          // 当diagram属性变化时更新表单数据
+          this.form = {
+            id: newVal.id || null,
+            imageName: newVal.imageName || '',
+            __name__: newVal.__name__ || '',
+            version: newVal.version !== undefined ? newVal.version : 1,
+            valid: newVal.valid !== undefined ? newVal.valid : true,
+            imageDataUrl: newVal.imageDataUrl || null,
+            imageData: newVal.imageData || null,
+            createdTime: newVal.createdTime || null,
+            updateTime: newVal.updateTime || null,
+            imageType: newVal.imageType || null
+          };
+        }
       },
       deep: true,
       immediate: true
     }
   },
+  async mounted() {
+    // 只在新增模式下加载所有流程图用于拷贝功能
+    if (!this.isEditMode) {
+      await this.loadAllDiagrams();
+    }
+  },
   methods: {
-    initializeForm(diagram) {
-      if (diagram && diagram.id) {
-        // 编辑模式
-        this.isEditing = true;
-        this.form = {
-          id: diagram.id,
-          imageName: diagram.imageName || '',
-          __name__: diagram.__name__ || '',
-          version: diagram.version || 1,
-          valid: diagram.valid !== undefined ? diagram.valid : true,
-          imageDataUrl: diagram.imageDataUrl || null,
-          createdTime: diagram.createdTime || null,
-          updateTime: diagram.updateTime || null
-        };
-        this.previewUrl = diagram.imageDataUrl || null;
+    // 加载所有流程图用于拷贝功能
+    async loadAllDiagrams() {
+      try {
+        this.allDiagrams = await processDiagramService.getAllBusinessProcessDiagrams();
+        // 限制初始显示数量
+        this.filteredDiagrams = this.allDiagrams.slice(0, 100);
+      } catch (error) {
+        console.error('加载业务流程图列表失败:', error);
+        // 不中断用户操作，只是不显示拷贝功能
+        this.allDiagrams = [];
+      }
+    },
+    
+    // 处理流程图搜索输入
+    onDiagramSearchInput() {
+      if (!this.diagramSearchQuery) {
+        // 限制显示数量，只显示前100个流程图
+        this.filteredDiagrams = this.allDiagrams.slice(0, 100);
       } else {
-        // 新增模式
-        this.isEditing = false;
-        this.form = {
-          id: null,
-          imageName: '',
-          __name__: '',
-          version: 1,
-          valid: true,
-          imageDataUrl: null,
-          createdTime: null,
-          updateTime: null
-        };
-        this.previewUrl = null;
+        const query = this.diagramSearchQuery.toLowerCase();
+        // 过滤并限制显示数量
+        this.filteredDiagrams = this.allDiagrams
+          .filter(diagram => 
+            diagram.__name__ && diagram.__name__.toLowerCase().includes(query)
+          )
+          .slice(0, 100);
+      }
+      this.showDiagramDropdown = true;
+    },
+    
+    // 显示流程图下拉列表
+    showDiagramDropdown() {
+      this.showDiagramDropdown = true;
+    },
+    
+    // 隐藏流程图下拉列表
+    hideDiagramDropdown() {
+      // 延迟隐藏，确保点击选项时能正常触发
+      setTimeout(() => {
+        this.showDiagramDropdown = false;
+      }, 200);
+    },
+    
+    // 从下拉列表中选择流程图
+    async selectDiagramFromDropdown(diagram) {
+      this.diagramSearchQuery = diagram.__name__;
+      this.showDiagramDropdown = false;
+      
+      try {
+        // 获取选中的流程图详情
+        const diagramDetail = await processDiagramService.getBusinessProcessDiagramById(diagram.id);
+        this.copyDiagramData(diagramDetail);
+      } catch (error) {
+        console.error('拷贝流程图失败:', error);
+        alert('拷贝流程图失败: ' + (error.message || '未知错误'));
       }
     },
-
-    // 返回列表
-    goBack() {
-      this.$emit('back');
-    },
-
-    // 格式化日期时间
-    formatDateTime(dateString) {
-      if (!dateString) return '';
-
-      // 如果是已经格式化的字符串 (yyyy-MM-dd HH:mm:ss)
-      if (typeof dateString === 'string' &&
-        dateString.includes('-') &&
-        dateString.includes(':') &&
-        dateString.length === 19) { // "yyyy-MM-dd HH:mm:ss" 长度为19
-        return dateString;
-      }
-
-      // 如果是 Date 对象或其他格式，则进行格式化
-      const date = new Date(dateString);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      const seconds = String(date.getSeconds()).padStart(2, '0');
-
-      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    
+    // 拷贝流程图数据到当前表单
+    copyDiagramData(diagramData) {
+      // 基本信息
+      this.form.imageName = diagramData.imageName;
+      this.form.version = diagramData.version;
+      this.form.valid = diagramData.valid;
+      this.form.imageDataUrl = diagramData.imageDataUrl;
+      this.form.imageType = diagramData.imageType;
+      // 拷贝图像数据
+      this.form.imageData = diagramData.imageData;
+      
+      // 触发更新以确保视图刷新
+      this.$forceUpdate();
+      
+      alert('流程图数据拷贝成功');
     },
 
     onImageChange(event) {
       const file = event.target.files[0];
       if (file) {
-        this.form.imageFile = file;
-        // 生成预览
         const reader = new FileReader();
         reader.onload = (e) => {
           this.form.imagePreview = e.target.result;
@@ -191,39 +283,54 @@ export default {
       }
     },
 
-    // 表单提交处理
+    formatDateTime(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toLocaleString('zh-CN');
+    },
+
+    goBack() {
+      this.$emit('back');
+    },
+
     async handleSubmit() {
-      if (!this.form.imageName.trim()) {
-        alert('请输入流程图名称');
-        return;
-      }
-
       const formData = new FormData();
-      formData.append('imageName', this.form.imageName);
-      formData.append('version', this.form.version);
+      const fileInput = document.querySelector('input[type="file"]');
       
-      // 修复：使用 'isValid' 而不是 'valid'
-      formData.append('isValid', this.form.valid);
+      // 添加表单数据
+      formData.append('imageName', this.form.imageName || '');
+      formData.append('version', this.form.version || 1);
+      formData.append('isValid', this.form.valid !== undefined ? this.form.valid : true);
       
-      if (this.form.imageFile) {
-        formData.append('imageFile', this.form.imageFile);
-      }
-
-      try {
-        let result;
-        if (this.isEditing) {
-          // 更新
-          result = await processDiagramService.updateBusinessProcessDiagram(this.form.id, formData);
-        } else {
-          // 创建
-          result = await processDiagramService.createBusinessProcessDiagram(formData);
+      // 添加文件（如果有的话）
+      if (fileInput && fileInput.files[0]) {
+        formData.append('imageFile', fileInput.files[0]);
+      } else if (this.form.imageData && !this.isEditMode) {
+        // 如果没有新文件但有拷贝的图像数据（新增模式），创建一个Blob并添加到表单中
+        try {
+          const response = await fetch(this.form.imageDataUrl);
+          const blob = await response.blob();
+          formData.append('imageFile', blob, 'copied_image.' + (this.form.imageType === 'PNG' ? 'png' : 'jpg'));
+        } catch (error) {
+          console.error('从imageDataUrl创建文件时出错:', error);
         }
-
-        this.$emit('diagram-updated', result);
-        this.$emit('back');
+      }
+      
+      try {
+        let response;
+        if (this.isEditMode) {
+          // 编辑模式
+          response = await processDiagramService.updateBusinessProcessDiagram(this.form.id, formData);
+        } else {
+          // 新增模式
+          response = await processDiagramService.createBusinessProcessDiagram(formData);
+        }
+        
+        this.$emit('diagram-updated', response);
+        alert(this.isEditMode ? '业务流程图更新成功' : '业务流程图创建成功');
       } catch (error) {
-        console.error('保存业务流程图失败:', error);
-        alert('保存失败: ' + error.message);
+        console.error('保存业务流程图出错:', error);
+        alert('保存失败: ' + (error.message || '未知错误'));
       }
     }
   }
@@ -235,8 +342,6 @@ export default {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
-  position: relative;
-  z-index: 1; /* 降低z-index值，确保侧边栏可以覆盖 */
 }
 
 .header {
@@ -247,126 +352,193 @@ export default {
 }
 
 .header h2 {
-  color: #303133;
   margin: 0;
+  color: #333;
 }
 
 .diagram-detail-content {
-  background-color: white;
-  border-radius: 4px;
+  background: white;
+  border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  position: relative;
-  z-index: 1; /* 降低z-index值，确保侧边栏可以覆盖 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* 表单样式 */
-.form-group {
-  margin-bottom: 15px;
+.copy-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+.copy-section .form-group {
+  margin-bottom: 0;
+}
+
+.diagram-copy-container {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  max-width: 400px;
+}
+
+.diagram-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.diagram-dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.diagram-dropdown-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+.diagram-dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+.diagram-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.no-results {
+  padding: 10px 12px;
+  color: #999;
+  font-style: italic;
 }
 
 .form-row {
   display: flex;
   gap: 15px;
+  margin-bottom: 15px;
 }
 
 .form-row .form-group {
   flex: 1;
-  margin-bottom: 15px;
+  margin-bottom: 0;
 }
 
-/* 调整ID字段的宽度 */
-.form-row .form-group:first-child {
-  flex: 0 0 120px; /* ID字段更窄 */
+.form-group {
+  margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 5px;
   font-weight: bold;
-  color: #303133;
+  color: #555;
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #dcdfe6;
+  border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
   box-sizing: border-box;
 }
 
 .form-group input:disabled {
-  background-color: #f5f7fa;
+  background-color: #f5f5f5;
   cursor: not-allowed;
 }
 
 .image-preview {
   margin-top: 10px;
+  text-align: center;
 }
 
 .image-preview img {
   max-width: 100%;
-  max-height: 200px;
-  border: 1px solid #dcdfe6;
+  max-height: 300px;
+  border: 1px solid #ddd;
   border-radius: 4px;
 }
 
-.image-preview p {
-  margin: 5px 0;
-  font-size: 12px;
-  color: #909399;
+.image-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 10px;
+  margin-bottom: 20px; /* 添加底部边距防止遮挡下面的元素 */
 }
 
-/* 时间信息样式 */
+.image-label {
+  margin-top: 5px;
+  font-weight: bold;
+  color: #555;
+}
+
 .time-info {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #ebeef5;
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 4px;
+  margin: 20px 0;
 }
 
 .time-details p {
   margin: 5px 0;
-  color: #909399;
+  color: #666;
   font-size: 14px;
 }
 
 .form-actions {
-  margin-top: 20px;
-  text-align: right;
-  position: relative;
-  z-index: 1; /* 降低z-index值，确保侧边栏可以覆盖 */
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  margin-bottom: 20px; /* 添加底部边距防止被遮挡 */
+  position: relative; /* 添加定位上下文 */
+  z-index: 10; /* 确保按钮在图片之上 */
 }
 
 .form-actions button {
-  margin-left: 10px;
-  padding: 8px 16px;
+  padding: 10px 20px;
+  border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  position: relative;
-  z-index: 1; /* 降低z-index值，确保侧边栏可以覆盖 */
+  transition: background-color 0.3s;
 }
 
 .back-btn-form {
-  background-color: #909399;
+  background-color: #6c757d;
   color: white;
-  border: none;
 }
 
 .back-btn-form:hover {
-  background-color: #a0a3a9;
+  background-color: #5a6268;
 }
 
 .save-btn {
-  background-color: #409eff;
+  background-color: #007bff;
   color: white;
-  border: none;
 }
 
 .save-btn:hover {
-  background-color: #66b1ff;
+  background-color: #0056b3;
 }
 
 @media (max-width: 768px) {
@@ -375,8 +547,10 @@ export default {
     gap: 0;
   }
   
-  .form-row .form-group:first-child {
-    flex: 1;
+  .header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
   }
 }
 </style>

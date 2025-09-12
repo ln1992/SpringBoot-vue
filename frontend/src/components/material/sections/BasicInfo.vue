@@ -1,7 +1,7 @@
 <!-- src/components/material/sections/BasicInfo.vue -->
 <template>
   <div class="basic-info-section">
-    <!-- ID和材料明细放在同一行 -->
+    <!-- ID、材料明细和版本放在同一行 -->
     <div class="form-row" v-if="isEditMode">
       <div class="form-group">
         <label>ID:</label>
@@ -21,25 +21,7 @@
           {{ errors.materialDetail }}
         </div>
       </div>
-    </div>
 
-    <!-- 新增模式下材料明细单独一行 -->
-    <div class="form-group" v-else>
-      <label>材料明细 *</label>
-      <input
-        type="text"
-        :value="form.materialDetail"
-        @input="$emit('update-field', 'materialDetail', $event.target.value)"
-        required
-        :class="{ 'error': errors.materialDetail }"
-      >
-      <div class="error-message" v-if="errors.materialDetail">
-        {{ errors.materialDetail }}
-      </div>
-    </div>
-
-    <!-- 版本和显示名称放在同一行 -->
-    <div class="form-row">
       <div class="form-group">
         <label>版本:</label>
         <input
@@ -52,10 +34,35 @@
           {{ errors.version }}
         </div>
       </div>
+    </div>
+
+    <!-- 新增模式下材料明细和版本放在同一行 -->
+    <div class="form-row" v-else>
+      <div class="form-group">
+        <label>材料明细 *</label>
+        <input
+          type="text"
+          :value="form.materialDetail"
+          @input="$emit('update-field', 'materialDetail', $event.target.value)"
+          required
+          :class="{ 'error': errors.materialDetail }"
+        >
+        <div class="error-message" v-if="errors.materialDetail">
+          {{ errors.materialDetail }}
+        </div>
+      </div>
 
       <div class="form-group">
-        <label>显示名称:</label>
-        <input type="text" :value="form.__name__" disabled>
+        <label>版本:</label>
+        <input
+          type="number"
+          :value="form.version"
+          @input="$emit('update-field', 'version', $event.target.value)"
+          min="1"
+        >
+        <div class="error-message" v-if="errors.version">
+          {{ errors.version }}
+        </div>
       </div>
     </div>
   </div>
@@ -114,19 +121,19 @@ export default {
   box-sizing: border-box;
 }
 
+.form-group input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
 .form-group input.error {
-  border-color: #f56c6c;
+  border-color: #dc3545;
 }
 
 .error-message {
-  color: #f56c6c;
+  color: #dc3545;
   font-size: 12px;
   margin-top: 5px;
-}
-
-.form-group input:disabled {
-  background-color: #f5f7fa;
-  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

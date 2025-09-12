@@ -9,34 +9,50 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/api/process-diagrams/business")
 @CrossOrigin(origins = "*")
 public class BusinessProcessDiagramController extends ProcessDiagramController<BusinessProcessDiagram> {
 
+    protected static final Logger logger = Logger.getLogger(BusinessProcessDiagramController.class.getName());
+
+    private final BusinessProcessDiagramService businessProcessDiagramService;
+
     @Autowired
     public BusinessProcessDiagramController(BusinessProcessDiagramService businessProcessDiagramService) {
-        super(businessProcessDiagramService, "业务流程图");
+        super(businessProcessDiagramService, "Business");
+        this.businessProcessDiagramService = businessProcessDiagramService;
     }
 
     // 获取所有业务流程图
     @GetMapping
-    public ResponseEntity<List<BusinessProcessDiagram>> getAllDiagrams() {
-        return super.getAllDiagrams();
+    public ResponseEntity<?> getBusinessProcessDiagrams(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            logger.info("Fetching business process diagrams with page: " + page + ", size: " + size);
+            // 这里可以添加分页逻辑
+            List<BusinessProcessDiagram> diagrams = businessProcessDiagramService.getAllDiagrams();
+            logger.info("Successfully retrieved " + diagrams.size() + " business process diagrams");
+            return ResponseEntity.ok(diagrams);
+        } catch (Exception e) {
+            logger.severe("Error retrieving business process diagrams: " + e.getMessage());
+            return ResponseEntity.status(500).body("获取业务流程图失败: " + e.getMessage());
+        }
     }
 
     // 根据ID获取业务流程图
-    @GetMapping("/{id}")
-    public ResponseEntity<BusinessProcessDiagram> getDiagramById(@PathVariable Long id) {
+    public ResponseEntity<BusinessProcessDiagram> getBusinessProcessDiagramById(@PathVariable Long id) {
         return super.getDiagramById(id);
     }
 
-    // 创建新的业务流程图
+    // 创建业务流程图
     @PostMapping
-    public ResponseEntity<?> createDiagram(
+    public ResponseEntity<?> createBusinessProcessDiagram(
             @RequestParam("imageName") String imageName,
-            @RequestParam(value = "version", required = false) Long version,
+            @RequestParam(value = "version", defaultValue = "1") Long version,
             @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
             @RequestParam(value = "isValid", defaultValue = "true") Boolean isValid) {
         return super.createDiagram(imageName, version, imageFile, isValid);
@@ -44,36 +60,30 @@ public class BusinessProcessDiagramController extends ProcessDiagramController<B
 
     // 更新业务流程图
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateDiagram(
+    public ResponseEntity<?> updateBusinessProcessDiagram(
             @PathVariable Long id,
             @RequestParam("imageName") String imageName,
             @RequestParam(value = "version", required = false) Long version,
             @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
-            @RequestParam(value = "isValid", defaultValue = "true") Boolean isValid) {
+            @RequestParam(value = "isValid", required = false) Boolean isValid) {
         return super.updateDiagram(id, imageName, version, imageFile, isValid);
     }
 
     // 删除业务流程图
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteDiagram(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteBusinessProcessDiagram(@PathVariable Long id) {
         return super.deleteDiagram(id);
     }
 
     // 启用业务流程图
     @PutMapping("/{id}/activate")
-    public ResponseEntity<?> activateDiagram(@PathVariable Long id) {
+    public ResponseEntity<?> activateBusinessProcessDiagram(@PathVariable Long id) {
         return super.activateDiagram(id);
     }
 
-    // 禁用业务流程图
+    // 停用业务流程图
     @PutMapping("/{id}/deactivate")
-    public ResponseEntity<?> deactivateDiagram(@PathVariable Long id) {
+    public ResponseEntity<?> deactivateBusinessProcessDiagram(@PathVariable Long id) {
         return super.deactivateDiagram(id);
-    }
-
-    // 根据状态获取业务流程图
-    @GetMapping("/search/valid")
-    public ResponseEntity<List<BusinessProcessDiagram>> getDiagramsByValidStatus(@RequestParam Boolean isValid) {
-        return super.getDiagramsByValidStatus(isValid);
     }
 }
