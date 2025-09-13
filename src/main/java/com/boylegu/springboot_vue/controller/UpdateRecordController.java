@@ -1,7 +1,7 @@
 package com.boylegu.springboot_vue.controller;
 
 import com.boylegu.springboot_vue.entities.UpdateRecord;
-import com.boylegu.springboot_vue.repository.UpdateRecordRepository;
+import com.boylegu.springboot_vue.service.UpdateRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,13 +17,13 @@ public class UpdateRecordController {
     private static final Logger logger = Logger.getLogger(UpdateRecordController.class.getName());
 
     @Autowired
-    private UpdateRecordRepository updateRecordRepository;
+    private UpdateRecordService updateRecordService;
 
     // 获取所有更新记录
     @GetMapping
     public ResponseEntity<List<UpdateRecord>> getAllUpdateRecords() {
         try {
-            List<UpdateRecord> records = updateRecordRepository.findAll();
+            List<UpdateRecord> records = updateRecordService.getAllUpdateRecords();
             logger.info("Successfully retrieved " + records.size() + " update records");
             return ResponseEntity.ok(records);
         } catch (Exception e) {
@@ -36,7 +36,7 @@ public class UpdateRecordController {
     @GetMapping("/{id}")
     public ResponseEntity<UpdateRecord> getUpdateRecordById(@PathVariable Long id) {
         try {
-            UpdateRecord record = updateRecordRepository.findById(id).orElse(null);
+            UpdateRecord record = updateRecordService.getUpdateRecordById(id);
             if (record != null) {
                 return ResponseEntity.ok(record);
             } else {
@@ -48,11 +48,24 @@ public class UpdateRecordController {
         }
     }
 
+    // 根据ID删除更新记录
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUpdateRecord(@PathVariable Long id) {
+        try {
+            updateRecordService.deleteUpdateRecordById(id);
+            logger.info("Successfully deleted update record with id: " + id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            logger.severe("Error deleting update record with id " + id + ": " + e.getMessage());
+            return ResponseEntity.status(500).build();
+        }
+    }
+
     // 根据实体类型获取更新记录
     @GetMapping("/entity-type/{entityType}")
     public ResponseEntity<List<UpdateRecord>> getUpdateRecordsByEntityType(@PathVariable String entityType) {
         try {
-            List<UpdateRecord> records = updateRecordRepository.findByEntityType(entityType);
+            List<UpdateRecord> records = updateRecordService.getUpdateRecordsByEntityType(entityType);
             return ResponseEntity.ok(records);
         } catch (Exception e) {
             logger.severe("Error retrieving update records by entity type " + entityType + ": " + e.getMessage());
@@ -65,7 +78,7 @@ public class UpdateRecordController {
     public ResponseEntity<List<UpdateRecord>> getUpdateRecordsByOperationType(@PathVariable String operationType) {
         try {
             UpdateRecord.OperationType type = UpdateRecord.OperationType.valueOf(operationType);
-            List<UpdateRecord> records = updateRecordRepository.findByOperationType(type);
+            List<UpdateRecord> records = updateRecordService.getUpdateRecordsByOperationType(type);
             return ResponseEntity.ok(records);
         } catch (Exception e) {
             logger.severe("Error retrieving update records by operation type " + operationType + ": " + e.getMessage());
@@ -77,7 +90,7 @@ public class UpdateRecordController {
     @GetMapping("/operator/{operator}")
     public ResponseEntity<List<UpdateRecord>> getUpdateRecordsByOperator(@PathVariable String operator) {
         try {
-            List<UpdateRecord> records = updateRecordRepository.findByOperator(operator);
+            List<UpdateRecord> records = updateRecordService.getUpdateRecordsByOperator(operator);
             return ResponseEntity.ok(records);
         } catch (Exception e) {
             logger.severe("Error retrieving update records by operator " + operator + ": " + e.getMessage());

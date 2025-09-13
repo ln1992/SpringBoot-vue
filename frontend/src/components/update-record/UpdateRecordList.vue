@@ -2,7 +2,7 @@
 <template>
   <div class="update-record-list-container">
     <!-- 更新记录列表界面 -->
-    <div v-if="!selectedRecord && !showAddForm">
+    <div v-if="!selectedRecord">
       <div class="header">
         <h2>更新记录</h2>
         <div class="header-actions">
@@ -62,60 +62,47 @@
           <div class="table-cell">操作类型</div>
           <div class="table-cell">操作用户</div>
           <div class="table-cell">创建时间</div>
+          <div class="table-cell">操作</div>
         </div>
-        <div 
-          class="table-row" 
-          v-for="record in paginatedRecords" 
+        <div
+          class="table-row"
+          v-for="record in paginatedRecords"
           :key="record.id"
-          @click="selectRecord(record)"
         >
           <div class="table-cell">{{ record.id }}</div>
-          <div class="table-cell">{{ record.entityName || '-' }}</div>
+          <div class="table-cell entity-name" @click="viewRecordDetail(record)">
+            {{ record.entityName || '-' }}
+          </div>
           <div class="table-cell">{{ record.entityId }}</div>
           <div class="table-cell">{{ record.entityType }}</div>
           <div class="table-cell">{{ getOperationTypeLabel(record.operationType) }}</div>
-          <div class="table-cell">{{ record.operator }}</div>
-          <div class="table-cell">{{ formatDate(record.createdTime) }}</div>
+          <div class="table-cell">{{ record.operator || '-' }}</div>
+          <div class="table-cell">{{ formatDate(record.createTime) }}</div>
+          <div class="table-cell">
+            <button @click.stop="deleteRecord(record.id)" class="delete-btn">删除</button>
+          </div>
         </div>
       </div>
-      
-      <!-- 自定义分页组件 -->
-      <div class="pagination" v-if="paginatedRecords.length > 0">
+
+      <!-- 分页控件 -->
+      <div class="pagination" v-if="totalPages > 1">
         <div class="pagination-controls">
-          <button 
-            :disabled="currentPage === 1"
-            @click="currentPage > 1 && (currentPage--)">
-            上一页
-          </button>
-          
-          <span>
-            第 {{ currentPage }} 页，共 {{ totalPages }} 页 (总计 {{ filteredRecords.length }} 条)
-          </span>
-          
-          <button 
-            :disabled="currentPage === totalPages"
-            @click="currentPage < totalPages && (currentPage++)">
-            下一页
-          </button>
+          <button @click="prevPage" :disabled="currentPage === 1">上一页</button>
+          <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页</span>
+          <button @click="nextPage" :disabled="currentPage === totalPages">下一页</button>
         </div>
-        <div class="page-size-selector">
-          <label>每页显示:</label>
-          <select v-model="pageSize" @change="handlePageSizeChange">
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="50">50</option>
-          </select>
+        <div class="pagination-info">
+          显示第 {{ (currentPage - 1) * pageSize + 1 }} 到 {{ Math.min(currentPage * pageSize, filteredRecords.length) }} 条，共 {{ filteredRecords.length }} 条记录
         </div>
       </div>
     </div>
 
     <!-- 更新记录详情界面 -->
-    <UpdateRecordDetail 
-      v-else-if="selectedRecord"
-      :record="selectedRecord"
-      @back="goBackToList"
-    />
+    <div v-else>
+      <UpdateRecordDetail
+        :record="selectedRecord"
+        @back="goBackToList" />
+    </div>
   </div>
 </template>
 
@@ -132,16 +119,15 @@ export default {
     return {
       records: [],
       filteredRecords: [],
-      selectedRecord: null,
       loading: false,
       error: null,
       filterEntityType: '',
       filterOperationType: '',
       searchKeyword: '',
-      showAddForm: false,
       // 分页相关数据
       currentPage: 1,
-      pageSize: 10
+      pageSize: 10,
+      selectedRecord: null
     }
   },
   computed: {
@@ -149,7 +135,7 @@ export default {
     totalPages() {
       return Math.ceil(this.filteredRecords.length / this.pageSize)
     },
-    
+
     // 计算分页后的记录
     paginatedRecords() {
       const start = (this.currentPage - 1) * this.pageSize
@@ -161,6 +147,16 @@ export default {
     this.fetchRecords()
   },
   methods: {
+    // 查看记录详情，在当前页面中显示
+    viewRecordDetail(record) {
+      this.selectedRecord = record;
+    },
+
+    // 返回列表视图
+    goBackToList() {
+      this.selectedRecord = null;
+    },
+
     async fetchRecords() {
       this.loading = true
       this.error = null
@@ -176,19 +172,19 @@ export default {
         this.loading = false
       }
     },
-    
+
     filterRecords() {
       this.filteredRecords = this.records.filter(record => {
         // 实体类型筛选
         if (this.filterEntityType && record.entityType !== this.filterEntityType) {
           return false
         }
-        
+
         // 操作类型筛选
         if (this.filterOperationType && record.operationType !== this.filterOperationType) {
           return false
         }
-        
+
         // 关键词搜索
         if (this.searchKeyword) {
           const keyword = this.searchKeyword.toLowerCase()
@@ -197,23 +193,14 @@ export default {
             return false
           }
         }
-        
+
         return true
       })
-      
+
       // 重置到第一页
       this.currentPage = 1
     },
-    
-    selectRecord(record) {
-      this.selectedRecord = record
-    },
-    
-    goBackToList() {
-      this.selectedRecord = null
-      this.fetchRecords() // 返回列表时刷新数据
-    },
-    
+
     getOperationTypeLabel(operationType) {
       const labels = {
         'CREATE': '创建',
@@ -222,20 +209,46 @@ export default {
       }
       return labels[operationType] || operationType
     },
-    
+
     formatDate(dateString) {
       if (!dateString) return '-'
       const date = new Date(dateString)
       return date.toLocaleString('zh-CN')
     },
-    
-    // 添加resetToListView方法以符合规范
-    resetToListView() {
-      this.selectedRecord = null
-      this.showAddForm = false
-      this.fetchRecords()
+
+    // 删除记录
+    async deleteRecord(id) {
+      if (!confirm('确定要删除这条更新记录吗？此操作不可恢复。')) {
+        return;
+      }
+
+      try {
+        await api.http.delete(`/update-records/${id}`);
+        // 删除成功后刷新列表
+        await this.fetchRecords();
+        alert('删除成功');
+      } catch (err) {
+        console.error('删除记录失败:', err);
+        if (err.response) {
+          if (err.response.status === 404) {
+            alert('记录不存在');
+          } else if (err.response.status === 500) {
+            alert('服务器内部错误，请稍后重试');
+          } else {
+            var message = '未知错误';
+            if (err.response.data && err.response.data.message) {
+              message = err.response.data.message;
+            } else if (err.response.statusText) {
+              message = err.response.statusText;
+            }
+            alert('删除失败: ' + message);
+          }
+        } else {
+          alert('删除失败: 网络错误或服务器无响应');
+        }
+      }
     },
-    
+
     // 上一页
     prevPage() {
       if (this.currentPage > 1) {
@@ -243,7 +256,7 @@ export default {
         window.scrollTo(0, 0)
       }
     },
-    
+
     // 下一页
     nextPage() {
       if (this.currentPage < this.totalPages) {
@@ -251,11 +264,10 @@ export default {
         window.scrollTo(0, 0)
       }
     },
-    
-    // 处理每页显示条数变化
-    handlePageSizeChange() {
-      // 重置到第一页
-      this.currentPage = 1
+
+    // 添加resetToListView方法，用于从App.vue中调用返回列表视图
+    resetToListView() {
+      this.selectedRecord = null;
     }
   }
 }
@@ -291,11 +303,6 @@ export default {
 .refresh-btn {
   background-color: #f0f0f0;
   color: #333;
-}
-
-.add-btn {
-  background-color: #409eff;
-  color: white;
 }
 
 .filter-section {
@@ -385,6 +392,16 @@ export default {
   flex: 0 0 150px;
 }
 
+.entity-name {
+  color: #007bff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.entity-name:hover {
+  color: #0056b3;
+}
+
 .table-cell:nth-child(3) {
   flex: 0 0 100px;
 }
@@ -403,6 +420,19 @@ export default {
 
 .table-cell:last-child {
   flex: 0 0 160px;
+}
+
+.delete-btn {
+  background-color: #f56c6c;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background-color: #e45656;
 }
 
 .pagination {
@@ -445,18 +475,6 @@ export default {
   cursor: not-allowed;
 }
 
-.page-size-selector {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.page-size-selector select {
-  padding: 6px 10px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-}
-
 .pagination-info {
   color: #606266;
   font-size: 14px;
@@ -466,16 +484,16 @@ export default {
   .filter-section {
     flex-direction: column;
   }
-  
+
   .filter-group, .search-group {
     width: 100%;
   }
-  
+
   .search-group input {
     min-width: auto;
     flex: 1;
   }
-  
+
   .pagination {
     flex-direction: column;
     gap: 10px;

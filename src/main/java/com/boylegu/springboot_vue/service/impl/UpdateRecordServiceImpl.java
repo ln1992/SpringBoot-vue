@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * 更新记录服务实现类
  */
@@ -32,37 +34,87 @@ public class UpdateRecordServiceImpl implements UpdateRecordService {
      */
     @Override
     public UpdateRecord logCreate(BaseEntity entity, String operator, String description) {
-        UpdateRecord record = createUpdateRecord(
-            entity.getClass().getSimpleName(),
-            entity.getId(),
-            entity.get__name__(),
-            UpdateRecord.OperationType.CREATE,
-            null,
-            entityToString(entity),
-            operator,
-            description
-        );
-        
-        return updateRecordRepository.save(record);
+        try {
+            UpdateRecord record = new UpdateRecord();
+            record.setEntityType(entity.getClass().getSimpleName());
+            record.setEntityId(entity.getId());
+            record.setEntityName(entity.get__name__());
+            record.setOperationType(UpdateRecord.OperationType.CREATE);
+            record.setOperator(operator);
+            record.setDescription(description);
+            
+            // 序列化新实体作为afterData
+            String afterData = objectMapper.writeValueAsString(entity);
+            record.setAfterData(afterData);
+            
+            return updateRecordRepository.save(record);
+        } catch (Exception e) {
+            // 记录日志但不中断主流程
+            e.printStackTrace();
+            return null;
+        }
     }
     
     /**
-     * 记录实体更新操作
+     * 记录实体更新操作（完整实体）
      */
     @Override
     public UpdateRecord logUpdate(BaseEntity oldEntity, BaseEntity newEntity, String operator, String description) {
-        UpdateRecord record = createUpdateRecord(
-            newEntity.getClass().getSimpleName(),
-            newEntity.getId(),
-            newEntity.get__name__(),
-            UpdateRecord.OperationType.UPDATE,
-            entityToString(oldEntity),
-            entityToString(newEntity),
-            operator,
-            description
-        );
-        
-        return updateRecordRepository.save(record);
+        try {
+            UpdateRecord record = new UpdateRecord();
+            record.setEntityType(newEntity.getClass().getSimpleName());
+            record.setEntityId(newEntity.getId());
+            record.setEntityName(newEntity.get__name__());
+            record.setOperationType(UpdateRecord.OperationType.UPDATE);
+            record.setOperator(operator);
+            record.setDescription(description);
+            
+            // 序列化旧实体作为beforeData
+            String beforeData = objectMapper.writeValueAsString(oldEntity);
+            record.setBeforeData(beforeData);
+            
+            // 序列化新实体作为afterData
+            String afterData = objectMapper.writeValueAsString(newEntity);
+            record.setAfterData(afterData);
+            
+            return updateRecordRepository.save(record);
+        } catch (Exception e) {
+            // 记录日志但不中断主流程
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    /**
+     * 记录实体更新操作（仅变更字段）
+     */
+    public UpdateRecord logUpdate(String entityType, Long entityId, String entityName,
+                                java.util.Map<String, Object> oldValues, java.util.Map<String, Object> newValues,
+                                String operator, String description) {
+        try {
+            UpdateRecord record = new UpdateRecord();
+            record.setEntityType(entityType);
+            record.setEntityId(entityId);
+            record.setEntityName(entityName);
+            record.setOperationType(UpdateRecord.OperationType.UPDATE);
+            record.setOperator(operator);
+            record.setDescription(description);
+            
+            // 创建变更详情对象
+            java.util.Map<String, Object> changeDetails = new java.util.HashMap<>();
+            changeDetails.put("old", oldValues);
+            changeDetails.put("new", newValues);
+            
+            // 序列化变更详情
+            String changeData = objectMapper.writeValueAsString(changeDetails);
+            record.setBeforeData(changeData); // 使用beforeData存储变更详情
+            
+            return updateRecordRepository.save(record);
+        } catch (Exception e) {
+            // 记录日志但不中断主流程
+            e.printStackTrace();
+            return null;
+        }
     }
     
     /**
@@ -70,47 +122,72 @@ public class UpdateRecordServiceImpl implements UpdateRecordService {
      */
     @Override
     public UpdateRecord logDelete(BaseEntity entity, String operator, String description) {
-        UpdateRecord record = createUpdateRecord(
-            entity.getClass().getSimpleName(),
-            entity.getId(),
-            entity.get__name__(),
-            UpdateRecord.OperationType.DELETE,
-            entityToString(entity),
-            null,
-            operator,
-            description
-        );
-        
-        return updateRecordRepository.save(record);
-    }
-    
-    /**
-     * 创建更新记录
-     */
-    private UpdateRecord createUpdateRecord(String entityType, Long entityId, String entityName,
-                                          UpdateRecord.OperationType operationType,
-                                          String beforeData, String afterData,
-                                          String operator, String description) {
-        UpdateRecord record = new UpdateRecord();
-        record.setEntityType(entityType);
-        record.setEntityId(entityId);
-        record.setEntityName(entityName);
-        record.setOperationType(operationType);
-        record.setBeforeData(beforeData);
-        record.setAfterData(afterData);
-        record.setOperator(operator);
-        record.setDescription(description);
-        return record;
-    }
-    
-    /**
-     * 将实体转换为字符串（用于存储）
-     */
-    private String entityToString(BaseEntity entity) {
         try {
-            return objectMapper.writeValueAsString(entity);
+            UpdateRecord record = new UpdateRecord();
+            record.setEntityType(entity.getClass().getSimpleName());
+            record.setEntityId(entity.getId());
+            record.setEntityName(entity.get__name__());
+            record.setOperationType(UpdateRecord.OperationType.DELETE);
+            record.setOperator(operator);
+            record.setDescription(description);
+            
+            // 序列化旧实体作为beforeData
+            String beforeData = objectMapper.writeValueAsString(entity);
+            record.setBeforeData(beforeData);
+            
+            return updateRecordRepository.save(record);
         } catch (Exception e) {
-            return "Error serializing entity: " + e.getMessage();
+            // 记录日志但不中断主流程
+            e.printStackTrace();
+            return null;
         }
+    }
+    
+    /**
+     * 获取所有更新记录
+     */
+    @Override
+    public List<UpdateRecord> getAllUpdateRecords() {
+        return updateRecordRepository.findAll();
+    }
+    
+    /**
+     * 根据ID获取更新记录
+     */
+    @Override
+    public UpdateRecord getUpdateRecordById(Long id) {
+        return updateRecordRepository.findById(id).orElse(null);
+    }
+    
+    /**
+     * 根据ID删除更新记录
+     */
+    @Override
+    public void deleteUpdateRecordById(Long id) {
+        updateRecordRepository.deleteById(id);
+    }
+    
+    /**
+     * 根据实体类型获取更新记录
+     */
+    @Override
+    public List<UpdateRecord> getUpdateRecordsByEntityType(String entityType) {
+        return updateRecordRepository.findByEntityType(entityType);
+    }
+    
+    /**
+     * 根据操作类型获取更新记录
+     */
+    @Override
+    public List<UpdateRecord> getUpdateRecordsByOperationType(UpdateRecord.OperationType operationType) {
+        return updateRecordRepository.findByOperationType(operationType);
+    }
+    
+    /**
+     * 根据操作用户获取更新记录
+     */
+    @Override
+    public List<UpdateRecord> getUpdateRecordsByOperator(String operator) {
+        return updateRecordRepository.findByOperator(operator);
     }
 }

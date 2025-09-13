@@ -9,16 +9,16 @@
       <form @submit.prevent="handleSubmit">
         <BasicInfo
           :record="record" />
-          
+
         <OperationInfo
           :record="record" />
-          
+
         <DataInfo
           :record="record" />
-          
+
         <TimeInfo
           :record="record" />
-          
+
         <FormActions
           @back="goBack" />
       </form>
@@ -52,7 +52,7 @@ export default {
     goBack() {
       this.$emit('back')
     },
-    
+
     handleSubmit() {
       // 空提交处理函数，保持与MaterialDetail.vue一致的结构
     }
