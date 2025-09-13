@@ -3,6 +3,7 @@
   <div class="matter-detail-container">
     <div class="header">
       <h2>{{ isEditMode ? '编辑事项' : '新增事项' }}</h2>
+      <button v-if="isEditMode" class="api-btn" @click="openApiUrl" title="查看API数据">API</button>
     </div>
 
     <div class="matter-detail-content">
@@ -278,7 +279,7 @@ export default {
         const query = this.matterSearchQuery.toLowerCase();
         // 过滤并限制显示数量
         this.filteredMatters = this.allMatters
-          .filter(matter => 
+          .filter(matter =>
             matter.__name__ && matter.__name__.toLowerCase().includes(query)
           )
           .slice(0, 100);
@@ -303,7 +304,7 @@ export default {
     async selectMatterFromDropdown(matter) {
       this.matterSearchQuery = matter.__name__;
       this.showMatterDropdown = false;
-      
+
       try {
         // 获取选中的事项详情
         const matterDetail = await matterService.getMatterById(matter.id);
@@ -343,34 +344,34 @@ export default {
       this.form.mainItemName = matterData.mainItemName;
       this.form.subItemName = matterData.subItemName;
       this.form.grandchildItemName = matterData.grandchildItemName;
-      
+
       // 经办依据
       this.form.bases = matterData.bases ? [...matterData.bases] : [];
-      
+
       // 材料ID列表
       this.form.materialIds = matterData.materialIds ? [...matterData.materialIds] : [];
-      
+
       // 重新初始化材料
       this.initializeMaterials();
-      
+
       // 时限信息
       this.form.legalTimeLimit = matterData.legalTimeLimit;
       this.form.committedTimeLimit = matterData.committedTimeLimit;
-      
+
       // 审批层级和省厅对口指导处室
       this.form.approvalLevel = matterData.approvalLevel;
       this.form.provincialDepartmentOffice = matterData.provincialDepartmentOffice;
-      
+
       // 流程图ID
       this.form.approvalProcessDiagramId = matterData.approvalProcessDiagramId;
       this.form.businessProcessDiagramId = matterData.businessProcessDiagramId;
-      
+
       // 注意：不拷贝发布状态和ID
       // this.form.id = matterData.id;
       // this.form.version = matterData.version;
       // this.form.isValid = matterData.isValid;
       // this.form.isPublish = matterData.isPublish;
-      
+
       alert('事项数据拷贝成功');
     },
 
@@ -506,6 +507,17 @@ export default {
         publish: this.form.isPublish,
         materials: this.selectedMaterials.filter(material => material.id)
       }
+    },
+
+    // 打开API网址查看数据
+    openApiUrl() {
+      if (this.form.id) {
+        // 构造API URL，假设API端点为 /api/matters/{id}
+        const apiUrl = `${window.location.origin}/api/matters/${this.form.id}`;
+        window.open(apiUrl, '_blank');
+      } else {
+        alert('事项ID不存在，无法打开API链接');
+      }
     }
   }
 }
@@ -530,6 +542,20 @@ export default {
 .header h2 {
   color: #303133;
   margin: 0;
+}
+
+.api-btn {
+  background-color: #409eff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.api-btn:hover {
+  background-color: #337ecc;
 }
 
 .matter-detail-content {
@@ -620,7 +646,13 @@ export default {
   .matter-detail-container {
     padding: 10px;
   }
-  
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
   .form-group {
     flex-direction: column;
     align-items: stretch;

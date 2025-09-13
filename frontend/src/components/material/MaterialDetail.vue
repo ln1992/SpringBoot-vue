@@ -3,6 +3,7 @@
   <div class="material-detail-container">
     <div class="header">
       <h2>{{ isEditMode ? '编辑材料' : '新增材料' }}</h2>
+      <button v-if="isEditMode" class="api-btn" @click="openApiUrl" title="查看API数据">API</button>
     </div>
 
     <div class="material-detail-content">
@@ -308,6 +309,17 @@ export default {
       } finally {
         this.submitting = false;
       }
+    },
+
+    // 打开API网址查看数据
+    openApiUrl() {
+      if (this.form.id) {
+        // 构造API URL，假设API端点为 /api/materials/{id}
+        const apiUrl = `${window.location.origin}/api/materials/${this.form.id}`;
+        window.open(apiUrl, '_blank');
+      } else {
+        alert('材料ID不存在，无法打开API链接');
+      }
     }
   }
 }
@@ -332,6 +344,20 @@ export default {
 .header h2 {
   color: #303133;
   margin: 0;
+}
+
+.api-btn {
+  background-color: #409eff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.api-btn:hover {
+  background-color: #337ecc;
 }
 
 .material-detail-content {
@@ -426,6 +452,12 @@ export default {
 @media (max-width: 768px) {
   .material-detail-container {
     padding: 10px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
 
   .form-group {

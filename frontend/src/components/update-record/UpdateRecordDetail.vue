@@ -3,6 +3,7 @@
   <div class="update-record-detail-container">
     <div class="header">
       <h2>更新记录详情</h2>
+      <button class="api-btn" @click="openApiUrl" title="查看API数据">API</button>
     </div>
 
     <div class="update-record-detail-content">
@@ -55,6 +56,17 @@ export default {
 
     handleSubmit() {
       // 空提交处理函数，保持与MaterialDetail.vue一致的结构
+    },
+
+    // 打开API网址查看数据
+    openApiUrl() {
+      if (this.record.id) {
+        // 构造API URL，假设API端点为 /api/update-records/{id}
+        const apiUrl = `${window.location.origin}/api/update-records/${this.record.id}`;
+        window.open(apiUrl, '_blank');
+      } else {
+        alert('记录ID不存在，无法打开API链接');
+      }
     }
   }
 }
@@ -81,6 +93,20 @@ export default {
   margin: 0;
 }
 
+.api-btn {
+  background-color: #409eff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.api-btn:hover {
+  background-color: #337ecc;
+}
+
 .update-record-detail-content {
   background-color: white;
   border-radius: 4px;
@@ -93,6 +119,12 @@ export default {
 @media (max-width: 768px) {
   .update-record-detail-container {
     padding: 10px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
 }
 </style>

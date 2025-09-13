@@ -3,6 +3,7 @@
   <div class="diagram-detail-container">
     <div class="header">
       <h2>{{ isEditMode ? '编辑业务流程图' : '新增业务流程图' }}</h2>
+      <button v-if="isEditMode" class="api-btn" @click="openApiUrl" title="查看API数据">API</button>
     </div>
 
     <div class="diagram-detail-content">
@@ -209,7 +210,7 @@ export default {
         this.allDiagrams = [];
       }
     },
-    
+
     // 处理流程图搜索输入
     onDiagramSearchInput() {
       if (!this.diagramSearchQuery) {
@@ -219,19 +220,19 @@ export default {
         const query = this.diagramSearchQuery.toLowerCase();
         // 过滤并限制显示数量
         this.filteredDiagrams = this.allDiagrams
-          .filter(diagram => 
+          .filter(diagram =>
             diagram.__name__ && diagram.__name__.toLowerCase().includes(query)
           )
           .slice(0, 100);
       }
       this.showDiagramDropdown = true;
     },
-    
+
     // 显示流程图下拉列表
     showDiagramDropdown() {
       this.showDiagramDropdown = true;
     },
-    
+
     // 隐藏流程图下拉列表
     hideDiagramDropdown() {
       // 延迟隐藏，确保点击选项时能正常触发
@@ -239,12 +240,12 @@ export default {
         this.showDiagramDropdown = false;
       }, 200);
     },
-    
+
     // 从下拉列表中选择流程图
     async selectDiagramFromDropdown(diagram) {
       this.diagramSearchQuery = diagram.__name__;
       this.showDiagramDropdown = false;
-      
+
       try {
         // 获取选中的流程图详情
         const diagramDetail = await processDiagramService.getBusinessProcessDiagramById(diagram.id);
@@ -254,7 +255,7 @@ export default {
         alert('拷贝流程图失败: ' + (error.message || '未知错误'));
       }
     },
-    
+
     // 拷贝流程图数据到当前表单
     copyDiagramData(diagramData) {
       // 基本信息
@@ -265,10 +266,10 @@ export default {
       this.form.imageType = diagramData.imageType;
       // 拷贝图像数据
       this.form.imageData = diagramData.imageData;
-      
+
       // 触发更新以确保视图刷新
       this.$forceUpdate();
-      
+
       alert('流程图数据拷贝成功');
     },
 
@@ -296,12 +297,12 @@ export default {
     async handleSubmit() {
       const formData = new FormData();
       const fileInput = document.querySelector('input[type="file"]');
-      
+
       // 添加表单数据
       formData.append('imageName', this.form.imageName || '');
       formData.append('version', this.form.version || 1);
       formData.append('isValid', this.form.valid !== undefined ? this.form.valid : true);
-      
+
       // 添加文件（如果有的话）
       if (fileInput && fileInput.files[0]) {
         formData.append('imageFile', fileInput.files[0]);
@@ -315,7 +316,7 @@ export default {
           console.error('从imageDataUrl创建文件时出错:', error);
         }
       }
-      
+
       try {
         let response;
         if (this.isEditMode) {
@@ -325,12 +326,23 @@ export default {
           // 新增模式
           response = await processDiagramService.createBusinessProcessDiagram(formData);
         }
-        
+
         this.$emit('diagram-updated', response);
         alert(this.isEditMode ? '业务流程图更新成功' : '业务流程图创建成功');
       } catch (error) {
         console.error('保存业务流程图出错:', error);
         alert('保存失败: ' + (error.message || '未知错误'));
+      }
+    },
+
+    // 打开API网址查看数据
+    openApiUrl() {
+      if (this.form.id) {
+        // 构造API URL，假设API端点为 /api/process-diagrams/business/{id}
+        const apiUrl = `${window.location.origin}/api/process-diagrams/business/${this.form.id}`;
+        window.open(apiUrl, '_blank');
+      } else {
+        alert('流程图ID不存在，无法打开API链接');
       }
     }
   }
@@ -354,6 +366,20 @@ export default {
 .header h2 {
   margin: 0;
   color: #333;
+}
+
+.api-btn {
+  background-color: #409eff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.api-btn:hover {
+  background-color: #337ecc;
 }
 
 .diagram-detail-content {
@@ -546,7 +572,7 @@ export default {
     flex-direction: column;
     gap: 0;
   }
-  
+
   .header {
     flex-direction: column;
     gap: 10px;
