@@ -12,7 +12,9 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -21,14 +23,23 @@ import java.util.logging.Logger;
 @Aspect
 @Component
 public class UpdateRecordAspect {
-    
+
     private static final Logger logger = Logger.getLogger(UpdateRecordAspect.class.getName());
-    
+
     @Autowired
     private UpdateRecordService updateRecordService;
-    
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    
+
+    // 定义需要忽略的字段列表
+    private static final Set<String> IGNORED_FIELDS = new HashSet<>(Arrays.asList(
+            "updateTime"
+    ));
+
+    private static final Set<String> HASH_FIELDS = new HashSet<>(Arrays.asList(
+            "imageData",
+            "imageUrl"
+    ));
+
+
     /**
      * 环绕通知，处理带有 @RecordUpdate 注解的方法
      */
@@ -38,12 +49,12 @@ public class UpdateRecordAspect {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         String methodName = signature.getName();
         String className = joinPoint.getTarget().getClass().getSimpleName();
-        
+
         logger.info("开始记录操作: " + className + "." + methodName);
-        
+
         // 获取方法参数
         Object[] args = joinPoint.getArgs();
-        
+
         // 根据操作类型处理
         switch (recordUpdate.operation()) {
             case CREATE:
@@ -56,57 +67,97 @@ public class UpdateRecordAspect {
                 return joinPoint.proceed();
         }
     }
-    
+
     /**
      * 处理创建操作
      */
     private Object handleCreateOperation(ProceedingJoinPoint joinPoint, RecordUpdate recordUpdate, Object[] args) throws Throwable {
         // 执行原方法
         Object result = joinPoint.proceed();
-        
+
         // 如果返回结果是 BaseEntity 或其子类，则记录创建操作
         if (result instanceof BaseEntity) {
             BaseEntity entity = (BaseEntity) result;
             String operator = getCurrentUser();
             String description = buildDescription(recordUpdate, "创建");
-            
+
             updateRecordService.logCreate(entity, operator, description);
         }
-        
+
         return result;
     }
-    
+
     /**
      * 处理更新操作
      */
     private Object handleUpdateOperation(ProceedingJoinPoint joinPoint, RecordUpdate recordUpdate, Object[] args) throws Throwable {
         // 在执行方法前获取旧实体状态
         BaseEntity oldEntity = extractOldEntityFromArgs(joinPoint, args);
-        
+
         // 如果成功获取到旧实体，创建其副本用于记录
-        BaseEntity oldEntityCopy = null;
+        Map<String, Object> oldValues = null;
         if (oldEntity != null) {
-            oldEntityCopy = createEntityCopy(oldEntity);
+            oldValues = extractEntityFields(oldEntity);
         }
-        
+
         try {
             // 执行原方法
             Object result = joinPoint.proceed();
-            
+
             // 如果返回结果是 BaseEntity 或其子类，则记录更新操作
             if (result instanceof BaseEntity) {
                 BaseEntity newEntity = (BaseEntity) result;
                 String operator = getCurrentUser();
                 String description = buildDescription(recordUpdate, "更新");
-                
-                if (oldEntityCopy != null) {
-                    updateRecordService.logUpdate(oldEntityCopy, newEntity, operator, description);
+
+                // 获取新实体字段值
+                Map<String, Object> newValues = extractEntityFields(newEntity);
+
+                // 比较并获取变更字段
+                Map<String, Object> changedOldValues = new HashMap<>();
+                Map<String, Object> changedNewValues = new HashMap<>();
+
+                if (oldValues != null) {
+                    for (Map.Entry<String, Object> entry : newValues.entrySet()) {
+                        String fieldName = entry.getKey();
+                        Object newValue = entry.getValue();
+                        Object oldValue = oldValues.get(fieldName);
+
+                        // 比较新旧值，只记录发生变化的字段
+                        if (!IGNORED_FIELDS.contains(fieldName) && !areEqual(oldValue, newValue)) {
+                            if (HASH_FIELDS.contains(fieldName)) {
+                                logger.info("检查字段变更: " + fieldName);
+                                logger.info("旧值: " + oldValue + " (类型: " + (oldValue != null ? oldValue.getClass().getName() : "null") + ")");
+                                logger.info("新值: " + newValue + " (类型: " + (newValue != null ? newValue.getClass().getName() : "null") + ")");
+
+                                changedOldValues.put(fieldName, computeHash(oldValue) );
+                                changedNewValues.put(fieldName, computeHash(newValue) );
+                            } else {
+                                changedOldValues.put(fieldName, oldValue);
+                                changedNewValues.put(fieldName, newValue);
+                            }
+                        }
+                    }
                 } else {
-                    // 如果无法获取旧实体，则只记录新实体
-                    updateRecordService.logCreate(newEntity, operator, description + " (无法获取更新前状态)");
+                    // 如果无法获取旧实体，则记录所有新字段
+                    changedNewValues.putAll(newValues);
+                    description += " (无法获取更新前状态)";
+                }
+
+                // 只有当有字段变更时才记录
+                if (!changedOldValues.isEmpty() || !changedNewValues.isEmpty()) {
+                    updateRecordService.logUpdate(
+                            newEntity.getClass().getSimpleName(),
+                            newEntity.getId(),
+                            newEntity.get__name__(),
+                            changedOldValues,
+                            changedNewValues,
+                            operator,
+                            description
+                    );
                 }
             }
-            
+
             return result;
         } catch (Exception e) {
             logger.severe("执行更新操作时发生异常: " + e.getMessage());
@@ -116,109 +167,99 @@ public class UpdateRecordAspect {
             throw e;
         }
     }
-    
+
     /**
      * 处理删除操作
      */
     private Object handleDeleteOperation(ProceedingJoinPoint joinPoint, RecordUpdate recordUpdate, Object[] args) throws Throwable {
         // 尝试获取要删除的实体
         BaseEntity entityToDelete = extractEntityToDelete(args);
-        
+
         // 执行原方法
         Object result = joinPoint.proceed();
-        
+
         // 如果能获取到要删除的实体，则记录删除操作
         if (entityToDelete != null) {
             String operator = getCurrentUser();
             String description = buildDescription(recordUpdate, "删除");
             updateRecordService.logDelete(entityToDelete, operator, description);
         }
-        
+
         return result;
     }
-    
+
     /**
-     * 创建实体副本
+     * 提取实体的所有字段值
      */
-    private BaseEntity createEntityCopy(BaseEntity original) {
+    private Map<String, Object> extractEntityFields(BaseEntity entity) {
+        Map<String, Object> fieldValues = new HashMap<>();
+
         try {
-            // 使用反射创建新实例
-            BaseEntity copy = original.getClass().getDeclaredConstructor().newInstance();
-            
-            // 复制基本属性
-            copy.setId(original.getId());
-            copy.set__name__(original.get__name__());
-            copy.setVersion(original.getVersion());
-            copy.setCreatedTime(original.getCreatedTime());
-            copy.setUpdateTime(original.getUpdateTime());
-            copy.setValid(original.getValid());
-            
-            // 如果是Material实体，复制Material特有字段
-            if (original instanceof com.boylegu.springboot_vue.entities.Material) {
-                com.boylegu.springboot_vue.entities.Material originalMaterial = 
-                    (com.boylegu.springboot_vue.entities.Material) original;
-                com.boylegu.springboot_vue.entities.Material copyMaterial = 
-                    (com.boylegu.springboot_vue.entities.Material) copy;
-                
-                copyMaterial.setMaterialDetail(originalMaterial.getMaterialDetail());
-                copyMaterial.setReviewPoint(originalMaterial.getReviewPoint());
-                copyMaterial.setAutoApprovalCriteria(originalMaterial.getAutoApprovalCriteria());
-                copyMaterial.setShared(originalMaterial.getShared());
-                copyMaterial.setMaterialSource(originalMaterial.getMaterialSource());
-                copyMaterial.setProcessingMethodAndInfoAccess(originalMaterial.getProcessingMethodAndInfoAccess());
-                copyMaterial.setEligibleForPromise(originalMaterial.getEligibleForPromise());
+            // 获取所有字段（包括父类字段）
+            Class<?> clazz = entity.getClass();
+            while (clazz != null) {
+                Field[] fields = clazz.getDeclaredFields();
+                for (Field field : fields) {
+                    field.setAccessible(true);
+                    fieldValues.put(field.getName(), field.get(entity));
+                }
+                clazz = clazz.getSuperclass();
             }
-            
-            // 如果是Matter实体，复制Matter特有字段
-            if (original instanceof com.boylegu.springboot_vue.entities.Matter) {
-                com.boylegu.springboot_vue.entities.Matter originalMatter = 
-                    (com.boylegu.springboot_vue.entities.Matter) original;
-                com.boylegu.springboot_vue.entities.Matter copyMatter = 
-                    (com.boylegu.springboot_vue.entities.Matter) copy;
-                
-                copyMatter.setMainItemCode(originalMatter.getMainItemCode());
-                copyMatter.setSubItemCode(originalMatter.getSubItemCode());
-                copyMatter.setGrandchildItemCode(originalMatter.getGrandchildItemCode());
-                copyMatter.setMainItemName(originalMatter.getMainItemName());
-                copyMatter.setSubItemName(originalMatter.getSubItemName());
-                copyMatter.setGrandchildItemName(originalMatter.getGrandchildItemName());
-                copyMatter.setBases(originalMatter.getBases());
-                copyMatter.setMaterialIds(originalMatter.getMaterialIds());
-                copyMatter.setLegalTimeLimit(originalMatter.getLegalTimeLimit());
-                copyMatter.setCommittedTimeLimit(originalMatter.getCommittedTimeLimit());
-                copyMatter.setApprovalLevel(originalMatter.getApprovalLevel());
-                copyMatter.setProvincialDepartmentOffice(originalMatter.getProvincialDepartmentOffice());
-                copyMatter.setApprovalProcessDiagramId(originalMatter.getApprovalProcessDiagramId());
-                copyMatter.setBusinessProcessDiagramId(originalMatter.getBusinessProcessDiagramId());
-                copyMatter.setPublish(originalMatter.getPublish());
-            }
-            
-            // 如果是ProcessDiagram实体，复制ProcessDiagram特有字段
-            if (original instanceof com.boylegu.springboot_vue.entities.ProcessDiagram) {
-                com.boylegu.springboot_vue.entities.ProcessDiagram originalDiagram = 
-                    (com.boylegu.springboot_vue.entities.ProcessDiagram) original;
-                com.boylegu.springboot_vue.entities.ProcessDiagram copyDiagram = 
-                    (com.boylegu.springboot_vue.entities.ProcessDiagram) copy;
-                
-                copyDiagram.setImageName(originalDiagram.getImageName());
-                copyDiagram.setImageType(originalDiagram.getImageType());
-                copyDiagram.setImageData(originalDiagram.getImageData());
-            }
-            
-            return copy;
+        } catch (IllegalAccessException e) {
+            logger.warning("无法访问实体字段: " + e.getMessage());
+        }
+
+        return fieldValues;
+    }
+
+    /**
+     * 比较两个对象是否相等
+     */
+    private boolean areEqual(Object obj1, Object obj2) {
+        if (obj1 == null && obj2 == null) {
+            return true;
+        }
+        if (obj1 == null || obj2 == null) {
+            return false;
+        }
+        // 特殊处理集合类型
+        if (obj1 instanceof Collection && obj2 instanceof Collection) {
+            return collectionsEqual((Collection<?>) obj1, (Collection<?>) obj2);
+        }
+        return obj1.equals(obj2);
+    }
+
+    /**
+     * 比较两个集合是否相等
+     */
+    private boolean collectionsEqual(Collection<?> c1, Collection<?> c2) {
+        if (c1.size() != c2.size()) {
+            return false;
+        }
+
+        // 对于所有集合类型，都转换为List进行比较（保持顺序）
+        try {
+            List<?> list1 = new ArrayList<>(c1);
+            List<?> list2 = new ArrayList<>(c2);
+            boolean result = list1.equals(list2);
+            logger.info("转换后集合比较结果: " + result);
+            return result;
         } catch (Exception e) {
-            logger.warning("无法创建实体副本: " + e.getMessage());
-            return null;
+            logger.warning("比较集合时出错: " + e.getMessage());
+            // 如果转换出错，回退到原始比较
+            boolean result = c1.equals(c2);
+            logger.info("原始集合比较结果: " + result);
+            return result;
         }
     }
-    
+
     /**
      * 从参数中提取旧实体状态
      */
     private BaseEntity extractOldEntityFromArgs(ProceedingJoinPoint joinPoint, Object[] args) {
         // 查找参数中是否有ID（通常为Long类型）
         Long id = null;
-        
+
         // 获取ID参数
         for (Object arg : args) {
             if (arg instanceof Long) {
@@ -226,17 +267,17 @@ public class UpdateRecordAspect {
                 break;
             }
         }
-        
+
         // 如果没有找到ID，直接返回null
         if (id == null) {
             return null;
         }
-        
+
         // 尝试通过反射调用Service的get方法获取旧实体
         try {
             Object target = joinPoint.getTarget();
             String className = target.getClass().getSimpleName();
-            
+
             // 根据类名确定要调用的方法
             String methodName = "";
             if (className.contains("Material")) {
@@ -251,11 +292,11 @@ public class UpdateRecordAspect {
                 // 对于其他类型，暂时返回null
                 return null;
             }
-            
+
             // 通过反射调用对应的方法获取旧实体
             Method method = target.getClass().getMethod(methodName, Long.class);
             Object result = method.invoke(target, id);
-            
+
             if (result instanceof BaseEntity) {
                 return (BaseEntity) result;
             }
@@ -264,10 +305,10 @@ public class UpdateRecordAspect {
             // 打印完整的堆栈跟踪以便调试
             e.printStackTrace();
         }
-        
+
         return null;
     }
-    
+
     /**
      * 从参数中提取要删除的实体
      */
@@ -278,7 +319,7 @@ public class UpdateRecordAspect {
                 return (BaseEntity) arg;
             }
         }
-        
+
         // 如果参数中有ID（通常为Long类型），则尝试通过Repository查询实体
         // 这需要具体的Service配合实现
         for (Object arg : args) {
@@ -288,7 +329,7 @@ public class UpdateRecordAspect {
                 return null;
             }
         }
-        
+
         return null;
     }
 
@@ -299,20 +340,40 @@ public class UpdateRecordAspect {
         if (!recordUpdate.description().isEmpty()) {
             return recordUpdate.description();
         }
-        
+
         String action = recordUpdate.operation().getDescription();
         if (action == null || action.isEmpty()) {
             action = defaultAction;
         }
-        
+
         return action + "操作";
     }
-    
+
     /**
      * 获取当前操作用户
      */
     private String getCurrentUser() {
         // 在没有Spring Security的情况下，暂时返回默认用户
         return "system";
+    }
+
+    private String computeHash(Object entity) {
+        try {
+            String input = Optional.ofNullable(entity).map(Object::toString).orElse("");
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(input.getBytes("UTF-8"));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            logger.warning("计算哈希值时出错: " + e.getMessage());
+            return "hash_error";
+        }
     }
 }

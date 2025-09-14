@@ -104,10 +104,11 @@ public class UpdateRecordServiceImpl implements UpdateRecordService {
             java.util.Map<String, Object> changeDetails = new java.util.HashMap<>();
             changeDetails.put("old", oldValues);
             changeDetails.put("new", newValues);
-            
+
             // 序列化变更详情
             String changeData = objectMapper.writeValueAsString(changeDetails);
-            record.setBeforeData(changeData); // 使用beforeData存储变更详情
+            record.setBeforeData(objectMapper.writeValueAsString(oldValues));
+            record.setAfterData(objectMapper.writeValueAsString(newValues));
             
             return updateRecordRepository.save(record);
         } catch (Exception e) {
