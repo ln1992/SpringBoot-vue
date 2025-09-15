@@ -33,6 +33,10 @@
         <div v-else-if="selectedMenu === 'update-record'">
           <update-record-list ref="updateRecordList"></update-record-list>
         </div>
+        <!-- 添加版本对比视图 -->
+        <div v-else-if="selectedMenu === 'matter-version-compare'">
+          <matter-version-compare></matter-version-compare>
+        </div>
       </el-col>
     </el-row>
 
@@ -60,6 +64,8 @@ import ApprovalProcessDiagramList from './components/process-diagram/ApprovalPro
 import BusinessProcessDiagramList from './components/process-diagram/BusinessProcessDiagramList.vue'
 // 导入更新记录组件
 import UpdateRecordList from './components/update-record/UpdateRecordList.vue'
+// 导入版本对比组件
+import MatterVersionCompare from './components/version-compare/MatterVersionCompare.vue'
 import ElRow from "element-ui/packages/row/src/row";
 
 export default {
@@ -78,7 +84,9 @@ export default {
     ApprovalProcessDiagramList,
     BusinessProcessDiagramList,
     // 注册更新记录组件
-    UpdateRecordList
+    UpdateRecordList,
+    // 注册版本对比组件
+    MatterVersionCompare
   },
   data() {
     return {

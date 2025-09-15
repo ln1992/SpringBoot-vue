@@ -43,6 +43,13 @@
     >
       更新记录
     </div>
+    <div
+      class="menu-item"
+      :class="{ active: activeItem === 'matter-version-compare' }"
+      @click="selectItem('matter-version-compare')"
+    >
+      版本对比
+    </div>
   </div>
 </template>
 

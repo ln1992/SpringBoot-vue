@@ -46,13 +46,13 @@ public class MatterExportServiceImpl implements MatterExportService {
 
     @Override
     public byte[] exportMattersCatalogByVersion(Long version) throws Exception {
-        List<Matter> matters = matterService.getMattersByVersionAndValid(version);
+        List<Matter> matters = matterService.findMattersByVersionAndValid(version);
         return matterWordExportUtil.exportMattersCatalogToWord(matters);
     }
 
     @Override
     public byte[] exportMattersDocumentsByVersion(Long version) throws Exception {
-        List<Matter> matters = matterService.getMattersByVersionAndValid(version);
+        List<Matter> matters = matterService.findMattersByVersionAndValid(version);
         List<Long> materialIds = matters.stream()
                 .flatMap(matter -> matter.getMaterialIds() != null ? matter.getMaterialIds().stream() : java.util.stream.Stream.empty())
                 .filter(java.util.Objects::nonNull)

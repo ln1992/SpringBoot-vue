@@ -90,6 +90,15 @@ public class Matter extends BaseEntity {
     // 默认构造函数
     public Matter() {}
 
+    /**
+     * 创建Matter比较器，按主项、子项、孙项编码排序
+     */
+    public static java.util.Comparator<Matter> createCodeComparator() {
+        return java.util.Comparator
+                .comparing(Matter::getMainItemCode, java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()))
+                .thenComparing(Matter::getSubItemCode, java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()))
+                .thenComparing(Matter::getGrandchildItemCode, java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+    }
     public String getMainItemCodeName() {
         if (this.mainItemCode != null && StringUtils.isNotBlank(this.mainItemName)) {
             return String.format("%d.%s", this.mainItemCode, this.mainItemName);

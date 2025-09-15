@@ -70,6 +70,6 @@ public interface MatterService {
      * @param version 版本号
      * @return 有效事项列表
      */
-    List<Matter> getMattersByVersionAndValid(Long version);
+    List<Matter> findMattersByVersionAndValid(Long version);
 
 }
