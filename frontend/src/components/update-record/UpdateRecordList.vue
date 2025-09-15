@@ -77,7 +77,7 @@
           <div class="table-cell">{{ record.entityType }}</div>
           <div class="table-cell">{{ getOperationTypeLabel(record.operationType) }}</div>
           <div class="table-cell">{{ record.operator || '-' }}</div>
-          <div class="table-cell">{{ formatDate(record.createTime) }}</div>
+          <div class="table-cell">{{ formatDate(record.createdTime) }}</div>
           <div class="table-cell">
             <button @click.stop="deleteRecord(record.id)" class="delete-btn">删除</button>
           </div>
@@ -85,14 +85,28 @@
       </div>
 
       <!-- 分页控件 -->
-      <div class="pagination" v-if="totalPages > 1">
+      <div class="pagination" v-if="paginatedRecords.length > 0">
         <div class="pagination-controls">
-          <button @click="prevPage" :disabled="currentPage === 1">上一页</button>
-          <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页</span>
-          <button @click="nextPage" :disabled="currentPage === totalPages">下一页</button>
+          <button 
+            :disabled="currentPage === 1" 
+            @click="currentPage > 1 && (currentPage--)">
+            上一页
+          </button>
+          <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页 (总计 {{ filteredRecords.length }} 条)</span>
+          <button 
+            :disabled="currentPage === totalPages" 
+            @click="currentPage < totalPages && (currentPage++)">
+            下一页
+          </button>
         </div>
-        <div class="pagination-info">
-          显示第 {{ (currentPage - 1) * pageSize + 1 }} 到 {{ Math.min(currentPage * pageSize, filteredRecords.length) }} 条，共 {{ filteredRecords.length }} 条记录
+        <div class="pagination-settings">
+          <label>每页显示:</label>
+          <select v-model="pageSize" @change="handlePageSizeChange">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+          </select>
         </div>
       </div>
     </div>
@@ -263,6 +277,14 @@ export default {
         this.currentPage++
         window.scrollTo(0, 0)
       }
+    },
+
+    // 改变每页显示数量
+    changePageSize() {
+      // 重置到第一页
+      this.currentPage = 1
+      // 滚动到顶部
+      window.scrollTo(0, 0)
     },
 
     // 添加resetToListView方法，用于从App.vue中调用返回列表视图
@@ -440,44 +462,62 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-top: 20px;
-  padding: 20px 0;
-  flex-wrap: wrap;
-  gap: 10px;
-  /* 使用z-index确保分页控件在最上层，不被页脚遮挡 */
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
   position: relative;
-  z-index: 1004;
-  background-color: white;
+  z-index: 1;
 }
 
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
 }
 
 .pagination-controls button {
   padding: 8px 16px;
-  border: 1px solid #dcdfe6;
+  background-color: #007bff;
+  color: white;
+  border: none;
   border-radius: 4px;
-  background-color: #fff;
   cursor: pointer;
-  transition: all 0.3s;
+  position: relative;
+  z-index: 2;
 }
 
 .pagination-controls button:hover:not(:disabled) {
-  background-color: #ecf5ff;
-  border-color: #409eff;
-  color: #409eff;
+  background-color: #0056b3;
 }
 
 .pagination-controls button:disabled {
-  color: #c0c4cc;
+  background-color: #ccc;
   cursor: not-allowed;
+}
+
+.pagination-settings {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination-settings label {
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.pagination-settings select {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 .pagination-info {
   color: #606266;
   font-size: 14px;
+  margin-left: 10px;
 }
 
 @media (max-width: 768px) {
@@ -497,6 +537,16 @@ export default {
   .pagination {
     flex-direction: column;
     gap: 10px;
+  }
+
+  .pagination-settings {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pagination-info {
+    margin-left: 0;
+    margin-top: 10px;
   }
 }
 </style>

@@ -101,7 +101,7 @@
             @click="currentPage > 1 && (currentPage--)">
             上一页
           </button>
-          <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页</span>
+          <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页 (总计 {{ diagrams.length }} 条)</span>
           <button 
             :disabled="currentPage === totalPages" 
             @click="currentPage < totalPages && (currentPage++)">
@@ -504,7 +504,12 @@ button {
   justify-content: space-between;
   align-items: center;
   margin-top: 20px;
-  padding: 10px 0;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  position: relative;
+  z-index: 1;
 }
 
 .pagination-controls {
@@ -528,23 +533,26 @@ button {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
-  position: relative;
-  z-index: 10;
 }
 
 .pagination button {
   padding: 8px 16px;
   background-color: #007bff;
   color: white;
-}
-
-.pagination button:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
 }
 
 .pagination button:hover:not(:disabled) {
   background-color: #0056b3;
+}
+
+.pagination button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

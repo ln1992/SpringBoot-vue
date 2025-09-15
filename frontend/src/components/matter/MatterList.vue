@@ -15,23 +15,23 @@
       <div class="export-section">
         <div class="version-input">
           <label for="version">版本:</label>
-          <input 
+          <input
             id="version"
-            type="text" 
-            v-model="exportVersion" 
+            type="text"
+            v-model="exportVersion"
             placeholder="请输入版本号"
           />
         </div>
         <div class="export-buttons">
-          <button 
-            class="export-catalog-btn" 
+          <button
+            class="export-catalog-btn"
             @click="exportCatalog"
             :disabled="!exportVersion"
           >
             导出目录
           </button>
-          <button 
-            class="export-document-btn" 
+          <button
+            class="export-document-btn"
             @click="exportDocument"
             :disabled="!exportVersion"
           >
@@ -153,14 +153,14 @@
       <!-- 分页控件 -->
       <div class="pagination" v-if="paginatedMatters.length > 0">
         <div class="pagination-controls">
-          <button 
-            :disabled="currentPage === 1" 
+          <button
+            :disabled="currentPage === 1"
             @click="currentPage > 1 && (currentPage--)">
             上一页
           </button>
-          <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页</span>
-          <button 
-            :disabled="currentPage === totalPages" 
+          <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页 (总计 {{ matters.length }} 条)</span>
+          <button
+            :disabled="currentPage === totalPages"
             @click="currentPage < totalPages && (currentPage++)">
             下一页
           </button>
@@ -339,7 +339,7 @@ export default {
 
     // 格式化孙项名称
     formatGrandchildItemName(mainItemCode, subItemCode, grandchildItemCode, grandchildItemName) {
-      if (!mainItemCode || !subItemCode || !grandchildItemCode || !grandchildItemName) 
+      if (!mainItemCode || !subItemCode || !grandchildItemCode || !grandchildItemName)
         return grandchildItemName || '-';
       return `${mainItemCode}.${subItemCode}.${grandchildItemCode}.${grandchildItemName}`;
     },
@@ -465,6 +465,7 @@ export default {
 <style scoped>
 .matter-list-container {
   padding: 20px;
+  position: relative;
 }
 
 .header {
@@ -724,9 +725,12 @@ button {
   justify-content: space-between;
   align-items: center;
   margin-top: 20px;
-  padding: 10px 0;
-  position: relative; /* 添加相对定位 */
-  min-height: 50px; /* 确保有足够的高度 */
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  position: relative;
+  z-index: 10; /* 添加 z-index 确保分页控件在最上层 */
 }
 
 .pagination-controls {
@@ -750,12 +754,19 @@ button {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
+  position: relative;
+  z-index: 11; /* 确保下拉框在分页控件之上 */
 }
 
 .pagination button {
   padding: 8px 16px;
   background-color: #007bff;
   color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  z-index: 11; /* 确保按钮在分页控件之上 */
 }
 
 .pagination button:hover:not(:disabled) {
@@ -781,40 +792,26 @@ button {
   font-size: 16px;
 }
 
-/* 新增样式：确保分页控件不被遮挡 */
-@media (min-width: 769px) {
-  .pagination {
-    flex-wrap: wrap;
-  }
-  
-  .pagination-controls {
-    order: -1;
-    width: 100%;
-    justify-content: center;
-    margin-bottom: 10px;
-  }
-  
-  .page-size-selector {
-    width: 100%;
-    justify-content: center;
-    margin-top: 10px;
-  }
-}
-
 @media (max-width: 768px) {
   .matters-table {
     font-size: 14px;
   }
-  
+
   .table-cell {
     padding: 8px;
   }
-  
+
   .pagination {
     flex-direction: column;
     gap: 15px;
   }
-  
+
+  .pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+
   .export-section {
     flex-direction: column;
     align-items: flex-start;
