@@ -3,6 +3,7 @@ package com.boylegu.springboot_vue.repository;
 
 import com.boylegu.springboot_vue.entities.Matter;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -77,4 +78,11 @@ public interface MatterRepository extends JpaRepository<Matter, Long> {
      * @return 事项列表
      */
     List<Matter> findByVersionAndIsValid(Long version, Boolean isValid);
+    
+    /**
+     * 查询所有唯一的版本号
+     * @return 版本号列表
+     */
+    @Query("SELECT DISTINCT m.version FROM Matter m WHERE m.version IS NOT NULL ORDER BY m.version")
+    List<Long> findAllVersions();
 }

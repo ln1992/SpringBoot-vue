@@ -47,6 +47,7 @@ public class MatterVersionCompareServiceImpl implements MatterVersionCompareServ
                         matter1.getMainItemCode(),
                         matter1.getSubItemCode(),
                         matter1.getGrandchildItemCode(),
+                        matter1.get__name__(),
                         matter1.getId(),
                         null,
                         CompareStatus.DELETED
@@ -58,6 +59,7 @@ public class MatterVersionCompareServiceImpl implements MatterVersionCompareServ
                         matter2.getMainItemCode(),
                         matter2.getSubItemCode(),
                         matter2.getGrandchildItemCode(),
+                        matter2.get__name__(),
                         null,
                         matter2.getId(),
                         CompareStatus.ADDED
@@ -70,6 +72,7 @@ public class MatterVersionCompareServiceImpl implements MatterVersionCompareServ
                             matter1.getMainItemCode(),
                             matter1.getSubItemCode(),
                             matter1.getGrandchildItemCode(),
+                            matter1.get__name__(),
                             matter1.getId(),
                             matter2.getId(),
                             CompareStatus.MODIFIED
@@ -79,6 +82,7 @@ public class MatterVersionCompareServiceImpl implements MatterVersionCompareServ
                             matter1.getMainItemCode(),
                             matter1.getSubItemCode(),
                             matter1.getGrandchildItemCode(),
+                            matter1.get__name__(),
                             matter1.getId(),
                             matter2.getId(),
                             CompareStatus.UNCHANGED
@@ -96,6 +100,7 @@ public class MatterVersionCompareServiceImpl implements MatterVersionCompareServ
                     matter1.getMainItemCode(),
                     matter1.getSubItemCode(),
                     matter1.getGrandchildItemCode(),
+                    matter1.get__name__(),
                     matter1.getId(),
                     null,
                     CompareStatus.DELETED
@@ -110,6 +115,7 @@ public class MatterVersionCompareServiceImpl implements MatterVersionCompareServ
                     matter2.getMainItemCode(),
                     matter2.getSubItemCode(),
                     matter2.getGrandchildItemCode(),
+                    matter2.get__name__(),
                     null,
                     matter2.getId(),
                     CompareStatus.ADDED
@@ -121,7 +127,7 @@ public class MatterVersionCompareServiceImpl implements MatterVersionCompareServ
     }
 
     private boolean isMatterModified(Matter oldMatter, Matter newMatter) {
-        // 比较事项的关键字段是否发生变化
+        // 比较事项的关键字段是否发生变化,publish, valid, version 暂不比较
         return !Objects.equals(oldMatter.getMainItemCode(), newMatter.getMainItemCode()) ||
                 !Objects.equals(oldMatter.getSubItemCode(), newMatter.getSubItemCode()) ||
                 !Objects.equals(oldMatter.getGrandchildItemCode(), newMatter.getGrandchildItemCode()) ||
@@ -135,9 +141,6 @@ public class MatterVersionCompareServiceImpl implements MatterVersionCompareServ
                 !Objects.equals(oldMatter.getApprovalLevel(), newMatter.getApprovalLevel()) ||
                 !Objects.equals(oldMatter.getProvincialDepartmentOffice(), newMatter.getProvincialDepartmentOffice()) ||
                 !Objects.equals(oldMatter.getApprovalProcessDiagramId(), newMatter.getApprovalProcessDiagramId()) ||
-                !Objects.equals(oldMatter.getBusinessProcessDiagramId(), newMatter.getBusinessProcessDiagramId()) ||
-                !Objects.equals(oldMatter.getPublish(), newMatter.getPublish()) ||
-                !Objects.equals(oldMatter.getValid(), newMatter.getValid()) ||
-                !Objects.equals(oldMatter.getVersion(), newMatter.getVersion());
+                !Objects.equals(oldMatter.getBusinessProcessDiagramId(), newMatter.getBusinessProcessDiagramId());
     }
 }

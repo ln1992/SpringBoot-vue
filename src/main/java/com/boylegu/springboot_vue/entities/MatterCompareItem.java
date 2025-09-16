@@ -4,6 +4,7 @@ public class MatterCompareItem {
     private Long mainItemCode;
     private Long subItemCode;
     private Long grandchildItemCode;
+    private String __name__;
     private Long oldMatterId;
     private Long newMatterId;
     private CompareStatus status;
@@ -12,10 +13,11 @@ public class MatterCompareItem {
     public MatterCompareItem() {}
 
     public MatterCompareItem(Long mainItemCode, Long subItemCode, Long grandchildItemCode,
-                           Long oldMatterId, Long newMatterId, CompareStatus status) {
+                             String __name__, Long oldMatterId, Long newMatterId, CompareStatus status) {
         this.mainItemCode = mainItemCode;
         this.subItemCode = subItemCode;
         this.grandchildItemCode = grandchildItemCode;
+        this.__name__ = __name__;
         this.oldMatterId = oldMatterId;
         this.newMatterId = newMatterId;
         this.status = status;
@@ -46,6 +48,14 @@ public class MatterCompareItem {
         this.grandchildItemCode = grandchildItemCode;
     }
 
+    public String get__name__() {
+        return __name__;
+    }
+
+    public void set__name__(String __name__) {
+        this.__name__ = __name__;
+    }
+
     public Long getOldMatterId() {
         return oldMatterId;
     }
@@ -61,7 +71,6 @@ public class MatterCompareItem {
     public void setNewMatterId(Long newMatterId) {
         this.newMatterId = newMatterId;
     }
-
 
     public CompareStatus getStatus() {
         return status;

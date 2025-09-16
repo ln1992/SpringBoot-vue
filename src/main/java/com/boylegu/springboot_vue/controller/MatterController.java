@@ -288,4 +288,19 @@ public class MatterController {
             return ResponseEntity.status(500).build();
         }
     }
+    
+    /**
+     * 获取所有唯一的事项版本号
+     */
+    @GetMapping("/versions")
+    public ResponseEntity<List<Long>> getAllVersions() {
+        try {
+            List<Long> versions = matterService.getAllVersions();
+            logger.info("成功获取到 " + versions.size() + " 个版本");
+            return ResponseEntity.ok(versions);
+        } catch (Exception e) {
+            logger.severe("获取版本列表失败: " + e.getMessage());
+            return ResponseEntity.status(500).build();
+        }
+    }
 }

@@ -72,4 +72,10 @@ public interface MatterService {
      */
     List<Matter> findMattersByVersionAndValid(Long version);
 
+    /**
+     * 获取数据库中所有唯一的事项版本号
+     * @return 版本号列表
+     */
+    List<Long> getAllVersions();
+
 }

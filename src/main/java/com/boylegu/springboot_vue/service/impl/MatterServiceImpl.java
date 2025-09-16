@@ -176,4 +176,11 @@ public class MatterServiceImpl implements MatterService {
         return matterRepository.findByVersionAndIsValid(version, true);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> getAllVersions() {
+        return matterRepository.findAllVersions();
+    }
+
+
 }
