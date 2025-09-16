@@ -17,7 +17,8 @@
             <option value="">全部</option>
             <option value="Material">材料</option>
             <option value="Matter">事项</option>
-            <option value="ProcessDiagram">流程图</option>
+            <option value="ApprovalProcessDiagram">审批流程图</option>
+            <option value="BusinessProcessDiagram">业务经办流程图</option>
           </select>
         </div>
         <div class="filter-group">
@@ -73,7 +74,7 @@
             {{ record.entityName || '-' }}
           </div>
           <div class="table-cell">{{ record.entityId }}</div>
-          <div class="table-cell">{{ record.entityType }}</div>
+          <div class="table-cell">{{ getEntityTypeLabel(record.entityType) }}</div>
           <div class="table-cell">{{ getOperationTypeLabel(record.operationType) }}</div>
           <div class="table-cell">{{ record.operator || '-' }}</div>
           <div class="table-cell">{{ formatDate(record.createdTime) }}</div>
@@ -156,6 +157,7 @@ export default {
       localFilterEntityType: '',
       filterOperationType: '',
       searchKeyword: '',
+      filterNewType: '',  // 新增的筛选类型变量
       // 分页相关数据
       currentPage: 1,
       pageSize: 10,
@@ -198,9 +200,15 @@ export default {
       this.loading = true
       this.error = null
       try {
-        // 修复API调用方式，移除多余的/api前缀，因为http实例已经配置了baseURL
-        const response = await api.http.get('/update-records')
-        this.records = response.data
+        // 如果提供了filterEntityId，则使用专门的API端点获取记录
+        if (this.filterEntityId) {
+          const response = await api.http.get(`/update-records/entity-id/${this.filterEntityId}`)
+          this.records = response.data
+        } else {
+          // 否则获取所有记录
+          const response = await api.http.get('/update-records')
+          this.records = response.data
+        }
         this.filterRecords()
       } catch (err) {
         console.error('获取更新记录失败:', err)
@@ -212,35 +220,47 @@ export default {
 
     filterRecords() {
       this.filteredRecords = this.records.filter(record => {
-        // 实体类型筛选
-        if (this.effectiveFilterEntityType && record.entityType !== this.effectiveFilterEntityType) {
-          return false
+        // 实体类型筛选 - 支持新的流程图类型
+        if (this.effectiveFilterEntityType) {
+          // 特殊处理流程图类型
+          if (this.effectiveFilterEntityType === 'ApprovalProcessDiagram' && record.entityType !== 'ApprovalProcessDiagram') {
+            return false;
+          }
+          if (this.effectiveFilterEntityType === 'BusinessProcessDiagram' && record.entityType !== 'BusinessProcessDiagram') {
+            return false;
+          }
+          // 处理其他类型
+          if (this.effectiveFilterEntityType !== 'ApprovalProcessDiagram' && 
+              this.effectiveFilterEntityType !== 'BusinessProcessDiagram' && 
+              record.entityType !== this.effectiveFilterEntityType) {
+            return false;
+          }
         }
 
         // 实体ID筛选
         if (this.filterEntityId && record.entityId !== this.filterEntityId) {
-          return false
+          return false;
         }
 
         // 操作类型筛选
         if (this.filterOperationType && record.operationType !== this.filterOperationType) {
-          return false
+          return false;
         }
 
         // 关键词搜索
         if (this.searchKeyword && !this.filterEntityId) {
-          const keyword = this.searchKeyword.toLowerCase()
-          const entityName = (record.entityName || '').toLowerCase()
+          const keyword = this.searchKeyword.toLowerCase();
+          const entityName = (record.entityName || '').toLowerCase();
           if (!entityName.includes(keyword)) {
-            return false
+            return false;
           }
         }
 
-        return true
-      })
+        return true;
+      });
 
       // 重置到第一页
-      this.currentPage = 1
+      this.currentPage = 1;
     },
 
     getOperationTypeLabel(operationType) {
@@ -318,6 +338,16 @@ export default {
     // 添加resetToListView方法，用于从App.vue中调用返回列表视图
     resetToListView() {
       this.selectedRecord = null;
+    },
+    
+    getEntityTypeLabel(entityType) {
+      const labels = {
+        'Material': '材料',
+        'Matter': '事项',
+        'ApprovalProcessDiagram': '审批流程图',
+        'BusinessProcessDiagram': '业务经办流程图'
+      };
+      return labels[entityType] || entityType;
     }
   },
   watch: {

@@ -37,12 +37,12 @@ public interface UpdateRecordService {
     /**
      * 获取所有更新记录
      */
-    List<UpdateRecord> getAllUpdateRecords();
+    List<UpdateRecord> findAllUpdateRecords();
 
     /**
      * 根据ID获取更新记录
      */
-    UpdateRecord getUpdateRecordById(Long id);
+    UpdateRecord findUpdateRecordById(Long id);
 
     /**
      * 根据ID删除更新记录
@@ -52,15 +52,20 @@ public interface UpdateRecordService {
     /**
      * 根据实体类型获取更新记录
      */
-    List<UpdateRecord> getUpdateRecordsByEntityType(String entityType);
+    List<UpdateRecord> findUpdateRecordsByEntityType(String entityType);
 
     /**
      * 根据操作类型获取更新记录
      */
-    List<UpdateRecord> getUpdateRecordsByOperationType(UpdateRecord.OperationType operationType);
+    List<UpdateRecord> findUpdateRecordsByOperationType(UpdateRecord.OperationType operationType);
 
     /**
      * 根据操作用户获取更新记录
      */
-    List<UpdateRecord> getUpdateRecordsByOperator(String operator);
+    List<UpdateRecord> findUpdateRecordsByOperator(String operator);
+    
+    /**
+     * 根据实体ID获取更新记录
+     */
+    List<UpdateRecord> findUpdateRecordsByEntityId(Long entityId);
 }

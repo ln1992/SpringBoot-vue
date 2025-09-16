@@ -23,7 +23,7 @@ public class UpdateRecordController {
     @GetMapping
     public ResponseEntity<List<UpdateRecord>> getAllUpdateRecords() {
         try {
-            List<UpdateRecord> records = updateRecordService.getAllUpdateRecords();
+            List<UpdateRecord> records = updateRecordService.findAllUpdateRecords();
             logger.info("Successfully retrieved " + records.size() + " update records");
             return ResponseEntity.ok(records);
         } catch (Exception e) {
@@ -36,7 +36,7 @@ public class UpdateRecordController {
     @GetMapping("/{id}")
     public ResponseEntity<UpdateRecord> getUpdateRecordById(@PathVariable Long id) {
         try {
-            UpdateRecord record = updateRecordService.getUpdateRecordById(id);
+            UpdateRecord record = updateRecordService.findUpdateRecordById(id);
             if (record != null) {
                 return ResponseEntity.ok(record);
             } else {
@@ -65,7 +65,7 @@ public class UpdateRecordController {
     @GetMapping("/entity-type/{entityType}")
     public ResponseEntity<List<UpdateRecord>> getUpdateRecordsByEntityType(@PathVariable String entityType) {
         try {
-            List<UpdateRecord> records = updateRecordService.getUpdateRecordsByEntityType(entityType);
+            List<UpdateRecord> records = updateRecordService.findUpdateRecordsByEntityType(entityType);
             return ResponseEntity.ok(records);
         } catch (Exception e) {
             logger.severe("Error retrieving update records by entity type " + entityType + ": " + e.getMessage());
@@ -78,7 +78,7 @@ public class UpdateRecordController {
     public ResponseEntity<List<UpdateRecord>> getUpdateRecordsByOperationType(@PathVariable String operationType) {
         try {
             UpdateRecord.OperationType type = UpdateRecord.OperationType.valueOf(operationType);
-            List<UpdateRecord> records = updateRecordService.getUpdateRecordsByOperationType(type);
+            List<UpdateRecord> records = updateRecordService.findUpdateRecordsByOperationType(type);
             return ResponseEntity.ok(records);
         } catch (Exception e) {
             logger.severe("Error retrieving update records by operation type " + operationType + ": " + e.getMessage());
@@ -90,10 +90,22 @@ public class UpdateRecordController {
     @GetMapping("/operator/{operator}")
     public ResponseEntity<List<UpdateRecord>> getUpdateRecordsByOperator(@PathVariable String operator) {
         try {
-            List<UpdateRecord> records = updateRecordService.getUpdateRecordsByOperator(operator);
+            List<UpdateRecord> records = updateRecordService.findUpdateRecordsByOperator(operator);
             return ResponseEntity.ok(records);
         } catch (Exception e) {
             logger.severe("Error retrieving update records by operator " + operator + ": " + e.getMessage());
+            return ResponseEntity.status(500).build();
+        }
+    }
+    
+    // 根据实体ID获取更新记录
+    @GetMapping("/entity-id/{entityId}")
+    public ResponseEntity<List<UpdateRecord>> getUpdateRecordsByEntityId(@PathVariable Long entityId) {
+        try {
+            List<UpdateRecord> records = updateRecordService.findUpdateRecordsByEntityId(entityId);
+            return ResponseEntity.ok(records);
+        } catch (Exception e) {
+            logger.severe("Error retrieving update records by entity id " + entityId + ": " + e.getMessage());
             return ResponseEntity.status(500).build();
         }
     }

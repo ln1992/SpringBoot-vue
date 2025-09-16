@@ -148,7 +148,7 @@ public class UpdateRecordServiceImpl implements UpdateRecordService {
      * 获取所有更新记录
      */
     @Override
-    public List<UpdateRecord> getAllUpdateRecords() {
+    public List<UpdateRecord> findAllUpdateRecords() {
         return updateRecordRepository.findAll();
     }
     
@@ -156,7 +156,7 @@ public class UpdateRecordServiceImpl implements UpdateRecordService {
      * 根据ID获取更新记录
      */
     @Override
-    public UpdateRecord getUpdateRecordById(Long id) {
+    public UpdateRecord findUpdateRecordById(Long id) {
         return updateRecordRepository.findById(id).orElse(null);
     }
     
@@ -172,7 +172,7 @@ public class UpdateRecordServiceImpl implements UpdateRecordService {
      * 根据实体类型获取更新记录
      */
     @Override
-    public List<UpdateRecord> getUpdateRecordsByEntityType(String entityType) {
+    public List<UpdateRecord> findUpdateRecordsByEntityType(String entityType) {
         return updateRecordRepository.findByEntityType(entityType);
     }
     
@@ -180,7 +180,7 @@ public class UpdateRecordServiceImpl implements UpdateRecordService {
      * 根据操作类型获取更新记录
      */
     @Override
-    public List<UpdateRecord> getUpdateRecordsByOperationType(UpdateRecord.OperationType operationType) {
+    public List<UpdateRecord> findUpdateRecordsByOperationType(UpdateRecord.OperationType operationType) {
         return updateRecordRepository.findByOperationType(operationType);
     }
     
@@ -188,7 +188,15 @@ public class UpdateRecordServiceImpl implements UpdateRecordService {
      * 根据操作用户获取更新记录
      */
     @Override
-    public List<UpdateRecord> getUpdateRecordsByOperator(String operator) {
+    public List<UpdateRecord> findUpdateRecordsByOperator(String operator) {
         return updateRecordRepository.findByOperator(operator);
+    }
+    
+    /**
+     * 根据实体ID获取更新记录
+     */
+    @Override
+    public List<UpdateRecord> findUpdateRecordsByEntityId(Long entityId) {
+        return updateRecordRepository.findByEntityId(entityId);
     }
 }

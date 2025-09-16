@@ -29,4 +29,9 @@ public interface UpdateRecordRepository extends JpaRepository<UpdateRecord, Long
      * 根据实体类型查找更新记录
      */
     List<UpdateRecord> findByEntityType(String entityType);
+    
+    /**
+     * 根据实体ID查找更新记录
+     */
+    List<UpdateRecord> findByEntityId(Long entityId);
 }
