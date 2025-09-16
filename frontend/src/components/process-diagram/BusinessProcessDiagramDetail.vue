@@ -6,120 +6,166 @@
       <button v-if="isEditMode" class="api-btn" @click="openApiUrl" title="查看API数据">API</button>
     </div>
 
+    <!-- 添加Tab页 -->
+    <div class="tabs" v-if="isEditMode">
+      <button
+        :class="{ active: activeTab === 'detail' }"
+        @click="activeTab = 'detail'"
+      >
+        流程图详情
+      </button>
+      <button
+        :class="{ active: activeTab === 'updates' }"
+        @click="activeTab = 'updates'"
+      >
+        更新记录
+      </button>
+    </div>
+
     <div class="diagram-detail-content">
-      <!-- 流程图拷贝选择区域 -->
-      <div class="copy-section" v-if="!isEditMode">
-        <div class="form-group">
-          <label for="copyDiagram">拷贝流程图:</label>
-          <div class="diagram-copy-container">
-            <input
-              type="text"
-              v-model="diagramSearchQuery"
-              placeholder="输入或选择要拷贝的流程图"
-              class="diagram-search-input"
-              @input="onDiagramSearchInput"
-              @focus="showDiagramDropdown = true"
-              @blur="hideDiagramDropdown"
-            />
-            <div
-              v-if="showDiagramDropdown && allDiagrams && allDiagrams.length > 0"
-              class="diagram-dropdown-list"
-              @mousedown.prevent
-            >
+      <!-- 流程图详情 Tab -->
+      <div v-show="activeTab === 'detail'">
+        <!-- 流程图拷贝选择区域 -->
+        <div class="copy-section" v-if="!isEditMode">
+          <div class="form-group">
+            <label for="copyDiagram">拷贝流程图:</label>
+            <div class="diagram-copy-container">
+              <input
+                type="text"
+                v-model="diagramSearchQuery"
+                placeholder="输入或选择要拷贝的流程图"
+                class="diagram-search-input"
+                @input="onDiagramSearchInput"
+                @focus="showDiagramDropdown = true"
+                @blur="hideDiagramDropdown"
+              />
               <div
-                v-for="availableDiagram in filteredDiagrams"
-                :key="availableDiagram.id"
-                class="diagram-dropdown-item"
-                @mousedown="selectDiagramFromDropdown(availableDiagram)"
+                v-if="showDiagramDropdown && allDiagrams && allDiagrams.length > 0"
+                class="diagram-dropdown-list"
+                @mousedown.prevent
               >
-                {{ availableDiagram.__name__ }}
-              </div>
-              <div
-                v-if="filteredDiagrams && filteredDiagrams.length === 0"
-                class="no-results"
-              >
-                无匹配结果
+                <div
+                  v-for="availableDiagram in filteredDiagrams"
+                  :key="availableDiagram.id"
+                  class="diagram-dropdown-item"
+                  @mousedown="selectDiagramFromDropdown(availableDiagram)"
+                >
+                  {{ availableDiagram.__name__ }}
+                </div>
+                <div
+                  v-if="filteredDiagrams && filteredDiagrams.length === 0"
+                  class="no-results"
+                >
+                  无匹配结果
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        <form @submit.prevent="handleSubmit">
+          <!-- 基本信息表单行：包含ID、名称、版本和图片类型 -->
+          <div class="form-row">
+            <div class="form-group">
+              <label>ID:</label>
+              <input type="text" v-model="form.id" disabled>
+            </div>
+
+            <div class="form-group">
+              <label>名称 *</label>
+              <input type="text" v-model="form.imageName" required>
+            </div>
+
+            <div class="form-group">
+              <label>版本</label>
+              <input type="text" v-model="form.version" placeholder="默认版本为1.0">
+            </div>
+
+            <div class="form-group">
+              <label>图片类型</label>
+              <input type="text" :value="form.imageType || '未指定'" disabled>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>上传图像</label>
+            <input
+              type="file"
+              accept="image/*"
+              @change="onImageChange"
+            />
+            <div v-if="form.imagePreview || form.imageDataUrl" class="image-container">
+              <div v-if="form.imagePreview" class="image-preview">
+                <img :src="form.imagePreview" alt="预览图像" />
+                <div class="image-label">新图像预览</div>
+              </div>
+              <div v-else-if="form.imageDataUrl" class="image-preview">
+                <img :src="form.imageDataUrl" alt="当前图像" />
+                <div class="image-label">当前图像</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>状态:</label>
+            <select v-model="form.valid">
+              <option :value="true">上线</option>
+              <option :value="false">下线</option>
+            </select>
+          </div>
+
+          <!-- 时间信息 -->
+          <div class="time-info" v-if="form.createdTime || form.updateTime">
+            <div class="form-group">
+              <label>时间信息:</label>
+              <div class="time-details">
+                <p v-if="form.createdTime">创建时间: {{ formatDateTime(form.createdTime) }}</p>
+                <p v-if="form.updateTime">更新时间: {{ formatDateTime(form.updateTime) }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="back-btn-form" @click="goBack">返回</button>
+            <button type="button" class="save-btn" @click="handleSubmit">
+              {{ isEditMode ? '保存' : '创建' }}
+            </button>
+          </div>
+        </form>
       </div>
 
-      <form @submit.prevent="handleSubmit">
-        <!-- 基本信息表单行：包含ID、名称、版本和图片类型 -->
-        <div class="form-row">
-          <div class="form-group">
-            <label>ID:</label>
-            <input type="text" v-model="form.id" disabled>
-          </div>
+      <!-- 更新记录 Tab -->
+      <div v-show="activeTab === 'updates'" v-if="isEditMode">
+        <!-- 只在未选择记录时显示列表 -->
+        <UpdateRecordList
+          v-if="!selectedUpdateRecord"
+          ref="updateRecordList"
+          filter-entity-type="BusinessProcessDiagram"
+          :filter-entity-id="form.id"
+          :hide-actions="true"
+          :hide-filters="true"
+          :hide-pagination="true"
+          @view-record="handleViewRecord" />
 
-          <div class="form-group">
-            <label>名称 *</label>
-            <input type="text" v-model="form.imageName" required>
+        <!-- 更新记录详情 -->
+        <div v-else class="update-record-detail-wrapper">
+          <div class="detail-header">
+            <button class="back-btn" @click="selectedUpdateRecord = null">← 返回</button>
+            <h3>更新记录详情</h3>
           </div>
-
-          <div class="form-group">
-            <label>版本</label>
-            <input type="text" v-model="form.version" placeholder="默认版本为1.0">
-          </div>
-
-          <div class="form-group">
-            <label>图片类型</label>
-            <input type="text" :value="form.imageType || '未指定'" disabled>
-          </div>
+          <UpdateRecordDetail
+            :record="selectedUpdateRecord"
+            @back="selectedUpdateRecord = null" />
         </div>
-
-        <div class="form-group">
-          <label>上传图像</label>
-          <input
-            type="file"
-            accept="image/*"
-            @change="onImageChange"
-          />
-          <div v-if="form.imagePreview || form.imageDataUrl" class="image-container">
-            <div v-if="form.imagePreview" class="image-preview">
-              <img :src="form.imagePreview" alt="预览图像" />
-              <div class="image-label">新图像预览</div>
-            </div>
-            <div v-else-if="form.imageDataUrl" class="image-preview">
-              <img :src="form.imageDataUrl" alt="当前图像" />
-              <div class="image-label">当前图像</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>状态:</label>
-          <select v-model="form.valid">
-            <option :value="true">上线</option>
-            <option :value="false">下线</option>
-          </select>
-        </div>
-
-        <!-- 时间信息 -->
-        <div class="time-info" v-if="form.createdTime || form.updateTime">
-          <div class="form-group">
-            <label>时间信息:</label>
-            <div class="time-details">
-              <p v-if="form.createdTime">创建时间: {{ formatDateTime(form.createdTime) }}</p>
-              <p v-if="form.updateTime">更新时间: {{ formatDateTime(form.updateTime) }}</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" class="back-btn-form" @click="goBack">返回</button>
-          <button type="button" class="save-btn" @click="handleSubmit">
-            {{ isEditMode ? '保存' : '创建' }}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import { processDiagramService } from '../../api';
+import UpdateRecordList from '../update-record/UpdateRecordList.vue';
+import UpdateRecordDetail from '../update-record/UpdateRecordDetail.vue';
 
 // API端点常量
 const API_GET_BY_ID = (id) => `/api/process-diagrams/business/${id}`;
@@ -127,6 +173,10 @@ const API_UPDATE = (id) => `/api/process-diagrams/business/${id}`;
 
 export default {
   name: 'BusinessProcessDiagramDetail',
+  components: {
+    UpdateRecordList,
+    UpdateRecordDetail
+  },
   props: {
     diagram: {
       type: Object,
@@ -152,7 +202,11 @@ export default {
       allDiagrams: [],
       diagramSearchQuery: '',
       showDiagramDropdown: false,
-      filteredDiagrams: []
+      filteredDiagrams: [],
+      // Tab页相关数据
+      activeTab: 'detail',
+      // 更新记录详情相关数据
+      selectedUpdateRecord: null
     };
   },
   computed: {
@@ -344,6 +398,11 @@ export default {
       } else {
         alert('流程图ID不存在，无法打开API链接');
       }
+    },
+
+    // 处理查看更新记录事件
+    handleViewRecord(record) {
+      this.selectedUpdateRecord = record;
     }
   }
 };
@@ -380,6 +439,30 @@ export default {
 
 .api-btn:hover {
   background-color: #337ecc;
+}
+
+/* Tab页样式 */
+.tabs {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #dcdfe6;
+}
+
+.tabs button {
+  padding: 10px 20px;
+  background-color: #f5f7fa;
+  border: 1px solid #dcdfe6;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.tabs button.active {
+  background-color: #ffffff;
+  border-bottom: 1px solid #ffffff;
+  margin-bottom: -1px;
+  font-weight: bold;
 }
 
 .diagram-detail-content {
@@ -565,6 +648,35 @@ export default {
 
 .save-btn:hover {
   background-color: #0056b3;
+}
+
+/* 更新记录详情样式 */
+.update-record-detail-wrapper {
+  margin-top: 20px;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.detail-header h3 {
+  margin: 0;
+  margin-left: 10px;
+}
+
+.back-btn {
+  background-color: #f0f0f0;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.back-btn:hover {
+  background-color: #e0e0e0;
 }
 
 @media (max-width: 768px) {

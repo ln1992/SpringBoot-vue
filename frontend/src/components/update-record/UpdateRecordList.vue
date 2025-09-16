@@ -5,12 +5,12 @@
     <div v-if="!selectedRecord">
       <div class="header">
         <h2>更新记录</h2>
-        <div class="header-actions">
+        <div class="header-actions" v-if="!hideActions">
           <button class="refresh-btn" @click="fetchRecords">刷新</button>
         </div>
       </div>
 
-      <div class="filter-section">
+      <div class="filter-section" v-if="!filterEntityId && !hideFilters">
         <div class="filter-group">
           <label>实体类型筛选:</label>
           <select v-model="filterEntityType" @change="filterRecords">
@@ -62,7 +62,6 @@
           <div class="table-cell">操作类型</div>
           <div class="table-cell">操作用户</div>
           <div class="table-cell">创建时间</div>
-          <div class="table-cell">操作</div>
         </div>
         <div
           class="table-row"
@@ -78,14 +77,11 @@
           <div class="table-cell">{{ getOperationTypeLabel(record.operationType) }}</div>
           <div class="table-cell">{{ record.operator || '-' }}</div>
           <div class="table-cell">{{ formatDate(record.createdTime) }}</div>
-          <div class="table-cell">
-            <button @click.stop="deleteRecord(record.id)" class="delete-btn">删除</button>
-          </div>
         </div>
       </div>
 
       <!-- 分页控件 -->
-      <div class="pagination" v-if="paginatedRecords.length > 0">
+      <div class="pagination" v-if="paginatedRecords.length > 0 && !hidePagination">
         <div class="pagination-controls">
           <button 
             :disabled="currentPage === 1" 
@@ -129,13 +125,35 @@ export default {
   components: {
     UpdateRecordDetail
   },
+  props: {
+    filterEntityType: {
+      type: String,
+      default: ''
+    },
+    filterEntityId: {
+      type: [String, Number],
+      default: null
+    },
+    hideActions: {
+      type: Boolean,
+      default: false
+    },
+    hideFilters: {
+      type: Boolean,
+      default: false
+    },
+    hidePagination: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
       records: [],
       filteredRecords: [],
       loading: false,
       error: null,
-      filterEntityType: '',
+      localFilterEntityType: '',
       filterOperationType: '',
       searchKeyword: '',
       // 分页相关数据
@@ -155,6 +173,10 @@ export default {
       const start = (this.currentPage - 1) * this.pageSize
       const end = start + this.pageSize
       return this.filteredRecords.slice(start, end)
+    },
+
+    effectiveFilterEntityType() {
+      return this.filterEntityType || this.localFilterEntityType;
     }
   },
   mounted() {
@@ -164,6 +186,7 @@ export default {
     // 查看记录详情，在当前页面中显示
     viewRecordDetail(record) {
       this.selectedRecord = record;
+      this.$emit('view-record', record);
     },
 
     // 返回列表视图
@@ -190,7 +213,12 @@ export default {
     filterRecords() {
       this.filteredRecords = this.records.filter(record => {
         // 实体类型筛选
-        if (this.filterEntityType && record.entityType !== this.filterEntityType) {
+        if (this.effectiveFilterEntityType && record.entityType !== this.effectiveFilterEntityType) {
+          return false
+        }
+
+        // 实体ID筛选
+        if (this.filterEntityId && record.entityId !== this.filterEntityId) {
           return false
         }
 
@@ -200,7 +228,7 @@ export default {
         }
 
         // 关键词搜索
-        if (this.searchKeyword) {
+        if (this.searchKeyword && !this.filterEntityId) {
           const keyword = this.searchKeyword.toLowerCase()
           const entityName = (record.entityName || '').toLowerCase()
           if (!entityName.includes(keyword)) {
@@ -290,6 +318,18 @@ export default {
     // 添加resetToListView方法，用于从App.vue中调用返回列表视图
     resetToListView() {
       this.selectedRecord = null;
+    }
+  },
+  watch: {
+    filterEntityType: {
+      handler() {
+        this.filterRecords();
+      }
+    },
+    filterEntityId: {
+      handler() {
+        this.filterRecords();
+      }
     }
   }
 }
@@ -440,9 +480,6 @@ export default {
   flex: 0 0 120px;
 }
 
-.table-cell:last-child {
-  flex: 0 0 160px;
-}
 
 .delete-btn {
   background-color: #f56c6c;
@@ -451,10 +488,24 @@ export default {
   padding: 4px 8px;
   border-radius: 4px;
   cursor: pointer;
+  margin-left: 5px;
 }
 
 .delete-btn:hover {
   background-color: #e45656;
+}
+
+.view-btn {
+  background-color: #409eff;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.view-btn:hover {
+  background-color: #337ecc;
 }
 
 .pagination {

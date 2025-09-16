@@ -6,78 +6,122 @@
       <button v-if="isEditMode" class="api-btn" @click="openApiUrl" title="查看API数据">API</button>
     </div>
 
+    <!-- 添加Tab页 -->
+    <div class="tabs" v-if="isEditMode">
+      <button 
+        :class="{ active: activeTab === 'detail' }"
+        @click="activeTab = 'detail'"
+      >
+        材料详情
+      </button>
+      <button 
+        :class="{ active: activeTab === 'updates' }"
+        @click="activeTab = 'updates'"
+      >
+        更新记录
+      </button>
+    </div>
+
     <div class="material-detail-content">
-      <!-- 拷贝功能区 -->
-      <div class="copy-section" v-if="!isEditMode && allMaterials.length > 0">
-        <div class="form-group">
-          <label for="copyMaterial">拷贝材料:</label>
-          <div class="material-copy-container">
-            <input
-              type="text"
-              v-model="materialSearchQuery"
-              placeholder="输入或选择材料"
-              class="material-search-input"
-              @input="onMaterialSearchInput"
-              @focus="showMaterialDropdown = true"
-              @blur="hideMaterialDropdown"
-            />
-            <div
-              v-if="showMaterialDropdown"
-              class="material-dropdown-list"
-              @mousedown.prevent
-            >
+      <!-- 材料详情 Tab -->
+      <div v-show="activeTab === 'detail'">
+        <!-- 拷贝功能区 -->
+        <div class="copy-section" v-if="!isEditMode && allMaterials.length > 0">
+          <div class="form-group">
+            <label for="copyMaterial">拷贝材料:</label>
+            <div class="material-copy-container">
+              <input
+                type="text"
+                v-model="materialSearchQuery"
+                placeholder="输入或选择材料"
+                class="material-search-input"
+                @input="onMaterialSearchInput"
+                @focus="showMaterialDropdown = true"
+                @blur="hideMaterialDropdown"
+              />
               <div
-                v-for="availableMaterial in filteredMaterials"
-                :key="availableMaterial.id"
-                class="material-dropdown-item"
-                @mousedown="selectMaterialFromDropdown(availableMaterial)"
+                v-if="showMaterialDropdown"
+                class="material-dropdown-list"
+                @mousedown.prevent
               >
-                {{ availableMaterial.__name__ }}
-              </div>
-              <div
-                v-if="filteredMaterials && filteredMaterials.length === 0"
-                class="no-results"
-              >
-                无匹配结果
+                <div
+                  v-for="availableMaterial in filteredMaterials"
+                  :key="availableMaterial.id"
+                  class="material-dropdown-item"
+                  @mousedown="selectMaterialFromDropdown(availableMaterial)"
+                >
+                  {{ availableMaterial.__name__ }}
+                </div>
+                <div
+                  v-if="filteredMaterials && filteredMaterials.length === 0"
+                  class="no-results"
+                >
+                  无匹配结果
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        <form @submit.prevent="handleSubmit">
+          <BasicInfo
+            :form="form"
+            :errors="errors"
+            :is-edit-mode="isEditMode"
+            @update-field="updateField" />
+
+          <ReviewInfo
+            :form="form"
+            @update-field="updateField" />
+
+          <SourceAndSharing
+            :form="form"
+            @update-field="updateField" />
+
+          <ProcessingInfo
+            :form="form"
+            @update-field="updateField" />
+
+          <StatusSection
+            :form="form"
+            @update-field="updateField" />
+
+          <TimeInfo
+            :created-time="form.createdTime"
+            :update-time="form.updateTime" />
+
+          <FormActions
+            @back="goBack"
+            @submit="handleSubmit"
+            :is-submitting="submitting"
+            :is-edit-mode="isEditMode" />
+        </form>
       </div>
 
-      <form @submit.prevent="handleSubmit">
-        <BasicInfo
-          :form="form"
-          :errors="errors"
-          :is-edit-mode="isEditMode"
-          @update-field="updateField" />
-
-        <ReviewInfo
-          :form="form"
-          @update-field="updateField" />
-
-        <SourceAndSharing
-          :form="form"
-          @update-field="updateField" />
-
-        <ProcessingInfo
-          :form="form"
-          @update-field="updateField" />
-
-        <StatusSection
-          :form="form"
-          @update-field="updateField" />
-
-        <TimeInfo
-          :created-time="form.createdTime"
-          :update-time="form.updateTime" />
-
-        <FormActions
-          @back="goBack"
-          @submit="handleSubmit"
-          :is-submitting="submitting"
-          :is-edit-mode="isEditMode" />
-      </form>
+      <!-- 更新记录 Tab -->
+      <div v-show="activeTab === 'updates'" v-if="isEditMode">
+        <!-- 只在未选择记录时显示列表 -->
+        <UpdateRecordList 
+          v-if="!selectedUpdateRecord"
+          ref="updateRecordList"
+          :filter-entity-type="'Material'"
+          :filter-entity-id="form.id"
+          :hide-actions="true"
+          :hide-filters="true"
+          :hide-pagination="true"
+          @view-record="handleViewRecord" />
+          
+        <!-- 更新记录详情 -->
+        <div v-else class="update-record-detail-wrapper">
+          <div class="detail-header">
+            <button class="back-btn" @click="selectedUpdateRecord = null">← 返回</button>
+            <h3>更新记录详情</h3>
+          </div>
+          <UpdateRecordDetail 
+            :record="selectedUpdateRecord" 
+            @back="selectedUpdateRecord = null" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -91,6 +135,8 @@ import ProcessingInfo from './sections/ProcessingInfo.vue'
 import StatusSection from './sections/StatusSection.vue'
 import TimeInfo from './sections/TimeInfo.vue'
 import FormActions from './sections/FormActions.vue'
+import UpdateRecordList from '../update-record/UpdateRecordList.vue'
+import UpdateRecordDetail from '../update-record/UpdateRecordDetail.vue'
 
 export default {
   name: 'MaterialDetail',
@@ -101,7 +147,9 @@ export default {
     ProcessingInfo,
     StatusSection,
     TimeInfo,
-    FormActions
+    FormActions,
+    UpdateRecordList,
+    UpdateRecordDetail
   },
   props: {
     material: {
@@ -146,7 +194,11 @@ export default {
       allMaterials: [],
       materialSearchQuery: '',
       showMaterialDropdown: false,
-      filteredMaterials: []
+      filteredMaterials: [],
+      // Tab页相关数据
+      activeTab: 'detail',
+      // 更新记录详情相关数据
+      selectedUpdateRecord: null
     };
   },
   computed: {
@@ -198,6 +250,7 @@ export default {
     // 处理材料搜索输入
     onMaterialSearchInput() {
       if (!this.materialSearchQuery) {
+        // 限制显示数量，只显示前100个材料
         // 限制显示数量，只显示前100个材料
         this.filteredMaterials = this.allMaterials.slice(0, 100);
       } else {
@@ -320,6 +373,11 @@ export default {
       } else {
         alert('材料ID不存在，无法打开API链接');
       }
+    },
+
+    // 处理查看更新记录事件
+    handleViewRecord(record) {
+      this.selectedUpdateRecord = record;
     }
   }
 }
@@ -358,6 +416,30 @@ export default {
 
 .api-btn:hover {
   background-color: #337ecc;
+}
+
+/* Tab页样式 */
+.tabs {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #dcdfe6;
+}
+
+.tabs button {
+  padding: 10px 20px;
+  background-color: #f5f7fa;
+  border: 1px solid #dcdfe6;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.tabs button.active {
+  background-color: #ffffff;
+  border-bottom: 1px solid #ffffff;
+  margin-bottom: -1px;
+  font-weight: bold;
 }
 
 .material-detail-content {
@@ -442,6 +524,35 @@ export default {
   padding: 8px 12px;
   color: #909399;
   font-style: italic;
+}
+
+/* 更新记录详情样式 */
+.update-record-detail-wrapper {
+  margin-top: 20px;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.detail-header h3 {
+  margin: 0;
+  margin-left: 10px;
+}
+
+.back-btn {
+  background-color: #f0f0f0;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.back-btn:hover {
+  background-color: #e0e0e0;
 }
 
 /* 防止页面自动滚动到底部 */

@@ -6,101 +6,145 @@
       <button v-if="isEditMode" class="api-btn" @click="openApiUrl" title="查看API数据">API</button>
     </div>
 
+    <!-- 添加Tab页 -->
+    <div class="tabs" v-if="isEditMode">
+      <button 
+        :class="{ active: activeTab === 'detail' }"
+        @click="activeTab = 'detail'"
+      >
+        事项详情
+      </button>
+      <button 
+        :class="{ active: activeTab === 'updates' }"
+        @click="activeTab = 'updates'"
+      >
+        更新记录
+      </button>
+    </div>
+
     <div class="matter-detail-content">
-      <!-- 拷贝功能区 -->
-      <div class="copy-section" v-if="!isEditMode && allMatters.length > 0">
-        <div class="form-group">
-          <label for="copyMatter">拷贝事项:</label>
-          <div class="matter-copy-container">
-            <input
-              type="text"
-              v-model="matterSearchQuery"
-              placeholder="输入或选择事项"
-              class="matter-search-input"
-              @input="onMatterSearchInput"
-              @focus="showMatterDropdown = true"
-              @blur="hideMatterDropdown"
-            />
-            <div
-              v-if="showMatterDropdown"
-              class="matter-dropdown-list"
-              @mousedown.prevent
-            >
+      <!-- 事项详情 Tab -->
+      <div v-show="activeTab === 'detail'">
+        <!-- 拷贝功能区 -->
+        <div class="copy-section" v-if="!isEditMode && allMatters.length > 0">
+          <div class="form-group">
+            <label for="copyMatter">拷贝事项:</label>
+            <div class="matter-copy-container">
+              <input
+                type="text"
+                v-model="matterSearchQuery"
+                placeholder="输入或选择事项"
+                class="matter-search-input"
+                @input="onMatterSearchInput"
+                @focus="showMatterDropdown = true"
+                @blur="hideMatterDropdown"
+              />
               <div
-                v-for="availableMatter in filteredMatters"
-                :key="availableMatter.id"
-                class="matter-dropdown-item"
-                @mousedown="selectMatterFromDropdown(availableMatter)"
+                v-if="showMatterDropdown"
+                class="matter-dropdown-list"
+                @mousedown.prevent
               >
-                {{ availableMatter.__name__ }}
-              </div>
-              <div
-                v-if="filteredMatters && filteredMatters.length === 0"
-                class="no-results"
-              >
-                无匹配结果
+                <div
+                  v-for="availableMatter in filteredMatters"
+                  :key="availableMatter.id"
+                  class="matter-dropdown-item"
+                  @mousedown="selectMatterFromDropdown(availableMatter)"
+                >
+                  {{ availableMatter.__name__ }}
+                </div>
+                <div
+                  v-if="filteredMatters && filteredMatters.length === 0"
+                  class="no-results"
+                >
+                  无匹配结果
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        <form @submit.prevent="handleSubmit">
+          <!-- 基本信息 -->
+          <BasicInfoSection
+            :form="form"
+            :errors="errors"
+            @update:form="updateForm" />
+
+          <!-- 事项层级信息 -->
+          <ItemHierarchySection
+            :form="form"
+            :errors="errors"
+            @update:form="updateForm" />
+
+          <!-- 经办依据 -->
+          <BasisSection
+            :bases="form.bases"
+            @update:bases="updateBases" />
+
+          <!-- 关联材料 -->
+          <MaterialsSection
+            :materials="selectedMaterials"
+            :materials-list="materialsList"
+            @add-material="addMaterial"
+            @remove-material="removeMaterial"
+            @update-material="updateMaterial" />
+
+          <!-- 时限和审批信息 -->
+          <TimeAndApprovalSection
+            :form="form"
+            :errors="errors"
+            :approval-levels="approvalLevels"
+            :provincial-offices="provincialDepartmentOffices"
+            @update:form="updateForm" />
+
+          <!-- 流程图 -->
+          <ProcessDiagramsSection
+            :approval-diagram-id="form.approvalProcessDiagramId"
+            :business-diagram-id="form.businessProcessDiagramId"
+            :approval-diagrams="approvalProcessDiagrams"
+            :business-diagrams="businessProcessDiagrams"
+            @update:approval-diagram="updateApprovalDiagram"
+            @update:business-diagram="updateBusinessDiagram"
+            @clear:approval-diagram="clearApprovalDiagram"
+            @clear:business-diagram="clearBusinessDiagram" />
+
+          <!-- 时间信息 -->
+          <TimeInfoSection
+            :created-time="form.createdTime"
+            :update-time="form.updateTime" />
+
+          <!-- 操作按钮 -->
+          <ActionButtons
+            @back="goBack"
+            :is-edit-mode="isEditMode"
+            @submit="handleSubmit" />
+        </form>
       </div>
 
-      <form @submit.prevent="handleSubmit">
-        <!-- 基本信息 -->
-        <BasicInfoSection
-          :form="form"
-          :errors="errors"
-          @update:form="updateForm" />
-
-        <!-- 事项层级信息 -->
-        <ItemHierarchySection
-          :form="form"
-          :errors="errors"
-          @update:form="updateForm" />
-
-        <!-- 经办依据 -->
-        <BasisSection
-          :bases="form.bases"
-          @update:bases="updateBases" />
-
-        <!-- 关联材料 -->
-        <MaterialsSection
-          :materials="selectedMaterials"
-          :materials-list="materialsList"
-          @add-material="addMaterial"
-          @remove-material="removeMaterial"
-          @update-material="updateMaterial" />
-
-        <!-- 时限和审批信息 -->
-        <TimeAndApprovalSection
-          :form="form"
-          :errors="errors"
-          :approval-levels="approvalLevels"
-          :provincial-offices="provincialDepartmentOffices"
-          @update:form="updateForm" />
-
-        <!-- 流程图 -->
-        <ProcessDiagramsSection
-          :approval-diagram-id="form.approvalProcessDiagramId"
-          :business-diagram-id="form.businessProcessDiagramId"
-          :approval-diagrams="approvalProcessDiagrams"
-          :business-diagrams="businessProcessDiagrams"
-          @update:approval-diagram="updateApprovalDiagram"
-          @update:business-diagram="updateBusinessDiagram"
-          @clear:approval-diagram="clearApprovalDiagram"
-          @clear:business-diagram="clearBusinessDiagram" />
-
-        <!-- 时间信息 -->
-        <TimeInfoSection
-          :created-time="form.createdTime"
-          :update-time="form.updateTime" />
-
-        <!-- 操作按钮 -->
-        <ActionButtons
-          @back="goBack"
-          :is-edit-mode="isEditMode"
-          @submit="handleSubmit" />
-      </form>
+      <!-- 更新记录 Tab -->
+      <div v-show="activeTab === 'updates'" v-if="isEditMode">
+        <!-- 只在未选择记录时显示列表 -->
+        <UpdateRecordList 
+          v-if="!selectedUpdateRecord"
+          ref="updateRecordList"
+          :filter-entity-type="'Matter'"
+          :filter-entity-id="form.id"
+          :hide-actions="true"
+          :hide-filters="true"
+          :hide-pagination="true"
+          @view-record="handleViewRecord" />
+          
+        <!-- 更新记录详情 -->
+        <div v-else class="update-record-detail-wrapper">
+          <div class="detail-header">
+            <button class="back-btn" @click="selectedUpdateRecord = null">← 返回</button>
+            <h3>更新记录详情</h3>
+          </div>
+          <UpdateRecordDetail 
+            :record="selectedUpdateRecord" 
+            @back="selectedUpdateRecord = null" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -114,6 +158,8 @@ import TimeAndApprovalSection from './sections/TimeAndApprovalSection.vue'
 import ProcessDiagramsSection from './sections/ProcessDiagramsSection.vue'
 import TimeInfoSection from './sections/TimeInfoSection.vue'
 import ActionButtons from './sections/ActionButtons.vue'
+import UpdateRecordList from '../update-record/UpdateRecordList.vue'
+import UpdateRecordDetail from '../update-record/UpdateRecordDetail.vue'
 import { matterService } from '../../api';
 
 export default {
@@ -126,7 +172,9 @@ export default {
     TimeAndApprovalSection,
     ProcessDiagramsSection,
     TimeInfoSection,
-    ActionButtons
+    ActionButtons,
+    UpdateRecordList,
+    UpdateRecordDetail
   },
   props: {
     matter: {
@@ -194,7 +242,11 @@ export default {
         { name: 'PROVINCIAL_PORT_CENTER_MANAGEMENT', description: '省港航中心管理处' },
         { name: 'PROVINCIAL_HIGHWAY_CENTER_CONSTRUCTION', description: '省公路中心建设处' },
         { name: 'PROVINCIAL_HIGHWAY_CENTER_MAINTENANCE', description: '省公路中心养护处' }
-      ]
+      ],
+      // Tab页相关数据
+      activeTab: 'detail',
+      // 更新记录详情相关数据
+      selectedUpdateRecord: null
     }
   },
   computed: {
@@ -202,59 +254,176 @@ export default {
       return !!this.matter.id
     }
   },
-  created() {
-    this.resetForm()
+  watch: {
+    matter: {
+      handler(newVal) {
+        this.initializeForm(newVal);
+      },
+      deep: true,
+      immediate: true
+    },
+    materialsList: {
+      handler() {
+        this.updateSelectedMaterials();
+      },
+      deep: true
+    }
+  },
+  mounted() {
     // 只在新增模式下加载所有事项用于拷贝功能
     if (!this.isEditMode) {
       this.loadAllMatters();
     }
   },
   methods: {
-    resetForm() {
-      // 初始化表单逻辑
-      this.initializeForm()
-      this.initializeMaterials()
+    initializeForm(matter) {
+      // 初始化表单数据
+      this.form = {
+        id: matter.id || null,
+        version: matter.version || null,
+        mainItemCode: matter.mainItemCode || null,
+        subItemCode: matter.subItemCode || null,
+        grandchildItemCode: matter.grandchildItemCode || null,
+        mainItemName: matter.mainItemName || '',
+        subItemName: matter.subItemName || '',
+        grandchildItemName: matter.grandchildItemName || '',
+        bases: Array.isArray(matter.bases) ? [...matter.bases] : [],
+        materialIds: Array.isArray(matter.materialIds) ? [...matter.materialIds] : [],
+        legalTimeLimit: matter.legalTimeLimit || null,
+        committedTimeLimit: matter.committedTimeLimit || null,
+        approvalLevel: matter.approvalLevel || '',
+        provincialDepartmentOffice: matter.provincialDepartmentOffice || '',
+        isValid: matter.isValid !== undefined ? matter.isValid : true,
+        isPublish: matter.isPublish !== undefined ? matter.isPublish : false,
+        approvalProcessDiagramId: matter.approvalProcessDiagramId || null,
+        businessProcessDiagramId: matter.businessProcessDiagramId || null,
+        createdTime: matter.createdTime || null,
+        updateTime: matter.updateTime || null
+      };
+
+      // 更新选中的材料
+      this.updateSelectedMaterials();
     },
 
-    initializeForm() {
-      this.form = {
-        id: this.matter.id,
-        version: this.matter.version,
-        mainItemCode: this.matter.mainItemCode,
-        subItemCode: this.matter.subItemCode,
-        grandchildItemCode: this.matter.grandchildItemCode,
-        mainItemName: this.matter.mainItemName || '',
-        subItemName: this.matter.subItemName || '',
-        grandchildItemName: this.matter.grandchildItemName || '',
-        bases: [...(this.matter.bases || [])],
-        materialIds: [...(this.matter.materialIds || [])],
-        legalTimeLimit: this.matter.legalTimeLimit,
-        committedTimeLimit: this.matter.committedTimeLimit,
-        approvalLevel: this.matter.approvalLevel || '',
-        provincialDepartmentOffice: this.matter.provincialDepartmentOffice || '',
-        isValid: this.matter.isValid !== undefined ? this.matter.isValid : true,
-        isPublish: this.matter.isPublish !== undefined ? this.matter.isPublish : false,
-        approvalProcessDiagramId: this.matter.approvalProcessDiagramId || null,
-        businessProcessDiagramId: this.matter.businessProcessDiagramId || null,
-        createdTime: this.matter.createdTime || null,
-        updateTime: this.matter.updateTime || null
+    updateSelectedMaterials() {
+      // 根据 materialIds 更新 selectedMaterials
+      this.selectedMaterials = this.materialsList.filter(material =>
+        this.form.materialIds.includes(material.id)
+      );
+    },
+
+    updateForm(field, value) {
+      this.form[field] = value;
+    },
+
+    updateBases(bases) {
+      this.form.bases = bases;
+    },
+
+    addMaterial(material) {
+      // 检查是否已添加
+      if (!this.selectedMaterials.find(m => m.id === material.id)) {
+        this.selectedMaterials.push(material);
+        this.form.materialIds.push(material.id);
       }
     },
 
-    initializeMaterials() {
-      this.selectedMaterials = []
-      this.form.materialIds.forEach((materialId) => {
-        if (materialId) {
-          const material = this.materialsList.find(m => m.id === materialId)
-          if (material) {
-            // 确保包含所有必要字段
-            this.selectedMaterials.push({
-              ...material,
-              __name__: material.__name__ || ''
-            })
-          }
+    removeMaterial(materialId) {
+      const index = this.selectedMaterials.findIndex(m => m.id === materialId);
+      if (index !== -1) {
+        this.selectedMaterials.splice(index, 1);
+        const idIndex = this.form.materialIds.indexOf(materialId);
+        if (idIndex !== -1) {
+          this.form.materialIds.splice(idIndex, 1);
         }
-      })
+      }
+    },
+
+    updateMaterial({ materialId, field, value }) {
+      const material = this.selectedMaterials.find(m => m.id === materialId);
+      if (material) {
+        material[field] = value;
+      }
+    },
+
+    updateApprovalDiagram(diagramId) {
+      this.form.approvalProcessDiagramId = diagramId;
+    },
+
+    updateBusinessDiagram(diagramId) {
+      this.form.businessProcessDiagramId = diagramId;
+    },
+
+    clearApprovalDiagram() {
+      this.form.approvalProcessDiagramId = null;
+    },
+
+    clearBusinessDiagram() {
+      this.form.businessProcessDiagramId = null;
+    },
+
+    goBack() {
+      this.$emit('back');
+    },
+
+    validateForm() {
+      this.errors = {};
+
+      // 验证主项名称
+      if (!this.form.mainItemName || this.form.mainItemName.trim() === '') {
+        this.errors.mainItemName = '主项名称不能为空';
+      }
+
+      // 验证版本号
+      if (this.form.version && (isNaN(this.form.version) || this.form.version < 1)) {
+        this.errors.version = '版本号必须是大于0的数字';
+      }
+
+      // 验证法定时限
+      if (this.form.legalTimeLimit !== null && this.form.legalTimeLimit !== undefined && 
+          (isNaN(this.form.legalTimeLimit) || this.form.legalTimeLimit < 0)) {
+        this.errors.legalTimeLimit = '法定时限必须是非负数';
+      }
+
+      // 验证承诺时限
+      if (this.form.committedTimeLimit !== null && this.form.committedTimeLimit !== undefined && 
+          (isNaN(this.form.committedTimeLimit) || this.form.committedTimeLimit < 0)) {
+        this.errors.committedTimeLimit = '承诺时限必须是非负数';
+      }
+
+      return Object.keys(this.errors).length === 0;
+    },
+
+    async handleSubmit() {
+      if (!this.validateForm()) {
+        // 表单验证失败，滚动到第一个错误
+        this.$nextTick(() => {
+          const firstError = document.querySelector('.error-message');
+          if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        });
+        return;
+      }
+
+      try {
+        let response;
+        if (this.isEditMode) {
+          response = await matterService.updateMatter(this.form.id, this.form);
+        } else {
+          // 确保版本号有效
+          if (!this.form.version || this.form.version < 1) {
+            this.form.version = 1;
+          }
+          response = await matterService.createMatter(this.form);
+        }
+
+        this.$emit('matter-updated', response);
+        alert(this.isEditMode ? '事项更新成功' : '事项创建成功');
+      } catch (error) {
+        console.error('保存事项出错:', error);
+        alert('保存失败: ' + (error.message || '未知错误'));
+      }
     },
 
     // 加载所有事项用于拷贝功能
@@ -315,198 +484,37 @@ export default {
       }
     },
 
-    // 处理事项拷贝
-    async handleMatterCopy() {
-      if (!this.selectedMatterForCopy) {
-        return;
-      }
-
-      try {
-        // 获取选中的事项详情
-        const matter = await matterService.getMatterById(this.selectedMatterForCopy);
-        this.copyMatterData(matter);
-        // 重置选择，允许再次选择同一事项
-        this.$nextTick(() => {
-          this.selectedMatterForCopy = '';
-        });
-      } catch (error) {
-        console.error('拷贝事项失败:', error);
-        alert('拷贝事项失败: ' + (error.message || '未知错误'));
-      }
-    },
-
     // 拷贝事项数据到当前表单
     copyMatterData(matterData) {
       // 基本信息
-      this.form.mainItemCode = matterData.mainItemCode;
-      this.form.subItemCode = matterData.subItemCode;
-      this.form.grandchildItemCode = matterData.grandchildItemCode;
-      this.form.mainItemName = matterData.mainItemName;
-      this.form.subItemName = matterData.subItemName;
-      this.form.grandchildItemName = matterData.grandchildItemName;
-
+      this.updateForm('mainItemCode', matterData.mainItemCode);
+      this.updateForm('subItemCode', matterData.subItemCode);
+      this.updateForm('grandchildItemCode', matterData.grandchildItemCode);
+      this.updateForm('mainItemName', matterData.mainItemName);
+      this.updateForm('subItemName', matterData.subItemName);
+      this.updateForm('grandchildItemName', matterData.grandchildItemName);
+      this.updateForm('version', matterData.version);
+      
       // 经办依据
-      this.form.bases = matterData.bases ? [...matterData.bases] : [];
+      this.updateBases([...matterData.bases]);
 
-      // 材料ID列表
-      this.form.materialIds = matterData.materialIds ? [...matterData.materialIds] : [];
+      // 时限和审批信息
+      this.updateForm('legalTimeLimit', matterData.legalTimeLimit);
+      this.updateForm('committedTimeLimit', matterData.committedTimeLimit);
+      this.updateForm('approvalLevel', matterData.approvalLevel);
+      this.updateForm('provincialDepartmentOffice', matterData.provincialDepartmentOffice);
+      this.updateForm('isValid', matterData.isValid);
+      this.updateForm('isPublish', matterData.isPublish);
 
-      // 重新初始化材料
-      this.initializeMaterials();
+      // 流程图
+      this.updateForm('approvalProcessDiagramId', matterData.approvalProcessDiagramId);
+      this.updateForm('businessProcessDiagramId', matterData.businessProcessDiagramId);
 
-      // 时限信息
-      this.form.legalTimeLimit = matterData.legalTimeLimit;
-      this.form.committedTimeLimit = matterData.committedTimeLimit;
-
-      // 审批层级和省厅对口指导处室
-      this.form.approvalLevel = matterData.approvalLevel;
-      this.form.provincialDepartmentOffice = matterData.provincialDepartmentOffice;
-
-      // 流程图ID
-      this.form.approvalProcessDiagramId = matterData.approvalProcessDiagramId;
-      this.form.businessProcessDiagramId = matterData.businessProcessDiagramId;
-
-      // 注意：不拷贝发布状态和ID
-      // this.form.id = matterData.id;
-      // this.form.version = matterData.version;
-      // this.form.isValid = matterData.isValid;
-      // this.form.isPublish = matterData.isPublish;
+      // 材料
+      this.form.materialIds = [...matterData.materialIds];
+      this.updateSelectedMaterials();
 
       alert('事项数据拷贝成功');
-    },
-
-    updateForm(field, value) {
-      this.form[field] = value
-    },
-
-    updateBases(bases) {
-      this.form.bases = bases
-    },
-
-    addMaterial() {
-      this.selectedMaterials.push({
-        materialDetail: '',
-        reviewPoint: '',
-        autoApprovalCriteria: '',
-        shared: false,
-        materialSource: '',
-        processingMethodAndInfoAccess: '',
-        eligibleForPromise: false,
-        __name__: ''
-      })
-    },
-
-    removeMaterial(index) {
-      this.selectedMaterials.splice(index, 1)
-    },
-
-    updateMaterial(index, material) {
-      this.$set(this.selectedMaterials, index, material)
-    },
-
-    updateApprovalDiagram(diagramId) {
-      this.form.approvalProcessDiagramId = diagramId
-    },
-
-    updateBusinessDiagram(diagramId) {
-      this.form.businessProcessDiagramId = diagramId
-    },
-
-    clearApprovalDiagram() {
-      this.form.approvalProcessDiagramId = null
-    },
-
-    clearBusinessDiagram() {
-      this.form.businessProcessDiagramId = null
-    },
-
-    goBack() {
-      this.$emit('back')
-    },
-
-    async handleSubmit() {
-      // 表单验证
-      if (!this.validateForm()) {
-        return
-      }
-
-      const formData = this.buildFormData()
-
-      try {
-        let response
-        if (this.isEditMode) {
-          response = await matterService.updateMatter(this.form.id, formData)
-        } else {
-          response = await matterService.createMatter(formData)
-        }
-
-        this.$emit('matter-updated', response)
-        alert(this.isEditMode ? '事项更新成功' : '事项创建成功')
-      } catch (error) {
-        console.error('保存事项出错:', error)
-        alert('保存失败: ' + error.message)
-      }
-    },
-
-    validateForm() {
-      this.errors = {}
-
-      // 验证主项编号和名称
-      if (!this.form.mainItemCode) {
-        this.errors.mainItemCode = '主项编号不能为空'
-      }
-      if (!this.form.mainItemName) {
-        this.errors.mainItemName = '主项名称不能为空'
-      }
-
-      // 验证法定时限和承诺时限
-      if (this.form.legalTimeLimit === null || this.form.legalTimeLimit === undefined) {
-        this.errors.legalTimeLimit = '法定时限不能为空'
-      }
-      if (this.form.committedTimeLimit === null || this.form.committedTimeLimit === undefined) {
-        this.errors.committedTimeLimit = '承诺时限不能为空'
-      }
-
-      // 验证审批层级
-      if (!this.form.approvalLevel) {
-        this.errors.approvalLevel = '审批层级不能为空'
-      }
-
-      // 验证省厅对口指导处室
-      if (!this.form.provincialDepartmentOffice) {
-        this.errors.provincialDepartmentOffice = '省厅对口指导处室不能为空'
-      }
-
-      return Object.keys(this.errors).length === 0
-    },
-
-    buildFormData() {
-      // 过滤掉空的材料ID
-      const validMaterialIds = this.selectedMaterials
-        .filter(material => material.id)
-        .map(material => material.id)
-
-      return {
-        id: this.form.id,
-        version: this.form.version ? parseInt(this.form.version) : null,
-        mainItemCode: this.form.mainItemCode,
-        subItemCode: this.form.subItemCode,
-        grandchildItemCode: this.form.grandchildItemCode,
-        mainItemName: this.form.mainItemName,
-        subItemName: this.form.subItemName,
-        grandchildItemName: this.form.grandchildItemName,
-        bases: this.form.bases.filter(basis => basis !== ''),
-        materialIds: validMaterialIds,
-        legalTimeLimit: this.form.legalTimeLimit,
-        committedTimeLimit: this.form.committedTimeLimit,
-        approvalLevel: this.form.approvalLevel,
-        provincialDepartmentOffice: this.form.provincialDepartmentOffice,
-        approvalProcessDiagramId: this.form.approvalProcessDiagramId,
-        businessProcessDiagramId: this.form.businessProcessDiagramId,
-        valid: this.form.isValid,
-        publish: this.form.isPublish,
-        materials: this.selectedMaterials.filter(material => material.id)
-      }
     },
 
     // 打开API网址查看数据
@@ -518,6 +526,11 @@ export default {
       } else {
         alert('事项ID不存在，无法打开API链接');
       }
+    },
+
+    // 处理查看更新记录事件
+    handleViewRecord(record) {
+      this.selectedUpdateRecord = record;
     }
   }
 }
@@ -529,7 +542,7 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   position: relative;
-  z-index: 1001;
+  z-index: 1;
 }
 
 .header {
@@ -558,13 +571,37 @@ export default {
   background-color: #337ecc;
 }
 
+/* Tab页样式 */
+.tabs {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #dcdfe6;
+}
+
+.tabs button {
+  padding: 10px 20px;
+  background-color: #f5f7fa;
+  border: 1px solid #dcdfe6;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.tabs button.active {
+  background-color: #ffffff;
+  border-bottom: 1px solid #ffffff;
+  margin-bottom: -1px;
+  font-weight: bold;
+}
+
 .matter-detail-content {
   background-color: white;
   border-radius: 4px;
   padding: 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   position: relative;
-  z-index: 1001;
+  z-index: 1;
 }
 
 /* 拷贝功能区样式 */
@@ -640,6 +677,35 @@ export default {
   padding: 8px 12px;
   color: #909399;
   font-style: italic;
+}
+
+/* 更新记录详情样式 */
+.update-record-detail-wrapper {
+  margin-top: 20px;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.detail-header h3 {
+  margin: 0;
+  margin-left: 10px;
+}
+
+.back-btn {
+  background-color: #f0f0f0;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.back-btn:hover {
+  background-color: #e0e0e0;
 }
 
 @media (max-width: 768px) {
