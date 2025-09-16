@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 @RestController
@@ -34,6 +35,27 @@ public class MatterToolsController {
             return ResponseEntity.ok(compareResult);
         } catch (Exception e) {
             logger.severe("Error comparing matter versions: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    /**
+     * 对比两个事项对象，返回差异字段的详细信息
+     * @param oldMatterId 旧版本事项ID
+     * @param newMatterId 新版本事项ID
+     * @return 包含差异字段信息的Map，结构为 {old:{"fieldName":oldValue}, new:{"fieldName":newValue}}
+     */
+    @GetMapping("/compare-matters")
+    public ResponseEntity<Map<String, Map<String, Object>>> compareMatters(
+            @RequestParam(required = false) Long oldMatterId,
+            @RequestParam(required = false) Long newMatterId) {
+        try {
+            logger.info("Comparing matters: " + oldMatterId + " and " + newMatterId);
+            Map<String, Map<String, Object>> compareResult = matterVersionCompareService.compareMattersById(oldMatterId, newMatterId);
+            return ResponseEntity.ok(compareResult);
+        } catch (Exception e) {
+            logger.severe("Error comparing matters: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).build();
         }

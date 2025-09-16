@@ -17,7 +17,9 @@ export const ENDPOINTS = {
   MATTERS_UNPUBLISH: (id) => `/matters/${id}/unpublish`,
 
   // 事项工具端点
-  MATTER_TOOLS_COMPARE: '/matters/tools/compare-versions',
+  MATTER_TOOLS_COMPARE: '/matters/tools',
+  MATTER_TOOLS_COMPARE_VERSIONS: '/matters/tools/compare-versions',
+  MATTER_TOOLS_COMPARE_MATTERS: '/matters/tools/compare-matters',
 
   // 流程图相关端点
   PROCESS_DIAGRAMS: '/process-diagrams',

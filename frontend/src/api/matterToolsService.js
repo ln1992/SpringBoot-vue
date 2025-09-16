@@ -6,7 +6,7 @@ class MatterToolsService {
   // 版本对比
   async compareVersions(version1, version2) {
     try {
-      const response = await http.get(ENDPOINTS.MATTER_TOOLS_COMPARE, {
+      const response = await http.get(ENDPOINTS.MATTER_TOOLS_COMPARE_VERSIONS, {
         params: {
           version1: version1,
           version2: version2
@@ -16,6 +16,22 @@ class MatterToolsService {
     } catch (error) {
       console.error('API调用失败:', error);
       throw new Error(`版本对比失败: ${error.message}`);
+    }
+  }
+
+  // 事项详细对比
+  async compareMatters(oldMatterId, newMatterId) {
+    try {
+      // 构建参数对象，只包含非空值
+      const params = {};
+      if (oldMatterId != null) params.oldMatterId = oldMatterId;
+      if (newMatterId != null) params.newMatterId = newMatterId;
+
+      const response = await http.get(ENDPOINTS.MATTER_TOOLS_COMPARE_MATTERS, { params });
+      return response.data;
+    } catch (error) {
+      console.error('API调用失败:', error);
+      throw new Error(`事项对比失败: ${error.message}`);
     }
   }
 }

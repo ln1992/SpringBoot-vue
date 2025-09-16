@@ -1,104 +1,165 @@
 <!-- src/components/version-compare/MatterVersionCompare.vue -->
 <template>
   <div class="version-compare-container">
-    <!-- 版本对比界面 -->
-    <div>
-      <div class="header">
-        <h2>事项版本对比</h2>
-      </div>
-
-      <div class="version-selection-panel">
-        <div class="version-selection">
-          <div class="version-select-group">
-            <label>旧版本:</label>
-            <select v-model="oldVersion" @change="onVersionChange">
-              <option value="">请选择版本</option>
-              <option
-                v-for="version in availableVersions"
-                :key="version"
-                :value="version">
-                {{ version }}
-              </option>
-            </select>
-          </div>
-
-          <div class="version-select-group">
-            <label>新版本:</label>
-            <select v-model="newVersion" @change="onVersionChange">
-              <option value="">请选择版本</option>
-              <option
-                v-for="version in availableVersions"
-                :key="version"
-                :value="version">
-                {{ version }}
-              </option>
-            </select>
-          </div>
-
-          <button
-            class="compare-btn"
-            @click="compareVersions"
-            :disabled="!oldVersion || !newVersion || oldVersion === newVersion || isLoading">
-            {{ isLoading ? '对比中...' : '对比' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- 对比结果区域 -->
-      <div class="compare-result" v-if="compareResult !== null">
-        <div class="result-header">
-          <h3>对比结果 (总计: {{ totalCount }})</h3>
+    <div class="main-layout">
+      <!-- 左侧版本对比面板（始终显示，占1/3宽度） -->
+      <div class="left-panel">
+        <div class="header">
+          <h2>事项版本对比</h2>
         </div>
 
-        <!-- 状态统计 -->
-        <div class="status-summary">
-          <span class="status-item status-added">新增: {{ addedCount }}</span>
-          <span class="status-item status-deleted">删除: {{ deletedCount }}</span>
-          <span class="status-item status-modified">修改: {{ modifiedCount }}</span>
-          <span class="status-item status-unchanged">未变更: {{ unchangedCount }}</span>
-        </div>
-
-        <div class="loading" v-if="isLoading">
-          <p>正在加载对比结果...</p>
-        </div>
-
-        <div class="error" v-else-if="error">
-          <p>加载失败: {{ error }}</p>
-          <button @click="compareVersions">重试</button>
-        </div>
-
-        <div class="no-data" v-else-if="tableData.length === 0">
-          <p>没有找到对比结果</p>
-        </div>
-
-        <!-- 对比结果表格 -->
-        <div class="compare-table" v-else>
-          <div class="table-header">
-            <div class="table-cell">状态</div>
-            <div class="table-cell">事项名称</div>
-          </div>
-
-          <div
-            class="table-row"
-            v-for="(item, index) in tableData"
-            :key="index"
-            :class="getRowClass(item)"
-          >
-            <div class="table-cell">
-              <span :class="`status-badge ${getStatusClass(item.status)}`">
-                {{ getStatusText(item.status) }}
-              </span>
+        <div class="version-selection-panel">
+          <div class="version-selection">
+            <div class="version-select-group">
+              <label>旧版本:</label>
+              <select v-model="oldVersion" @change="onVersionChange">
+                <option value="">请选择版本</option>
+                <option
+                  v-for="version in availableVersions"
+                  :key="version"
+                  :value="version">
+                  {{ version }}
+                </option>
+              </select>
             </div>
-            <div class="table-cell">
-              {{ item.__name__ || '无数据' }}
+
+            <div class="version-select-group">
+              <label>新版本:</label>
+              <select v-model="newVersion" @change="onVersionChange">
+                <option value="">请选择版本</option>
+                <option
+                  v-for="version in availableVersions"
+                  :key="version"
+                  :value="version">
+                  {{ version }}
+                </option>
+              </select>
+            </div>
+
+            <button
+              class="compare-btn"
+              @click="compareVersions"
+              :disabled="!oldVersion || !newVersion || oldVersion === newVersion || isLoading">
+              {{ isLoading ? '对比中...' : '对比' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- 对比结果区域 -->
+        <div class="compare-result" v-if="compareResult !== null">
+          <div class="result-header">
+            <h3>对比结果 (总计: {{ totalCount }})</h3>
+          </div>
+
+          <!-- 状态统计 -->
+          <div class="status-summary">
+            <span class="status-item status-added">新增: {{ addedCount }}</span>
+            <span class="status-item status-deleted">删除: {{ deletedCount }}</span>
+            <span class="status-item status-modified">修改: {{ modifiedCount }}</span>
+            <span class="status-item status-unchanged">未变更: {{ unchangedCount }}</span>
+          </div>
+
+          <div class="loading" v-if="isLoading">
+            <p>正在加载对比结果...</p>
+          </div>
+
+          <div class="error" v-else-if="error">
+            <p>加载失败: {{ error }}</p>
+            <button @click="compareVersions">重试</button>
+          </div>
+
+          <div class="no-data" v-else-if="tableData.length === 0">
+            <p>没有找到对比结果</p>
+          </div>
+
+          <!-- 对比结果表格 -->
+          <div class="compare-table" v-else>
+            <div class="table-header">
+              <div class="table-cell">状态</div>
+              <div class="table-cell">事项名称</div>
+            </div>
+
+            <div
+              class="table-row"
+              v-for="(item, index) in tableData"
+              :key="index"
+              :class="getRowClass(item)"
+              @click="showDetail(item)"
+            >
+              <div class="table-cell">
+                <span :class="'status-badge ' + getStatusClass(item.status)">
+                  {{ getStatusText(item.status) }}
+                </span>
+              </div>
+              <div class="table-cell">
+                {{ item.__name__ || '无数据' }}
+              </div>
             </div>
           </div>
         </div>
+
+        <!-- 未选择版本提示 -->
+        <div class="no-version-selected" v-else-if="!isLoading && compareResult === null">
+          <p>请选择要对比的版本</p>
+        </div>
       </div>
 
-      <!-- 未选择版本提示 -->
-      <div class="no-version-selected" v-else-if="!isLoading && compareResult === null">
-        <p>请选择要对比的版本</p>
+      <!-- 右侧详细信息面板（始终显示，占2/3宽度） -->
+      <div class="right-panel">
+        <div class="detail-header" v-if="selectedItem">
+          <h3>详细对比信息</h3>
+          <button class="close-btn" @click="closeDetail">×</button>
+        </div>
+
+        <div class="detail-placeholder" v-if="!selectedItem">
+          <p>请选择左侧列表中的事项查看详细对比信息</p>
+        </div>
+
+        <div class="detail-content" v-else>
+          <div class="loading" v-if="isDetailLoading">
+            <p>正在加载详细信息...</p>
+          </div>
+
+          <div v-else-if="detailData">
+            <div class="detail-section old-section">
+              <h4>旧版本 (ID: {{ getMatterId('old') }})</h4>
+              <div class="field-list">
+                <div
+                  v-for="(value, field) in getDetailData('old')"
+                  :key="'old-' + field"
+                  class="field-item"
+                >
+                  <span class="field-label">{{ getFieldLabel(field) }}:</span>
+                  <span class="field-value">{{ formatFieldValue(field, value) }}</span>
+                </div>
+                <div v-if="isEmpty(getDetailData('old'))" class="no-diff">
+                  无差异字段
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-section new-section">
+              <h4>新版本 (ID: {{ getMatterId('new') }})</h4>
+              <div class="field-list">
+                <div
+                  v-for="(value, field) in getDetailData('new')"
+                  :key="'new-' + field"
+                  class="field-item"
+                >
+                  <span class="field-label">{{ getFieldLabel(field) }}:</span>
+                  <span class="field-value">{{ formatFieldValue(field, value) }}</span>
+                </div>
+                <div v-if="isEmpty(getDetailData('new'))" class="no-diff">
+                  无差异字段
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="no-detail-data">
+            <p>暂无详细数据</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -117,8 +178,11 @@ export default {
       newVersion: '',
       compareResult: null,
       isLoading: false,
+      isDetailLoading: false,
       error: null,
-      tableData: []
+      tableData: [],
+      detailData: null,
+      selectedItem: null
     };
   },
   computed: {
@@ -128,22 +192,22 @@ export default {
 
     addedCount() {
       if (!this.compareResult) return 0;
-      return this.compareResult.filter(item => item.status === 'ADDED').length;
+      return this.compareResult.filter(function(item) { return item.status === 'ADDED'; }).length;
     },
 
     deletedCount() {
       if (!this.compareResult) return 0;
-      return this.compareResult.filter(item => item.status === 'DELETED').length;
+      return this.compareResult.filter(function(item) { return item.status === 'DELETED'; }).length;
     },
 
     modifiedCount() {
       if (!this.compareResult) return 0;
-      return this.compareResult.filter(item => item.status === 'MODIFIED').length;
+      return this.compareResult.filter(function(item) { return item.status === 'MODIFIED'; }).length;
     },
 
     unchangedCount() {
       if (!this.compareResult) return 0;
-      return this.compareResult.filter(item => item.status === 'UNCHANGED').length;
+      return this.compareResult.filter(function(item) { return item.status === 'UNCHANGED'; }).length;
     }
   },
   async mounted() {
@@ -152,6 +216,25 @@ export default {
   },
 
   methods: {
+    getDetailData(type) {
+      if (!this.detailData) return {};
+      return this.detailData[type] || {};
+    },
+
+    getMatterId(type) {
+      if (!this.selectedItem) return '无';
+      if (type === 'old') {
+        return this.selectedItem.oldMatterId || '无';
+      } else {
+        return this.selectedItem.newMatterId || '无';
+      }
+    },
+
+    isEmpty(obj) {
+      if (!obj) return true;
+      return Object.keys(obj).length === 0;
+    },
+
     async loadAvailableVersions() {
       try {
         // 使用专门的API获取版本列表，避免加载所有事项数据
@@ -159,10 +242,10 @@ export default {
 
         // 确保版本号是数字类型并按降序排列
         const numericVersions = versions
-          .map(v => typeof v === 'string' ? parseFloat(v) : v)
-          .filter(v => !isNaN(v));
+          .map(function(v) { return typeof v === 'string' ? parseFloat(v) : v; })
+          .filter(function(v) { return !isNaN(v); });
 
-        numericVersions.sort((a, b) => b - a);
+        numericVersions.sort(function(a, b) { return b - a; });
 
         this.availableVersions = numericVersions;
         console.log('加载到的版本列表:', this.availableVersions);
@@ -175,10 +258,10 @@ export default {
     autoSelectLatestVersions() {
       if (this.availableVersions.length >= 2) {
         const numericVersions = this.availableVersions
-          .map(v => parseFloat(v))
-          .filter(v => !isNaN(v));
+          .map(function(v) { return parseFloat(v); })
+          .filter(function(v) { return !isNaN(v); });
 
-        const sortedVersions = numericVersions.sort((a, b) => b - a);
+        const sortedVersions = numericVersions.sort(function(a, b) { return b - a; });
 
         if (sortedVersions.length >= 2) {
           this.oldVersion = sortedVersions[1];
@@ -191,6 +274,8 @@ export default {
       // 版本选择改变时清空之前的结果
       this.compareResult = null;
       this.tableData = [];
+      this.detailData = null;
+      this.selectedItem = null;
     },
 
     async compareVersions() {
@@ -204,8 +289,9 @@ export default {
         this.error = null;
         this.compareResult = null;
         this.tableData = [];
+        this.detailData = null;
 
-        console.log(`开始对比版本 ${this.oldVersion} 和 ${this.newVersion}`);
+        console.log('开始对比版本 ' + this.oldVersion + ' 和 ' + this.newVersion);
         const startTime = performance.now();
 
         const result = await MatterToolsService.compareVersions(
@@ -214,19 +300,19 @@ export default {
         );
 
         const endTime = performance.now();
-        console.log(`API调用耗时: ${endTime - startTime} 毫秒`);
+        console.log('API调用耗时: ' + (endTime - startTime) + ' 毫秒');
 
         // 确保结果是数组格式
         this.compareResult = Array.isArray(result) ? result : [];
 
         // 性能监控：检查数据量
-        console.log(`获取到 ${this.compareResult.length} 条对比结果`);
+        console.log('获取到 ' + this.compareResult.length + ' 条对比结果');
         if (this.compareResult.length > 1000) {
           console.warn('数据量较大，可能影响页面性能');
         }
 
         // 设置表格数据
-        this.tableData = [...this.compareResult];
+        this.tableData = [].concat(this.compareResult);
 
         console.log('数据获取完成:', this.compareResult);
         console.log('表格数据:', this.tableData);
@@ -239,6 +325,47 @@ export default {
       } finally {
         this.isLoading = false;
       }
+    },
+
+    async showDetail(item) {
+      console.log('点击事项:', item);
+
+      // 直接调用API获取详细信息，不再做额外判断
+      // 后端已经根据事项状态处理了所有情况：
+      // - 新增事项：{old: {}, new: {完整数据}}
+      // - 删除事项：{old: {完整数据}, new: {}}
+      // - 修改事项：{old: {变更旧数据}, new: {变更新数据}}
+      // - 未变更事项：{old: {}, new: {}}
+      try {
+        this.isDetailLoading = true;
+        this.selectedItem = item;
+        this.detailData = null; // 重置详细数据
+
+        console.log('获取详细对比信息: oldMatterId=' + item.oldMatterId + ', newMatterId=' + item.newMatterId);
+
+        const detailResult = await MatterToolsService.compareMatters(
+          item.oldMatterId,
+          item.newMatterId
+        );
+
+        console.log('详细对比结果:', detailResult);
+        this.detailData = detailResult;
+      } catch (error) {
+        console.error('获取详细对比信息失败:', error);
+        // 显示错误信息
+        this.detailData = {
+          old: { error: '加载失败: ' + (error.message || '未知错误') },
+          new: { error: '加载失败: ' + (error.message || '未知错误') }
+        };
+      } finally {
+        this.isDetailLoading = false;
+      }
+    },
+
+    closeDetail() {
+      this.detailData = null;
+      this.selectedItem = null;
+      this.isDetailLoading = false;
     },
 
     getStatusText(status) {
@@ -270,7 +397,43 @@ export default {
     },
 
     getRowClass(item) {
-      return `table-row status-${(item.status || 'unknown').toLowerCase()}`;
+      return 'table-row status-' + (item.status || 'unknown').toLowerCase();
+    },
+
+    getFieldLabel(field) {
+      const fieldLabels = {
+        'mainItemCode': '主项编码',
+        'subItemCode': '子项编码',
+        'grandchildItemCode': '孙项编码',
+        'mainItemName': '主项名称',
+        'subItemName': '子项名称',
+        'grandchildItemName': '孙项名称',
+        'bases': '设定依据',
+        'materialIds': '材料ID',
+        'legalTimeLimit': '法定时限',
+        'committedTimeLimit': '承诺时限',
+        'approvalLevel': '审批层级',
+        'provincialDepartmentOffice': '省厅对口指导处室',
+        'approvalProcessDiagramId': '审批流程图ID',
+        'businessProcessDiagramId': '业务流程图ID',
+        '__name__': '事项名称',
+        'version': '版本',
+        'valid': '是否有效',
+        'publish': '是否发布'
+      };
+      return fieldLabels[field] || field;
+    },
+
+    formatFieldValue(field, value) {
+      if (value === null || value === undefined) {
+        return '无';
+      }
+
+      if (field === 'valid' || field === 'publish') {
+        return value ? '是' : '否';
+      }
+
+      return String(value);
     }
   }
 };
@@ -281,12 +444,37 @@ export default {
   padding: 20px;
   position: relative;
   z-index: 1;
-  width: 33.33%; /* 占据左边1/3 */
-  float: left; /* 浮动到左侧 */
-  box-sizing: border-box;
-  border-right: 1px solid #dee2e6;
   height: 100%;
-  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.main-layout {
+  display: flex;
+  height: 100%;
+  gap: 20px;
+}
+
+.left-panel {
+  flex: 1; /* 占1/3宽度 */
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+}
+
+.right-panel {
+  flex: 2; /* 占2/3宽度 */
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
 }
 
 .header {
@@ -312,7 +500,7 @@ export default {
 .version-selection {
   display: flex;
   align-items: flex-end;
-  gap: 15px; /* 减小间距 */
+  gap: 15px;
 }
 
 .version-select-group {
@@ -324,26 +512,26 @@ export default {
 .version-select-group label {
   font-weight: bold;
   color: #495057;
-  font-size: 13px; /* 稍微减小字体 */
+  font-size: 13px;
 }
 
 .version-select-group select {
-  padding: 6px 10px; /* 减小内边距 */
+  padding: 6px 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 13px; /* 减小字体 */
-  min-width: 90px; /* 减小最小宽度 */
+  font-size: 13px;
+  min-width: 90px;
 }
 
 .compare-btn {
-  padding: 6px 12px; /* 减小内边距 */
+  padding: 6px 12px;
   background-color: #007bff;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 13px; /* 减小字体 */
-  height: 32px; /* 减小高度 */
+  font-size: 13px;
+  height: 32px;
 }
 
 .compare-btn:hover:not(:disabled) {
@@ -361,6 +549,10 @@ export default {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 20px;
   margin-bottom: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .result-header h3 {
@@ -370,14 +562,14 @@ export default {
 
 .status-summary {
   display: flex;
-  gap: 15px; /* 减小间距 */
+  gap: 15px;
   margin-bottom: 20px;
-  padding: 12px; /* 减小内边距 */
+  padding: 12px;
   background-color: #f8f9fa;
   border-radius: 4px;
   border: 1px solid #dee2e6;
   flex-wrap: wrap;
-  font-size: 13px; /* 减小字体 */
+  font-size: 13px;
 }
 
 .status-item {
@@ -404,8 +596,9 @@ export default {
   border: 1px solid #ddd;
   border-radius: 4px;
   overflow: hidden;
-  max-height: calc(100vh - 300px);
-  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .table-header {
@@ -413,15 +606,13 @@ export default {
   background-color: #f8f9fa;
   font-weight: bold;
   border-bottom: 1px solid #ddd;
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
 .table-row {
   display: flex;
   border-bottom: 1px solid #eee;
   transition: background-color 0.2s;
+  cursor: pointer;
 }
 
 .table-row:hover {
@@ -446,7 +637,7 @@ export default {
 }
 
 .table-cell {
-  padding: 10px; /* 稍微减小内边距 */
+  padding: 10px;
   border-right: 1px solid #eee;
   display: flex;
   align-items: center;
@@ -460,14 +651,14 @@ export default {
   border-right: none;
 }
 
-/* 调整列宽 - 进一步缩小状态列 */
-.table-cell:nth-child(1) { flex: 0 0 60px; } /* 状态列 - 更窄 */
-.table-cell:nth-child(2) { flex: 1; min-width: 150px; } /* 事项名称列 - 更宽 */
+/* 调整列宽 */
+.table-cell:nth-child(1) { flex: 0 0 60px; }
+.table-cell:nth-child(2) { flex: 1; min-width: 150px; }
 
 .status-badge {
-  padding: 3px 6px; /* 减小内边距 */
+  padding: 3px 6px;
   border-radius: 4px;
-  font-size: 12px; /* 保持字体大小 */
+  font-size: 12px;
   font-weight: bold;
 }
 
@@ -517,11 +708,120 @@ export default {
   font-size: 16px;
 }
 
+/* 右侧详细信息面板样式 */
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.detail-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+.detail-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+  font-size: 16px;
+}
+
+.detail-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.detail-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-section h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.old-section h4 {
+  color: #ff4d4f;
+}
+
+.new-section h4 {
+  color: #1890ff;
+}
+
+.field-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.field-item {
+  display: flex;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.field-label {
+  font-weight: bold;
+  min-width: 120px;
+  margin-right: 10px;
+  color: #666;
+}
+
+.field-value {
+  flex: 1;
+  word-break: break-word;
+}
+
+.no-diff {
+  text-align: center;
+  color: #999;
+  padding: 20px;
+}
+
+.no-detail-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
 @media (max-width: 768px) {
-  .version-compare-container {
-    width: 100%;
-    float: none;
-    border-right: none;
+  .main-layout {
+    flex-direction: column;
+  }
+
+  .left-panel,
+  .right-panel {
+    min-width: auto;
   }
 
   .version-selection {
