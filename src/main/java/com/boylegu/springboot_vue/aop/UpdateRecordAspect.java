@@ -4,7 +4,7 @@ package com.boylegu.springboot_vue.aop;
 import com.boylegu.springboot_vue.aop.annotation.RecordUpdate;
 import com.boylegu.springboot_vue.entities.BaseEntity;
 import com.boylegu.springboot_vue.service.UpdateRecordService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.boylegu.springboot_vue.util.ObjectCompareUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -124,7 +124,7 @@ public class UpdateRecordAspect {
                         Object oldValue = oldValues.get(fieldName);
 
                         // 比较新旧值，只记录发生变化的字段
-                        if (!IGNORED_FIELDS.contains(fieldName) && !areEqual(oldValue, newValue)) {
+                        if (!IGNORED_FIELDS.contains(fieldName) && !ObjectCompareUtils.objectEqual(oldValue, newValue)) {
                             if (HASH_FIELDS.contains(fieldName)) {
                                 logger.info("检查字段变更: " + fieldName);
                                 logger.info("旧值: " + oldValue + " (类型: " + (oldValue != null ? oldValue.getClass().getName() : "null") + ")");
@@ -210,47 +210,6 @@ public class UpdateRecordAspect {
         }
 
         return fieldValues;
-    }
-
-    /**
-     * 比较两个对象是否相等
-     */
-    private boolean areEqual(Object obj1, Object obj2) {
-        if (obj1 == null && obj2 == null) {
-            return true;
-        }
-        if (obj1 == null || obj2 == null) {
-            return false;
-        }
-        // 特殊处理集合类型
-        if (obj1 instanceof Collection && obj2 instanceof Collection) {
-            return collectionsEqual((Collection<?>) obj1, (Collection<?>) obj2);
-        }
-        return obj1.equals(obj2);
-    }
-
-    /**
-     * 比较两个集合是否相等
-     */
-    private boolean collectionsEqual(Collection<?> c1, Collection<?> c2) {
-        if (c1.size() != c2.size()) {
-            return false;
-        }
-
-        // 对于所有集合类型，都转换为List进行比较（保持顺序）
-        try {
-            List<?> list1 = new ArrayList<>(c1);
-            List<?> list2 = new ArrayList<>(c2);
-            boolean result = list1.equals(list2);
-            logger.info("转换后集合比较结果: " + result);
-            return result;
-        } catch (Exception e) {
-            logger.warning("比较集合时出错: " + e.getMessage());
-            // 如果转换出错，回退到原始比较
-            boolean result = c1.equals(c2);
-            logger.info("原始集合比较结果: " + result);
-            return result;
-        }
     }
 
     /**
