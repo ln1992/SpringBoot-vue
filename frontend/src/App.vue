@@ -130,6 +130,50 @@ export default {
     
     handleMenuSelect(menu) {
       this.selectedMenu = menu;
+      
+      // 特殊处理各菜单项，确保从详情界面返回时能正确显示列表
+      switch (menu) {
+        case 'material':
+          this.$nextTick(() => {
+            if (this.$refs.materialList) {
+              this.$refs.materialList.resetToListView();
+            }
+          });
+          break;
+          
+        case 'matter':
+          this.$nextTick(() => {
+            if (this.$refs.matterList) {
+              this.$refs.matterList.resetToListView();
+            }
+          });
+          break;
+          
+        case 'update-record':
+          this.$nextTick(() => {
+            if (this.$refs.updateRecordList) {
+              this.$refs.updateRecordList.resetToListView();
+            }
+          });
+          break;
+          
+        case 'approval-diagram':
+          this.$nextTick(() => {
+            if (this.$refs.approvalDiagramList) {
+              this.$refs.approvalDiagramList.resetToListView();
+            }
+          });
+          break;
+          
+        case 'business-diagram':
+          this.$nextTick(() => {
+            if (this.$refs.businessDiagramList) {
+              this.$refs.businessDiagramList.resetToListView();
+            }
+          });
+          break;
+      }
+      
       // 当切换菜单时，重置对应组件的状态
       this.resetComponentState(menu);
     },
