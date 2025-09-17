@@ -13,7 +13,7 @@
       <div class="filter-section" v-if="!filterEntityId && !hideFilters">
         <div class="filter-group">
           <label>实体类型筛选:</label>
-          <select v-model="filterEntityType" @change="filterRecords">
+          <select v-model="localFilterEntityType" @change="filterRecords">
             <option value="">全部</option>
             <option value="Material">材料</option>
             <option value="Matter">事项</option>
@@ -49,7 +49,7 @@
         <button @click="fetchRecords">重试</button>
       </div>
 
-      <div class="no-data" v-else-if="paginatedRecords.length === 0">
+      <div class="no-data" v-else-if="filteredRecords.length === 0">
         <p>暂无更新记录数据</p>
       </div>
 
@@ -69,8 +69,8 @@
           v-for="record in paginatedRecords"
           :key="record.id"
         >
-          <div class="table-cell">{{ record.id }}</div>
-          <div class="table-cell entity-name" @click="viewRecordDetail(record)">
+          <div class="table-cell record-id" @click="selectRecord(record)">{{ record.id }}</div>
+          <div class="table-cell" @click="selectRecord(record)">
             {{ record.entityName || '-' }}
           </div>
           <div class="table-cell">{{ record.entityId }}</div>
@@ -96,7 +96,7 @@
             下一页
           </button>
         </div>
-        <div class="pagination-settings">
+        <div class="page-size-selector">
           <label>每页显示:</label>
           <select v-model="pageSize" @change="handlePageSizeChange">
             <option value="5">5</option>
@@ -109,11 +109,11 @@
     </div>
 
     <!-- 更新记录详情界面 -->
-    <div v-else>
-      <UpdateRecordDetail
-        :record="selectedRecord"
-        @back="goBackToList" />
-    </div>
+    <UpdateRecordDetail 
+      v-else-if="selectedRecord"
+      :record="selectedRecord"
+      @back="goBackToList"
+    />
   </div>
 </template>
 
@@ -186,14 +186,17 @@ export default {
   },
   methods: {
     // 查看记录详情，在当前页面中显示
-    viewRecordDetail(record) {
+    selectRecord(record) {
+      console.log('点击记录:', record);
       this.selectedRecord = record;
-      this.$emit('view-record', record);
+      console.log('设置selectedRecord后:', this.selectedRecord);
     },
 
     // 返回列表视图
     goBackToList() {
       this.selectedRecord = null;
+      // 如果当前组件嵌套在其他组件中，同时通知父组件
+      this.$emit('back-to-list');
     },
 
     async fetchRecords() {
@@ -209,6 +212,12 @@ export default {
           const response = await api.http.get('/update-records')
           this.records = response.data
         }
+        
+        // 按创建时间倒序排列
+        this.records.sort((a, b) => {
+          return new Date(b.createdTime) - new Date(a.createdTime);
+        });
+        
         this.filterRecords()
       } catch (err) {
         console.error('获取更新记录失败:', err)
@@ -328,7 +337,7 @@ export default {
     },
 
     // 改变每页显示数量
-    changePageSize() {
+    handlePageSizeChange() {
       // 重置到第一页
       this.currentPage = 1
       // 滚动到顶部
@@ -399,143 +408,101 @@ export default {
 
 .filter-section {
   display: flex;
-  gap: 20px;
+  gap: 15px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
-.filter-group, .search-group {
+.filter-group,
+.search-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
 }
 
-.filter-group label {
+.filter-group label,
+.search-group label {
   white-space: nowrap;
 }
 
-.filter-group select, .search-group input {
-  padding: 6px 10px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-}
-
+.filter-group select,
 .search-group input {
-  min-width: 200px;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
-.loading, .error, .no-data {
+.loading,
+.error,
+.no-data {
   text-align: center;
   padding: 40px 20px;
 }
 
 .error {
-  color: #f56c6c;
-}
-
-.no-data {
-  color: #909399;
+  color: #d32f2f;
 }
 
 .records-table {
-  border: 1px solid #ebeef5;
+  border: 1px solid #ddd;
   border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 20px;
-  /* 确保表格在容器内正确显示 */
-  position: relative;
-  z-index: 1002;
 }
 
 .table-header {
   display: flex;
   background-color: #f5f7fa;
   font-weight: bold;
-}
-
-.table-row {
-  display: flex;
-  border-top: 1px solid #ebeef5;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  /* 确保表格行可以正确响应鼠标事件 */
-  position: relative;
-  z-index: 1003;
-}
-
-.table-row:hover {
-  background-color: #f5f7fa;
+  border-bottom: 1px solid #ddd;
 }
 
 .table-cell {
   flex: 1;
-  padding: 12px;
+  padding: 12px 15px;
+  text-align: left;
+  border-right: 1px solid #eee;
   min-width: 0;
-  word-break: break-word;
+  word-wrap: break-word;
+}
+
+.table-cell:last-child {
+  border-right: none;
+}
+
+.record-id {
+  cursor: pointer;
+  color: #1890ff;
+  text-decoration: underline;
+}
+
+.record-id:hover {
+  color: #40a9ff;
+}
+
+.table-row {
   display: flex;
-  align-items: center;
+  border-bottom: 1px solid #eee;
+  transition: background-color 0.2s;
 }
 
-.table-cell:first-child {
-  flex: 0 0 80px;
+.table-row:last-child {
+  border-bottom: none;
 }
 
-.table-cell:nth-child(2) {
-  flex: 0 0 150px;
+.table-row:hover {
+  background-color: #f9f9f9;
 }
 
 .entity-name {
-  color: #007bff;
-  text-decoration: underline;
+  color: #1890ff;
   cursor: pointer;
+  text-decoration: underline;
 }
 
 .entity-name:hover {
-  color: #0056b3;
-}
-
-.table-cell:nth-child(3) {
-  flex: 0 0 100px;
-}
-
-.table-cell:nth-child(4) {
-  flex: 0 0 120px;
-}
-
-.table-cell:nth-child(5) {
-  flex: 0 0 100px;
-}
-
-.table-cell:nth-child(6) {
-  flex: 0 0 120px;
-}
-
-
-.delete-btn {
-  background-color: #f56c6c;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 5px;
-}
-
-.delete-btn:hover {
-  background-color: #e45656;
-}
-
-.view-btn {
-  background-color: #409eff;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.view-btn:hover {
-  background-color: #337ecc;
+  color: #40a9ff;
 }
 
 .pagination {
@@ -543,91 +510,74 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-top: 20px;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  border: 1px solid #dee2e6;
-  position: relative;
-  z-index: 1;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: 15px;
-}
-
-.pagination-controls button {
-  padding: 8px 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  position: relative;
-  z-index: 2;
-}
-
-.pagination-controls button:hover:not(:disabled) {
-  background-color: #0056b3;
-}
-
-.pagination-controls button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-.pagination-settings {
-  display: flex;
-  align-items: center;
   gap: 10px;
 }
 
-.pagination-settings label {
-  font-weight: bold;
-  white-space: nowrap;
+.pagination-controls button {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-.pagination-settings select {
+.pagination-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.page-size-selector select {
   padding: 6px 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 14px;
-}
-
-.pagination-info {
-  color: #606266;
-  font-size: 14px;
-  margin-left: 10px;
 }
 
 @media (max-width: 768px) {
-  .filter-section {
+  .update-record-list-container {
+    padding: 10px;
+  }
+  
+  .header {
     flex-direction: column;
-  }
-
-  .filter-group, .search-group {
-    width: 100%;
-  }
-
-  .search-group input {
-    min-width: auto;
-    flex: 1;
-  }
-
-  .pagination {
-    flex-direction: column;
+    align-items: flex-start;
     gap: 10px;
   }
-
-  .pagination-settings {
+  
+  .filter-section {
     flex-direction: column;
     align-items: flex-start;
   }
-
-  .pagination-info {
-    margin-left: 0;
-    margin-top: 10px;
+  
+  .filter-group,
+  .search-group {
+    width: 100%;
+  }
+  
+  .filter-group select,
+  .search-group input {
+    flex: 1;
+  }
+  
+  .pagination {
+    flex-direction: column;
+  }
+  
+  .table-cell {
+    padding: 8px 10px;
+    font-size: 14px;
   }
 }
 </style>

@@ -41,7 +41,7 @@ public class UpdateRecordAspect {
 
 
     /**
-     * 环绕通知，处理带有 @RecordUpdate 注解的方法
+     * 环围通知，处理带有 @RecordUpdate 注解的方法
      */
     @Around("@annotation(recordUpdate)")
     public Object recordUpdateOperation(ProceedingJoinPoint joinPoint, RecordUpdate recordUpdate) throws Throwable {
@@ -173,7 +173,7 @@ public class UpdateRecordAspect {
      */
     private Object handleDeleteOperation(ProceedingJoinPoint joinPoint, RecordUpdate recordUpdate, Object[] args) throws Throwable {
         // 尝试获取要删除的实体
-        BaseEntity entityToDelete = extractEntityToDelete(args);
+        BaseEntity entityToDelete = extractEntityToDelete(joinPoint, args);
 
         // 执行原方法
         Object result = joinPoint.proceed();
@@ -213,6 +213,24 @@ public class UpdateRecordAspect {
     }
 
     /**
+     * 根据类名确定要调用的方法名
+     */
+    private String determineMethodNameByClassName(String className) {
+        if (className.contains("Material")) {
+            return "getMaterialById";
+        } else if (className.contains("Matter")) {
+            return "getMatterById";
+        } else if (className.contains("ApprovalProcessDiagram")) {
+            return "getDiagramById";
+        } else if (className.contains("BusinessProcessDiagram")) {
+            return "getDiagramById";
+        } else {
+            // 对于其他类型，暂时返回null
+            return null;
+        }
+    }
+
+    /**
      * 从参数中提取旧实体状态
      */
     private BaseEntity extractOldEntityFromArgs(ProceedingJoinPoint joinPoint, Object[] args) {
@@ -238,17 +256,10 @@ public class UpdateRecordAspect {
             String className = target.getClass().getSimpleName();
 
             // 根据类名确定要调用的方法
-            String methodName = "";
-            if (className.contains("Material")) {
-                methodName = "getMaterialById";
-            } else if (className.contains("Matter")) {
-                methodName = "getMatterById";
-            } else if (className.contains("ApprovalProcessDiagram")) {
-                methodName = "getDiagramById";
-            } else if (className.contains("BusinessProcessDiagram")) {
-                methodName = "getDiagramById";
-            } else {
-                // 对于其他类型，暂时返回null
+            String methodName = determineMethodNameByClassName(className);
+            
+            // 如果无法确定方法名，返回null
+            if (methodName == null) {
                 return null;
             }
 
@@ -271,7 +282,7 @@ public class UpdateRecordAspect {
     /**
      * 从参数中提取要删除的实体
      */
-    private BaseEntity extractEntityToDelete(Object[] args) {
+    private BaseEntity extractEntityToDelete(ProceedingJoinPoint joinPoint, Object[] args) {
         // 查找参数中是否有 BaseEntity 或其子类
         for (Object arg : args) {
             if (arg instanceof BaseEntity) {
@@ -279,12 +290,35 @@ public class UpdateRecordAspect {
             }
         }
 
-        // 如果参数中有ID（通常为Long类型），则尝试通过Repository查询实体
-        // 这需要具体的Service配合实现
+        // 如果参数中有ID（通常为Long类型），则尝试通过反射获取实体
+        Object target = joinPoint.getTarget();
         for (Object arg : args) {
             if (arg instanceof Long) {
-                // 无法通过ID直接获取实体，因为不知道具体是哪个实体类型
-                // 需要在具体的方法中实现
+                Long id = (Long) arg;
+                try {
+                    // 获取目标对象的类名
+                    String className = target.getClass().getSimpleName();
+                    
+                    // 根据类名确定要调用的方法
+                    String methodName = determineMethodNameByClassName(className);
+                    
+                    // 如果无法确定方法名，返回null
+                    if (methodName == null) {
+                        return null;
+                    }
+
+                    // 通过反射调用对应的方法获取要删除的实体
+                    Method method = target.getClass().getMethod(methodName, Long.class);
+                    Object result = method.invoke(target, id);
+
+                    if (result instanceof BaseEntity) {
+                        return (BaseEntity) result;
+                    }
+                } catch (Exception e) {
+                    logger.warning("无法获取要删除的实体: " + e.getMessage());
+                    // 打印完整的堆栈跟踪以便调试
+                    e.printStackTrace();
+                }
                 return null;
             }
         }
