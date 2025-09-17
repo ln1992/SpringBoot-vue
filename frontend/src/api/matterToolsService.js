@@ -34,6 +34,35 @@ class MatterToolsService {
       throw new Error(`事项对比失败: ${error.message}`);
     }
   }
+
+
+  // 导出事项目录
+  async exportMattersCatalog(version = null) {
+    try {
+      const params = version ? { version } : {};
+      const response = await http.get(`${ENDPOINTS.MATTER_TOOLS_COMPARE}/export/catalog`, {
+        params,
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`导出事项目录失败: ${error.message}`);
+    }
+  }
+
+  // 导出事项文档
+  async exportMattersDocuments(version = null) {
+    try {
+      const params = version ? { version } : {};
+      const response = await http.get(`${ENDPOINTS.MATTER_TOOLS_COMPARE}/export/documents`, {
+        params,
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`导出事项文档失败: ${error.message}`);
+    }
+  }
 }
 
 export default new MatterToolsService();

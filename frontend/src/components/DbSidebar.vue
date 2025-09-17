@@ -50,6 +50,13 @@
     >
       版本对比
     </div>
+    <div
+      class="menu-item"
+      :class="{ active: activeItem === 'admin' }"
+      @click="selectItem('admin')"
+    >
+      管理员
+    </div>
   </div>
 </template>
 

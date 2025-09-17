@@ -218,77 +218,7 @@ public class MatterController {
             return ResponseEntity.notFound().build();
         }
     }
-    
-    /**
-     * 导出指定版本的有效事项目录
-     */
-    @GetMapping("/export/catalog")
-    public ResponseEntity<byte[]> exportMattersCatalogByVersion(@RequestParam Long version) {
-        logger.info("收到导出事项目录请求，版本号: " + version);
-        
-        try {
-            // 检查版本参数
-            if (version == null || version <= 0) {
-                logger.warning("无效的版本号: " + version);
-                return ResponseEntity.badRequest().build();
-            }
-            
-            List<Matter> matters = matterService.findMattersByVersionAndValid(version);
-            logger.info("找到 " + matters.size() + " 个有效事项");
-            
-            byte[] documentBytes = matterExportService.exportMattersCatalogByVersion(version);
-            logger.info("成功导出版本 " + version + " 的事项目录，文件大小: " + documentBytes.length + " 字节");
-            
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            headers.setContentDispositionFormData("attachment", 
-                    "事项目录_v" + version + ".docx");
-            
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(documentBytes);
-        } catch (Exception e) {
-            logger.severe("导出事项目录失败: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(500).build();
-        }
-    }
-    
-    /**
-     * 导出指定版本的有效事项文档
-     */
-    @GetMapping("/export/documents")
-    public ResponseEntity<byte[]> exportMattersDocumentsByVersion(@RequestParam Long version) {
-        logger.info("收到导出事项文档请求，版本号: " + version);
-        
-        try {
-            // 检查版本参数
-            if (version == null || version <= 0) {
-                logger.warning("无效的版本号: " + version);
-                return ResponseEntity.badRequest().build();
-            }
-            
-            List<Matter> matters = matterService.findMattersByVersionAndValid(version);
-            logger.info("找到 " + matters.size() + " 个有效事项");
-            
-            byte[] documentBytes = matterExportService.exportMattersDocumentsByVersion(version);
-            logger.info("成功导出版本 " + version + " 的事项文档，文件大小: " + documentBytes.length + " 字节");
-            
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            headers.setContentDispositionFormData("attachment", 
-                    "事项文档_v" + version + ".docx");
-            
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(documentBytes);
-        } catch (Exception e) {
-            logger.severe("导出事项文档失败: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(500).build();
-        }
-    }
-    
+
     /**
      * 获取所有唯一的事项版本号
      */

@@ -37,6 +37,10 @@
         <div v-else-if="selectedMenu === 'matter-version-compare'">
           <matter-version-compare @navigate-to-matter-detail="handleNavigateToMatterDetail"></matter-version-compare>
         </div>
+        <!-- 添加管理员面板视图 -->
+        <div v-else-if="selectedMenu === 'admin'">
+          <admin-panel></admin-panel>
+        </div>
       </el-col>
     </el-row>
 
@@ -66,6 +70,8 @@ import BusinessProcessDiagramList from './components/process-diagram/BusinessPro
 import UpdateRecordList from './components/update-record/UpdateRecordList.vue'
 // 导入版本对比组件
 import MatterVersionCompare from './components/version-compare/MatterVersionCompare.vue'
+// 导入管理员面板组件
+import AdminPanel from './components/AdminPanel.vue'
 import ElRow from "element-ui/packages/row/src/row";
 
 export default {
@@ -86,7 +92,9 @@ export default {
     // 注册更新记录组件
     UpdateRecordList,
     // 注册版本对比组件
-    MatterVersionCompare
+    MatterVersionCompare,
+    // 注册管理员面板组件
+    AdminPanel
   },
   data() {
     return {
@@ -120,14 +128,38 @@ export default {
       }
     },
     
-    handleMenuSelect(menuItem) {
-      // 如果点击的是当前已选中的菜单项，则强制刷新到列表视图
-      if (this.selectedMenu === menuItem) {
-        this.resetToListView(menuItem);
+    handleMenuSelect(menu) {
+      this.selectedMenu = menu;
+      // 当切换菜单时，重置对应组件的状态
+      this.resetComponentState(menu);
+    },
+    
+    // 重置组件状态
+    resetComponentState(menu) {
+      // 重置材料列表视图
+      if (menu !== 'material' && this.$refs.materialList) {
+        this.$refs.materialList.resetToListView();
       }
-
-      // 更新选中的菜单项
-      this.selectedMenu = menuItem;
+      
+      // 重置事项列表视图
+      if (menu !== 'matter' && this.$refs.matterList) {
+        this.$refs.matterList.resetToListView();
+      }
+      
+      // 重置审批流程图列表视图
+      if (menu !== 'approval-diagram' && this.$refs.approvalDiagramList) {
+        this.$refs.approvalDiagramList.resetToListView();
+      }
+      
+      // 重置业务流程图列表视图
+      if (menu !== 'business-diagram' && this.$refs.businessDiagramList) {
+        this.$refs.businessDiagramList.resetToListView();
+      }
+      
+      // 重置更新记录列表视图
+      if (menu !== 'update-record' && this.$refs.updateRecordList) {
+        this.$refs.updateRecordList.resetToListView();
+      }
     },
     
     // 添加处理从版本对比组件导航到事项详情的事件

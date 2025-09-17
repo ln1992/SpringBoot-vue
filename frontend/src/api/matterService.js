@@ -102,34 +102,6 @@ class MatterService {
     }
   }
 
-  // 导出事项目录
-  async exportMattersCatalog(version = null) {
-    try {
-      const params = version ? { version } : {};
-      const response = await http.get(`${ENDPOINTS.MATTERS}/export/catalog`, {
-        params,
-        responseType: 'blob'
-      });
-      return response.data;
-    } catch (error) {
-      throw new Error(`导出事项目录失败: ${error.message}`);
-    }
-  }
-
-  // 导出事项文档
-  async exportMattersDocuments(version = null) {
-    try {
-      const params = version ? { version } : {};
-      const response = await http.get(`${ENDPOINTS.MATTERS}/export/documents`, {
-        params,
-        responseType: 'blob'
-      });
-      return response.data;
-    } catch (error) {
-      throw new Error(`导出事项文档失败: ${error.message}`);
-    }
-  }
-
   // 获取所有版本号
   async getAllVersions() {
     try {
