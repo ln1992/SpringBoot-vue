@@ -226,9 +226,45 @@ public class MatterVersionCompareServiceImpl implements MatterVersionCompareServ
      */
     private void addIfDifferent(Map<String, Object> oldValues, Map<String, Object> newValues,
                                 String fieldName, Object oldValue, Object newValue) {
-        if (!Objects.equals(oldValue, newValue)) {
+        if (!areEqual(oldValue, newValue)) {
             oldValues.put(fieldName, oldValue);
             newValues.put(fieldName, newValue);
         }
     }
+
+    private boolean areEqual(Object obj1, Object obj2) {
+        if (obj1 == null && obj2 == null) {
+            return true;
+        }
+        if (obj1 == null || obj2 == null) {
+            return false;
+        }
+        // 特殊处理集合类型
+        if (obj1 instanceof Collection && obj2 instanceof Collection) {
+            return collectionsEqual((Collection<?>) obj1, (Collection<?>) obj2);
+        }
+        return obj1.equals(obj2);
+    }
+
+    /**
+     * 比较两个集合是否相等
+     */
+    private boolean collectionsEqual(Collection<?> c1, Collection<?> c2) {
+        if (c1.size() != c2.size()) {
+            return false;
+        }
+
+        // 对于所有集合类型，都转换为List进行比较（保持顺序）
+        try {
+            List<?> list1 = new ArrayList<>(c1);
+            List<?> list2 = new ArrayList<>(c2);
+            boolean result = list1.equals(list2);
+            return result;
+        } catch (Exception e) {
+            // 如果转换出错，回退到原始比较
+            boolean result = c1.equals(c2);
+            return result;
+        }
+    }
+
 }

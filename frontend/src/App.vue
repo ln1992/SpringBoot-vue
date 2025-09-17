@@ -35,7 +35,7 @@
         </div>
         <!-- 添加版本对比视图 -->
         <div v-else-if="selectedMenu === 'matter-version-compare'">
-          <matter-version-compare></matter-version-compare>
+          <matter-version-compare @navigate-to-matter-detail="handleNavigateToMatterDetail"></matter-version-compare>
         </div>
       </el-col>
     </el-row>
@@ -94,7 +94,32 @@ export default {
       sidebarKey: 0 // 用于强制刷新sidebar组件
     }
   },
+  mounted() {
+    // 处理URL中的参数，支持直接打开事项详情页
+    this.handleUrlParams();
+  },
   methods: {
+    handleUrlParams() {
+      // 解析URL中的hash部分
+      const hash = window.location.hash;
+      if (hash.startsWith('#/matters/')) {
+        const matterId = hash.substring(10); // 提取ID部分
+        if (matterId && !isNaN(matterId)) {
+          // 如果URL包含事项ID，则切换到事项管理视图
+          this.selectedMenu = 'matter';
+          
+          // 在下一个DOM更新周期中调用事项列表组件的方法
+          this.$nextTick(() => {
+            // 确保事项列表组件已加载
+            if (this.$refs.matterList) {
+              // 调用组件方法显示指定ID的事项详情
+              this.$refs.matterList.showMatterDetail(parseInt(matterId));
+            }
+          });
+        }
+      }
+    },
+    
     handleMenuSelect(menuItem) {
       // 如果点击的是当前已选中的菜单项，则强制刷新到列表视图
       if (this.selectedMenu === menuItem) {
@@ -103,6 +128,21 @@ export default {
 
       // 更新选中的菜单项
       this.selectedMenu = menuItem;
+    },
+    
+    // 添加处理从版本对比组件导航到事项详情的事件
+    handleNavigateToMatterDetail(matterId) {
+      // 更新当前选中的菜单项
+      this.selectedMenu = 'matter';
+      
+      // 在下一个DOM更新周期中调用事项列表组件的方法
+      this.$nextTick(() => {
+        // 确保事项列表组件已加载
+        if (this.$refs.matterList) {
+          // 调用组件方法显示指定ID的事项详情
+          this.$refs.matterList.showMatterDetail(matterId);
+        }
+      });
     },
 
     resetToListView(menuItem) {

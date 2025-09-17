@@ -408,6 +408,22 @@ export default {
       await this.fetchMatters();
     },
 
+    // 添加显示指定事项详情的方法（供父组件调用）
+    async showMatterDetail(matterId) {
+      try {
+        // 获取指定ID的事项详情
+        const matter = await matterService.getMatterById(matterId);
+        if (matter) {
+          this.selectedMatter = matter;
+        } else {
+          alert('未找到指定的事项');
+        }
+      } catch (error) {
+        console.error('获取事项详情失败:', error);
+        alert('获取事项详情失败: ' + (error.message || '未知错误'));
+      }
+    },
+
     // 重置到列表视图的方法（供父组件调用）
     resetToListView() {
       this.selectedMatter = null;

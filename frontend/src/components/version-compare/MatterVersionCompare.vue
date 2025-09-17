@@ -122,7 +122,21 @@
 
           <div v-else-if="detailData">
             <div class="detail-section old-section">
-              <h4>旧版本 (ID: {{ getMatterId('old') }})</h4>
+              <h4>旧版本 (
+                <span v-if="getMatterName('old')">
+                  事项:
+                  <a
+                    href="javascript:void(0)"
+                    class="matter-link"
+                    @click="goToMatterDetail(getMatterId('old'))"
+                  >
+                    {{ getMatterName('old') }}
+                  </a>
+                </span>
+                <span v-else>
+                  ID: {{ getMatterId('old') }}
+                </span>
+                )</h4>
               <div class="field-list">
                 <div
                   v-for="(value, field) in getDetailData('old')"
@@ -139,7 +153,21 @@
             </div>
 
             <div class="detail-section new-section">
-              <h4>新版本 (ID: {{ getMatterId('new') }})</h4>
+              <h4>新版本 (
+                <span v-if="getMatterName('new')">
+                  事项:
+                  <a
+                    href="javascript:void(0)"
+                    class="matter-link"
+                    @click="goToMatterDetail(getMatterId('new'))"
+                  >
+                    {{ getMatterName('new') }}
+                  </a>
+                </span>
+                <span v-else>
+                  ID: {{ getMatterId('new') }}
+                </span>
+                )</h4>
               <div class="field-list">
                 <div
                   v-for="(value, field) in getDetailData('new')"
@@ -228,6 +256,14 @@ export default {
       } else {
         return this.selectedItem.newMatterId || '无';
       }
+    },
+
+    // 新增方法：获取事项名称
+    getMatterName(type) {
+      if (!this.detailData || !this.detailData[type]) return null;
+
+      const matterData = this.detailData[type];
+      return matterData.__name__ || null;
     },
 
     isEmpty(obj) {
@@ -359,6 +395,15 @@ export default {
         };
       } finally {
         this.isDetailLoading = false;
+      }
+    },
+
+    // 新增方法：跳转到事项详情
+    goToMatterDetail(matterId) {
+      if (matterId && matterId !== '无') {
+        // 在新窗口中打开事项详情页面
+        const url = `#/matters/${matterId}`;
+        window.open(url, '_blank');
       }
     },
 
@@ -814,6 +859,19 @@ export default {
   color: #999;
 }
 
+/* 添加事项链接样式 */
+.matter-link {
+  color: #007bff;
+  text-decoration: none;
+  border-bottom: 1px dashed #007bff;
+  cursor: pointer;
+}
+
+.matter-link:hover {
+  color: #0056b3;
+  border-bottom-style: solid;
+}
+
 @media (max-width: 768px) {
   .main-layout {
     flex-direction: column;
@@ -844,3 +902,15 @@ export default {
   .table-cell:nth-child(2) { flex: 1; min-width: 100px; }
 }
 </style>
+
+
+
+
+
+
+
+
+
+
+
+
