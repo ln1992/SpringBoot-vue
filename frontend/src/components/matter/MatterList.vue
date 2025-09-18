@@ -11,32 +11,55 @@
         </div>
       </div>
 
-      <!-- 导出功能区 -->
-      <div class="export-section">
-        <div class="version-input">
-          <label for="version">版本:</label>
+      <!-- 添加搜索和筛选区域 -->
+      <div class="filter-section">
+        <div class="search-group">
           <input
-            id="version"
             type="text"
-            v-model="exportVersion"
-            placeholder="请输入版本号"
-          />
+            v-model="searchKeyword"
+            placeholder="搜索事项名称..."
+            @input="filterMatters"
+          >
         </div>
-        <div class="export-buttons">
-          <button
-            class="export-catalog-btn"
-            @click="exportCatalog"
-            :disabled="!exportVersion"
-          >
-            导出目录
-          </button>
-          <button
-            class="export-document-btn"
-            @click="exportDocument"
-            :disabled="!exportVersion"
-          >
-            导出文档
-          </button>
+        <div class="filter-group">
+          <select v-model="filterVersion" @change="filterMatters">
+            <option value="">所有版本</option>
+            <option v-for="version in versions" :key="version" :value="version">
+              {{ version }}
+            </option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <select v-model="filterStatus" @change="filterMatters">
+            <option value="all">全部</option>
+            <option value="active">已上线</option>
+            <option value="inactive">已下线</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <select v-model="filterPublishStatus" @change="filterMatters">
+            <option value="all">所有发布状态</option>
+            <option value="published">已发布</option>
+            <option value="unpublished">未发布</option>
+          </select>
+        </div>
+        <div class="sort-group">
+          <label>排序:</label>
+          <select v-model="sortBy" @change="filterMatters">
+            <option value="id">ID</option>
+            <option value="mainItemName">主项名称</option>
+            <option value="subItemName">子项名称</option>
+            <option value="grandchildItemName">孙项名称</option>
+            <option value="version">版本</option>
+            <option value="legalTimeLimit">法定时限</option>
+            <option value="committedTimeLimit">承诺时限</option>
+            <option value="valid">状态</option>
+            <option value="publish">发布状态</option>
+          </select>
+          <select v-model="sortDirection" @change="filterMatters">
+            <option value="desc">降序</option>
+            <option value="asc">升序</option>
+          </select>
         </div>
       </div>
 
@@ -49,7 +72,7 @@
         <button @click="fetchMatters">重试</button>
       </div>
 
-      <div class="no-data" v-else-if="paginatedMatters.length === 0">
+      <div class="no-data" v-else-if="filteredMatters.length === 0">
         <p>暂无事项数据</p>
         <button class="add-btn" @click="showAddForm = true">新增第一个事项</button>
       </div>
@@ -57,29 +80,71 @@
       <!-- 事项表格 -->
       <div class="matters-table" v-else>
         <div class="table-header">
-          <div class="table-cell">ID</div>
-          <div class="table-cell">主项名称</div>
-          <div class="table-cell">子项名称</div>
-          <div class="table-cell">孙项名称</div>
-          <div class="table-cell">版本</div>
+          <div class="table-cell sortable" @click="sort('id')">
+            ID
+            <span v-if="sortBy === 'id'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
+          <div class="table-cell sortable" @click="sort('mainItemName')">
+            主项名称
+            <span v-if="sortBy === 'mainItemName'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
+          <div class="table-cell sortable" @click="sort('subItemName')">
+            子项名称
+            <span v-if="sortBy === 'subItemName'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
+          <div class="table-cell sortable" @click="sort('grandchildItemName')">
+            孙项名称
+            <span v-if="sortBy === 'grandchildItemName'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
+          <div class="table-cell sortable" @click="sort('version')">
+            版本
+            <span v-if="sortBy === 'version'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
           <div class="table-cell">法定时限</div>
           <div class="table-cell">承诺时限</div>
-          <div class="table-cell">审批层级</div>
+          <div class="table-cell sortable" @click="sort('approvalLevel')">
+            审批层级
+            <span v-if="sortBy === 'approvalLevel'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
           <div class="table-cell">省厅对口指导处室</div>
-          <div class="table-cell">发布状态</div>
-          <div class="table-cell">状态</div>
+          <div class="table-cell sortable" @click="sort('publish')">
+            发布状态
+            <span v-if="sortBy === 'publish'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
+          <div class="table-cell sortable" @click="sort('valid')">
+            状态
+            <span v-if="sortBy === 'valid'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
           <div class="table-cell">操作</div>
         </div>
 
         <div
           class="table-row"
-          v-for="matter in paginatedMatters"
+          v-for="matter in paginatedFilteredMatters"
           :key="matter.id"
-          @click="editMatter(matter)"
+          @click="viewMatter(matter)"
         >
           <div class="table-cell">{{ matter.id }}</div>
-          <div class="table-cell matter-name">
-            {{ formatMainItemName(matter.mainItemCode, matter.mainItemName) }}
+          <div class="table-cell">
+            <div class="matter-name" @click.stop="viewMatter(matter)">
+              {{ matter.mainItemName || '-' }}
+            </div>
           </div>
           <div class="table-cell">
             {{ formatSubItemName(matter.mainItemCode, matter.subItemCode, matter.subItemName) }}
@@ -151,14 +216,14 @@
       </div>
 
       <!-- 分页控件 -->
-      <div class="pagination" v-if="paginatedMatters.length > 0">
+      <div class="pagination" v-if="paginatedFilteredMatters.length > 0">
         <div class="pagination-controls">
           <button
             :disabled="currentPage === 1"
             @click="currentPage > 1 && (currentPage--)">
             上一页
           </button>
-          <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页 (总计 {{ matters.length }} 条)</span>
+          <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页 (总计 {{ filteredMatters.length }} 条)</span>
           <button
             :disabled="currentPage === totalPages"
             @click="currentPage < totalPages && (currentPage++)">
@@ -213,7 +278,9 @@ export default {
   },
   data() {
     return {
-      matters: [],
+      allMatters: [], // 保存所有事项，不进行筛选
+      matters: [], // 筛选后的事项
+      filteredMatters: [], // 搜索和筛选后的事项
       materialsList: [], // 存储所有材料列表
       approvalProcessDiagrams: [], // 存储所有审批流程图
       businessProcessDiagrams: [], // 存储所有业务流程图
@@ -262,26 +329,37 @@ export default {
       ],
       currentPage: 1,
       pageSize: 10, // 每页显示10条记录
-      exportVersion: '' // 导出版本号
+      // 添加搜索和筛选相关数据
+      searchKeyword: '',
+      filterVersion: '',
+      filterStatus: 'all',
+      filterPublishStatus: 'all',
+      // 排序相关数据
+      sortBy: 'id',
+      sortDirection: 'desc',
+      // 版本数据
+      versions: []
     };
   },
   computed: {
     totalPages() {
-      return Math.ceil(this.matters.length / this.pageSize);
+      return Math.ceil(this.filteredMatters.length / this.pageSize);
     },
-    paginatedMatters() {
+    paginatedFilteredMatters() {
       const start = (this.currentPage - 1) * this.pageSize;
       const end = start + this.pageSize;
-      return this.matters.slice(start, end);
+      return this.filteredMatters.slice(start, end);
     }
   },
   async mounted() {
+    await this.fetchVersions();
     await this.fetchAllData();
   },
   methods: {
     async fetchAllData() {
       this.loading = true;
       this.error = null;
+      this.currentPage = 1;
 
       try {
         // 并行获取所有数据
@@ -292,10 +370,13 @@ export default {
           processDiagramService.getBusinessProcessDiagrams()
         ]);
 
-        this.matters = matters;
+        this.allMatters = matters;
         this.materialsList = materials;
         this.approvalProcessDiagrams = approvalDiagrams;
         this.businessProcessDiagrams = businessDiagrams;
+        
+        // 初始化筛选后的数据
+        this.filterMatters();
       } catch (error) {
         this.error = error.message || '网络错误';
         console.error('获取数据出错:', error);
@@ -303,9 +384,56 @@ export default {
         this.loading = false;
       }
     },
+    
+    async fetchVersions() {
+      try {
+        this.versions = await matterService.getAllVersions();
+      } catch (error) {
+        console.error('获取事项版本失败:', error);
+      }
+    },
 
-    async fetchMatters() {
-      await this.fetchAllData();
+    // 添加过滤方法
+    filterMatters() {
+      let result = [...this.allMatters];
+
+      // 状态筛选
+      if (this.filterStatus !== 'all') {
+        const isValid = this.filterStatus === 'active';
+        result = result.filter(matter => matter.valid === isValid);
+      }
+
+      // 发布状态筛选
+      if (this.filterPublishStatus !== 'all') {
+        const isPublished = this.filterPublishStatus === 'published';
+        result = result.filter(matter => matter.publish === isPublished);
+      }
+
+      // 关键词搜索
+      if (this.searchKeyword) {
+        const keyword = this.searchKeyword.toLowerCase();
+        result = result.filter(matter =>
+          (matter.mainItemName && matter.mainItemName.toLowerCase().includes(keyword)) ||
+          (matter.subItemName && matter.subItemName.toLowerCase().includes(keyword)) ||
+          (matter.grandchildItemName && matter.grandchildItemName.toLowerCase().includes(keyword)) ||
+          (matter.__name__ && matter.__name__.toLowerCase().includes(keyword))
+        );
+      }
+
+      // 版本筛选
+      if (this.filterVersion !== '') {
+        const version = parseInt(this.filterVersion);
+        if (!isNaN(version)) {
+          result = result.filter(matter => matter.version === version);
+        }
+      }
+
+      // 应用排序
+      this.sortMatters(result);
+      
+      this.filteredMatters = result;
+      // 重置到第一页
+      this.currentPage = 1;
     },
 
     handlePageSizeChange() {
@@ -313,35 +441,103 @@ export default {
       this.currentPage = 1;
     },
 
-    // 获取审批层级描述
-    getApprovalLevelDescription(level) {
-      const levelItem = this.approvalLevels.find(item => item.name === level);
-      return levelItem ? levelItem.description : level;
+    // 排序功能
+    sortMatters(matters) {
+      const field = this.sortBy;
+      const direction = this.sortDirection;
+      
+      matters.sort((a, b) => {
+        let valueA = a[field];
+        let valueB = b[field];
+        
+        // 特殊处理名称字段
+        if (field === 'mainItemName') {
+          valueA = a.mainItemName || '';
+          valueB = b.mainItemName || '';
+        } else if (field === 'subItemName') {
+          valueA = a.subItemName || '';
+          valueB = b.subItemName || '';
+        } else if (field === 'grandchildItemName') {
+          valueA = a.grandchildItemName || '';
+          valueB = b.grandchildItemName || '';
+        }
+        
+        // 处理日期字段
+        if (field === 'createdTime') {
+          valueA = new Date(a.createdTime).getTime();
+          valueB = new Date(b.createdTime).getTime();
+        }
+        
+        // 处理布尔值字段
+        if (field === 'valid' || field === 'publish') {
+          valueA = a[field] ? 1 : 0;
+          valueB = b[field] ? 1 : 0;
+        }
+        
+        // 处理null或undefined值
+        if (valueA == null && valueB == null) return 0;
+        if (valueA == null) return direction === 'asc' ? -1 : 1;
+        if (valueB == null) return direction === 'asc' ? 1 : -1;
+        
+        // 比较值
+        let comparison = 0;
+        if (typeof valueA === 'string' && typeof valueB === 'string') {
+          comparison = valueA.localeCompare(valueB);
+        } else {
+          comparison = valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
+        }
+        
+        return direction === 'asc' ? comparison : -comparison;
+      });
     },
-
-    // 获取省厅对口指导处室描述
-    getProvincialDepartmentOfficeDescription(office) {
-      const officeItem = this.provincialDepartmentOffices.find(item => item.name === office);
-      return officeItem ? officeItem.description : office;
+    
+    // 点击列标题排序
+    sort(field) {
+      if (this.sortBy === field) {
+        // 如果当前已经是这个字段，则切换排序方向
+        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        // 切换到新字段，默认降序
+        this.sortBy = field;
+        this.sortDirection = 'desc';
+      }
+      this.filterMatters();
     },
 
     // 格式化主项名称
     formatMainItemName(mainItemCode, mainItemName) {
-      if (!mainItemCode || !mainItemName) return mainItemName || '-';
-      return `${mainItemCode}.${mainItemName}`;
+      if (mainItemCode && mainItemName) {
+        return `${mainItemCode}.${mainItemName}`;
+      }
+      return mainItemName || '-';
     },
 
     // 格式化子项名称
     formatSubItemName(mainItemCode, subItemCode, subItemName) {
-      if (!mainItemCode || !subItemCode || !subItemName) return subItemName || '-';
-      return `${mainItemCode}.${subItemCode}.${subItemName}`;
+      if (mainItemCode && subItemCode && subItemName) {
+        return `${mainItemCode}.${subItemCode}.${subItemName}`;
+      }
+      return subItemName || '-';
     },
 
     // 格式化孙项名称
     formatGrandchildItemName(mainItemCode, subItemCode, grandchildItemCode, grandchildItemName) {
-      if (!mainItemCode || !subItemCode || !grandchildItemCode || !grandchildItemName)
-        return grandchildItemName || '-';
-      return `${mainItemCode}.${subItemCode}.${grandchildItemCode}.${grandchildItemName}`;
+      if (mainItemCode && subItemCode && grandchildItemCode && grandchildItemName) {
+        return `${mainItemCode}.${subItemCode}.${grandchildItemCode}.${grandchildItemName}`;
+      }
+      return grandchildItemName || '-';
+    },
+
+    // 获取审批层级描述
+    getApprovalLevelDescription(level) {
+      const levelObj = this.approvalLevels.find(item => item.name === level);
+      return levelObj ? levelObj.description : level;
+    },
+
+    // 获取省厅对口指导处室描述
+    getProvincialDepartmentOfficeDescription(office) {
+      const officeObj = this.provincialDepartmentOffices.find(item => item.name === office);
+      return officeObj ? officeObj.description : office;
     },
 
     editMatter(matter) {
@@ -354,6 +550,30 @@ export default {
 
     cancelAdd() {
       this.showAddForm = false;
+      this.newMatter = {
+        id: null,
+        version: null,
+        mainItemCode: null,
+        subItemCode: null,
+        grandchildItemCode: null,
+        mainItemName: '',
+        subItemName: '',
+        grandchildItemName: '',
+        bases: [],
+        materialIds: [],
+        legalTimeLimit: null,
+        committedTimeLimit: null,
+        approvalLevel: '',
+        provincialDepartmentOffice: '',
+        isValid: true,
+        isPublish: false,
+        approvalProcessDiagramId: null,
+        businessProcessDiagramId: null
+      };
+    },
+
+    async fetchMatters() {
+      await this.fetchAllData();
     },
 
     async toggleMatterStatus(matterId, valid) {
@@ -405,32 +625,33 @@ export default {
 
     async handleMatterAdded() {
       this.showAddForm = false;
+      this.newMatter = {
+        id: null,
+        version: null,
+        mainItemCode: null,
+        subItemCode: null,
+        grandchildItemCode: null,
+        mainItemName: '',
+        subItemName: '',
+        grandchildItemName: '',
+        bases: [],
+        materialIds: [],
+        legalTimeLimit: null,
+        committedTimeLimit: null,
+        approvalLevel: '',
+        provincialDepartmentOffice: '',
+        isValid: true,
+        isPublish: false,
+        approvalProcessDiagramId: null,
+        businessProcessDiagramId: null
+      };
       await this.fetchMatters();
     },
 
-    // 添加显示指定事项详情的方法（供父组件调用）
-    async showMatterDetail(matterId) {
-      try {
-        // 获取指定ID的事项详情
-        const matter = await matterService.getMatterById(matterId);
-        if (matter) {
-          this.selectedMatter = matter;
-        } else {
-          alert('未找到指定的事项');
-        }
-      } catch (error) {
-        console.error('获取事项详情失败:', error);
-        alert('获取事项详情失败: ' + (error.message || '未知错误'));
-      }
+    viewMatter(matter) {
+      this.selectedMatter = matter;
     },
 
-    // 重置到列表视图的方法（供父组件调用）
-    resetToListView() {
-      this.selectedMatter = null;
-      this.showAddForm = false;
-    },
-
-    // 导出目录
     async exportCatalog() {
       if (!this.exportVersion) {
         alert('请输入版本号');
@@ -438,15 +659,22 @@ export default {
       }
 
       try {
-        const blob = await matterService.exportMattersCatalog(this.exportVersion);
-        this.downloadBlob(blob, `事项目录_v${this.exportVersion}.docx`);
+        const blob = await matterService.exportCatalog(this.exportVersion);
+        // 创建下载链接
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `事项目录_v${this.exportVersion}.docx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
       } catch (error) {
         console.error('导出目录失败:', error);
         alert('导出目录失败: ' + (error.message || '未知错误'));
       }
     },
 
-    // 导出文档
     async exportDocument() {
       if (!this.exportVersion) {
         alert('请输入版本号');
@@ -454,25 +682,46 @@ export default {
       }
 
       try {
-        const blob = await matterService.exportMattersDocuments(this.exportVersion);
-        this.downloadBlob(blob, `事项文档_v${this.exportVersion}.docx`);
+        const blob = await matterService.exportDocument(this.exportVersion);
+        // 创建下载链接
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `事项文档_v${this.exportVersion}.docx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
       } catch (error) {
         console.error('导出文档失败:', error);
         alert('导出文档失败: ' + (error.message || '未知错误'));
       }
     },
 
-    // 下载文件
-    downloadBlob(blob, filename) {
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+    // 添加resetToListView方法，用于从App.vue中调用返回列表视图
+    resetToListView() {
+      // 清空选中的事项
+      this.selectedMatter = null;
+      // 隐藏新增表单
+      this.showAddForm = false;
+      // 重置分页
+      this.currentPage = 1;
+      // 重新获取数据确保列表是最新的
+      this.fetchMatters();
+    }
+  },
+  watch: {
+    filterStatus() {
+      this.filterMatters();
+    },
+    filterPublishStatus() {
+      this.filterMatters();
+    },
+    searchKeyword() {
+      this.filterMatters();
+    },
+    filterVersion() {
+      this.filterMatters();
     }
   }
 };
@@ -482,6 +731,7 @@ export default {
 .matter-list-container {
   padding: 20px;
   position: relative;
+  z-index: 1;
 }
 
 .header {
@@ -501,70 +751,56 @@ export default {
   gap: 10px;
 }
 
-.export-section {
+/* 添加搜索和筛选区域样式 */
+.filter-section {
   display: flex;
-  align-items: center;
   gap: 15px;
   margin-bottom: 20px;
   padding: 15px;
-  background-color: #f8f9fa;
+  background-color: #f5f5f5;
   border-radius: 4px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-.version-input {
+.filter-group,
+.search-group,
+.sort-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
 }
 
-.version-input label {
-  font-weight: bold;
+.filter-group label,
+.search-group label,
+.sort-group label {
+  white-space: nowrap;
 }
 
-.version-input input {
+.filter-group input,
+.filter-group select,
+.search-group input,
+.sort-group select {
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
+  min-width: 120px;
 }
 
-.export-buttons {
-  display: flex;
-  gap: 10px;
+.filter-group input[type="number"] {
+  min-width: 80px;
 }
 
-.export-catalog-btn,
-.export-document-btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
+.search-group input {
+  min-width: 150px;
 }
 
-.export-catalog-btn {
-  background-color: #28a745;
-  color: white;
-}
-
-.export-catalog-btn:hover:not(:disabled) {
-  background-color: #218838;
-}
-
-.export-document-btn {
-  background-color: #007bff;
-  color: white;
-}
-
-.export-document-btn:hover:not(:disabled) {
-  background-color: #0069d9;
-}
-
-.export-catalog-btn:disabled,
-.export-document-btn:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
+.loading,
+.error,
+.no-data {
+  text-align: center;
+  padding: 40px 20px;
 }
 
 .matters-table {
@@ -572,6 +808,8 @@ export default {
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 20px;
+  max-height: 600px;
+  overflow-y: auto;
 }
 
 .table-header {
@@ -585,6 +823,8 @@ export default {
   display: flex;
   border-bottom: 1px solid #eee;
   transition: background-color 0.2s;
+  position: relative;
+  z-index: 1;
   cursor: pointer;
 }
 
@@ -598,47 +838,48 @@ export default {
   border-right: 1px solid #eee;
   display: flex;
   align-items: center;
-  min-width: 0; /* 添加此属性以防止内容溢出 */
-  word-wrap: break-word; /* 允许长单词换行 */
-  word-break: break-word; /* 允许单词内换行 */
-  white-space: normal; /* 允许正常换行 */
+  min-width: 0;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .table-cell:last-child {
   border-right: none;
 }
 
+/* 进一步优化列宽以适应屏幕显示 */
+.table-cell:nth-child(1) { flex: 0 0 40px; }   /* ID列 */
+.table-cell:nth-child(2) { flex: 1; min-width: 100px; } /* 主项名称列 */
+.table-cell:nth-child(3) { flex: 1; min-width: 100px; } /* 子项名称列 */
+.table-cell:nth-child(4) { flex: 1; min-width: 100px; } /* 孙项名称列 */
+.table-cell:nth-child(5) { flex: 0 0 40px; }  /* 版本列 */
+.table-cell:nth-child(6) { flex: 0 0 60px; } /* 法定时限列 */
+.table-cell:nth-child(7) { flex: 0 0 60px; } /* 承诺时限列 */
+.table-cell:nth-child(8) { flex: 0 0 80px; } /* 审批层级列 */
+.table-cell:nth-child(9) { flex: 0 0 120px; } /* 省厅对口指导处室列 */
+.table-cell:nth-child(10) { flex: 0 0 80px; } /* 发布状态列 */
+.table-cell:nth-child(11) { flex: 0 0 80px; } /* 状态列 */
+.table-cell:nth-child(12) { flex: 0 0 120px; } /* 操作列 */
+
+/* 在小屏幕上调整列宽 */
+.table-cell:nth-child(1) { flex: 0 0 30px; }
+.table-cell:nth-child(2) { flex: 1; min-width: 80px; }
+.table-cell:nth-child(3) { flex: 1; min-width: 80px; }
+.table-cell:nth-child(4) { flex: 1; min-width: 80px; }
+.table-cell:nth-child(5) { flex: 0 0 30px; }
+.table-cell:nth-child(6) { flex: 0 0 50px; }
+.table-cell:nth-child(7) { flex: 0 0 50px; }
+.table-cell:nth-child(8) { flex: 0 0 70px; }
+.table-cell:nth-child(9) { flex: 0 0 100px; }
+.table-cell:nth-child(10) { flex: 0 0 70px; }
+.table-cell:nth-child(11) { flex: 0 0 70px; }
+.table-cell:nth-child(12) { flex: 0 0 100px; }
 .matter-name {
   color: #007bff;
   text-decoration: underline;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-  word-wrap: break-word;
-  word-break: break-word;
-}
-
-/* 进一步调整列宽设置，使所有列更窄以便完整显示 */
-.table-cell:nth-child(1) { flex: 0 0 30px; }   /* ID列 */
-.table-cell:nth-child(2) { flex: 1; min-width: 80px; max-width: 120px; } /* 主项名称列 */
-.table-cell:nth-child(3) { flex: 1; min-width: 80px; max-width: 120px; } /* 子项名称列 */
-.table-cell:nth-child(4) { flex: 1; min-width: 80px; max-width: 120px; } /* 孙项名称列 */
-.table-cell:nth-child(5) { flex: 0 0 40px; }  /* 版本列 */
-.table-cell:nth-child(6) { flex: 0 0 50px; }  /* 法定时限列 */
-.table-cell:nth-child(7) { flex: 0 0 50px; }  /* 承诺时限列 */
-.table-cell:nth-child(8) { flex: 0 0 70px; } /* 审批层级列 */
-.table-cell:nth-child(9) { flex: 1; min-width: 100px; max-width: 150px; } /* 省厅对口指导处室列 */
-.table-cell:nth-child(10) { flex: 0 0 50px; } /* 发布状态列 */
-.table-cell:nth-child(11) { flex: 0 0 50px; } /* 状态列 */
-.table-cell:nth-child(12) { flex: 0 0 100px; }/* 操作列 */
-
-/* 特殊处理需要换行的列 */
-.table-cell:nth-child(2),
-.table-cell:nth-child(3),
-.table-cell:nth-child(4),
-.table-cell:nth-child(8),
-.table-cell:nth-child(9) {
-  align-items: flex-start; /* 顶部对齐 */
+  z-index: 2;
+  position: relative;
 }
 
 .status-badge {
@@ -671,6 +912,8 @@ button {
   cursor: pointer;
   font-size: 12px;
   transition: background-color 0.2s;
+  position: relative;
+  z-index: 2;
 }
 
 .add-btn {
@@ -691,15 +934,6 @@ button {
   background-color: #138496;
 }
 
-.offline-btn {
-  background-color: #ffc107;
-  color: #212529;
-}
-
-.offline-btn:hover {
-  background-color: #e0a800;
-}
-
 .online-btn {
   background-color: #28a745;
   color: white;
@@ -707,6 +941,15 @@ button {
 
 .online-btn:hover {
   background-color: #218838;
+}
+
+.offline-btn {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.offline-btn:hover {
+  background-color: #e0a800;
 }
 
 .delete-btn {
@@ -746,7 +989,7 @@ button {
   border-radius: 4px;
   border: 1px solid #dee2e6;
   position: relative;
-  z-index: 10; /* 添加 z-index 确保分页控件在最上层 */
+  z-index: 1;
 }
 
 .pagination-controls {
@@ -770,8 +1013,6 @@ button {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
-  position: relative;
-  z-index: 11; /* 确保下拉框在分页控件之上 */
 }
 
 .pagination button {
@@ -782,7 +1023,7 @@ button {
   border-radius: 4px;
   cursor: pointer;
   position: relative;
-  z-index: 11; /* 确保按钮在分页控件之上 */
+  z-index: 2;
 }
 
 .pagination button:hover:not(:disabled) {
@@ -794,18 +1035,13 @@ button {
   cursor: not-allowed;
 }
 
-.loading,
-.error,
-.no-data {
-  text-align: center;
-  padding: 40px 20px;
+.sortable {
+  cursor: pointer;
+  user-select: none;
 }
 
-.loading p,
-.error p,
-.no-data p {
-  margin: 0 0 20px 0;
-  font-size: 16px;
+.sortable:hover {
+  background-color: #e6f7ff;
 }
 
 @media (max-width: 768px) {
@@ -817,6 +1053,24 @@ button {
     padding: 8px;
   }
 
+  .filter-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-group,
+  .search-group,
+  .sort-group {
+    width: 100%;
+  }
+
+  .filter-group input,
+  .filter-group select,
+  .search-group input,
+  .sort-group select {
+    width: 100%;
+  }
+
   .pagination {
     flex-direction: column;
     gap: 15px;
@@ -826,11 +1080,6 @@ button {
     flex-wrap: wrap;
     justify-content: center;
     text-align: center;
-  }
-
-  .export-section {
-    flex-direction: column;
-    align-items: flex-start;
   }
 }
 </style>

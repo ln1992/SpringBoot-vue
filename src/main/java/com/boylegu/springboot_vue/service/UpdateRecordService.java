@@ -68,4 +68,10 @@ public interface UpdateRecordService {
      * 根据实体ID获取更新记录
      */
     List<UpdateRecord> findUpdateRecordsByEntityId(Long entityId);
+    
+    /**
+     * 根据过滤条件和排序条件获取更新记录
+     */
+    List<UpdateRecord> findUpdateRecordsWithFilters(String entityName, String entityType, 
+                                                   String operationType, String sortBy, String sortDirection);
 }

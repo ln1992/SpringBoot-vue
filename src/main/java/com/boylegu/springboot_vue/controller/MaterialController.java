@@ -164,4 +164,16 @@ public class MaterialController {
             return ResponseEntity.status(500).build();
         }
     }
+
+    @GetMapping("/versions")
+    public ResponseEntity<List<Long>> findAllMaterialVersions() {
+        try {
+            List<Long> versions = materialService.findAllMaterialVersions();
+            logger.info("成功获取到 " + versions.size() + " 个版本");
+            return ResponseEntity.ok(versions);
+        } catch (Exception e) {
+            logger.severe("获取版本列表失败: " + e.getMessage());
+            return ResponseEntity.status(500).build();
+        }
+    }
 }

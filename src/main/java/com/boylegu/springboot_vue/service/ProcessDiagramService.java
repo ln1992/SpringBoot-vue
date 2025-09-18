@@ -1,8 +1,5 @@
-// src/main/java/com/boylegu/springboot_vue/service/ProcessDiagramService.java
 package com.boylegu.springboot_vue.service;
 
-import com.boylegu.springboot_vue.entities.ApprovalProcessDiagram;
-import com.boylegu.springboot_vue.entities.BusinessProcessDiagram;
 import com.boylegu.springboot_vue.entities.ProcessDiagram;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,5 +27,7 @@ public interface ProcessDiagramService<T extends ProcessDiagram> {
     T createNewInstance();
 
     Map<Long, T> getProcessDiagramsMapByIds(List<Long> ids);
-
+    
+    // 添加获取所有版本号的方法
+    List<Long> findAllDiagramVersions();
 }

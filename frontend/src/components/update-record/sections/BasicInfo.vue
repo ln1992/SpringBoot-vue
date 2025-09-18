@@ -9,7 +9,14 @@
       
       <div class="form-group">
         <label class="form-label">实体名称:</label>
-        <div class="form-value">{{ record.entityName || '-' }}</div>
+        <div 
+          class="form-value entity-name" 
+          v-if="record.entityName"
+          @click="openEntityDetail"
+        >
+          {{ record.entityName }}
+        </div>
+        <div class="form-value" v-else>-</div>
       </div>
       
       <div class="form-group">
@@ -32,6 +39,31 @@ export default {
     record: {
       type: Object,
       required: true
+    }
+  },
+  methods: {
+    openEntityDetail() {
+      // 根据实体类型构建URL并在新窗口中打开
+      let url = '';
+      switch (this.record.entityType) {
+        case 'Matter':
+          url = `#/matters/${this.record.entityId}`;
+          break;
+        case 'Material':
+          url = `#/materials/${this.record.entityId}`;
+          break;
+        case 'ApprovalProcessDiagram':
+        case 'BusinessProcessDiagram':
+          url = `#/process-diagrams/${this.record.entityId}`;
+          break;
+        default:
+          // 如果不支持的实体类型，显示警告信息
+          alert(`不支持的实体类型: ${this.record.entityType}`);
+          return;
+      }
+      
+      // 在新窗口中打开实体详情页面
+      window.open(url, '_blank');
     }
   }
 }
@@ -77,6 +109,16 @@ export default {
 .form-value {
   flex: 1;
   color: #303133;
+}
+
+.entity-name {
+  color: #007bff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.entity-name:hover {
+  color: #0056b3;
 }
 
 @media (max-width: 768px) {

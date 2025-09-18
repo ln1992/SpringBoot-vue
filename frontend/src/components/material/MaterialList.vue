@@ -12,14 +12,6 @@
       </div>
 
       <div class="filter-section">
-        <div class="filter-group">
-          <label>状态筛选:</label>
-          <select v-model="filterStatus" @change="filterMaterials">
-            <option value="all">全部</option>
-            <option value="active">已上线</option>
-            <option value="inactive">已下线</option>
-          </select>
-        </div>
         <div class="search-group">
           <input
             type="text"
@@ -27,6 +19,35 @@
             placeholder="搜索材料明细..."
             @input="filterMaterials"
           >
+        </div>
+        <div class="filter-group">
+          <select v-model="filterVersion" @change="filterMaterials">
+            <option value="">所有版本</option>
+            <option v-for="version in versions" :key="version" :value="version">
+              {{ version }}
+            </option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <select v-model="filterStatus" @change="filterMaterials">
+            <option value="all">全部</option>
+            <option value="active">已上线</option>
+            <option value="inactive">已下线</option>
+          </select>
+        </div>
+        <div class="sort-group">
+          <label>排序:</label>
+          <select v-model="sortBy" @change="filterMaterials">
+            <option value="id">ID</option>
+            <option value="__name__">材料明细</option>
+            <option value="version">版本</option>
+            <option value="shared">是否共享</option>
+            <option value="valid">是否有效</option>
+          </select>
+          <select v-model="sortDirection" @change="filterMaterials">
+            <option value="desc">降序</option>
+            <option value="asc">升序</option>
+          </select>
         </div>
       </div>
 
@@ -47,16 +68,41 @@
       <!-- 材料表格 -->
       <div class="materials-table" v-else>
         <div class="table-header">
-          <div class="table-cell">ID</div>
-          <div class="table-cell">材料明细</div>
-          <div class="table-cell">版本</div>
+          <div class="table-cell sortable" @click="sort('id')">
+            ID
+            <span v-if="sortBy === 'id'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
+          <div class="table-cell sortable" @click="sort('__name__')">
+            材料明细
+            <span v-if="sortBy === '__name__'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
+          <div class="table-cell sortable" @click="sort('version')">
+            版本
+            <span v-if="sortBy === 'version'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
           <div class="table-cell">审核要点</div>
           <div class="table-cell">"智能秒批"判断标准</div>
-          <div class="table-cell">是否共享</div>
+          <div class="table-cell sortable" @click="sort('shared')">
+            是否共享
+            <span v-if="sortBy === 'shared'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
           <div class="table-cell">材料来源</div>
           <div class="table-cell">办理方式及材料信息获取方式说明</div>
           <div class="table-cell">是否适用告知承诺</div>
-          <div class="table-cell">是否有效</div>
+          <div class="table-cell sortable" @click="sort('valid')">
+            是否有效
+            <span v-if="sortBy === 'valid'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
           <div class="table-cell">操作</div>
         </div>
 
@@ -181,6 +227,12 @@ export default {
       editingMaterial: null,
       filterStatus: 'all',
       searchKeyword: '',
+      filterVersion: '',
+      // 排序相关数据
+      sortBy: 'id',
+      sortDirection: 'desc',
+      // 版本数据
+      versions: [],
       currentPage: 1,
       pageSize: 10 // 每页显示10条记录
     };
@@ -196,6 +248,7 @@ export default {
     }
   },
   async mounted() {
+    await this.fetchVersions();
     await this.fetchMaterials();
   },
   methods: {
@@ -212,6 +265,14 @@ export default {
         console.error('获取材料列表出错:', error);
       } finally {
         this.loading = false;
+      }
+    },
+    
+    async fetchVersions() {
+      try {
+        this.versions = await materialService.getMaterialVersions();
+      } catch (error) {
+        console.error('获取材料版本失败:', error);
       }
     },
 
@@ -232,7 +293,18 @@ export default {
           (material.__name__ && material.__name__.toLowerCase().includes(keyword))
         );
       }
+      
+      // 版本筛选
+      if (this.filterVersion !== '') {
+        const version = parseInt(this.filterVersion);
+        if (!isNaN(version)) {
+          result = result.filter(material => material.version === version);
+        }
+      }
 
+      // 应用排序
+      this.sortMaterials(result);
+      
       this.filteredMaterials = result;
       // 重置到第一页
       this.currentPage = 1;
@@ -299,15 +371,6 @@ export default {
     },
 
     async deleteMaterial(materialId) {
-      // 查找要删除的材料
-      const material = this.materials.find(m => m.id === materialId);
-
-      // 检查材料是否已下线，只有已下线的材料才能删除
-      if (material && material.valid) {
-        alert('只能删除已下线的材料，请先下线该材料再删除。');
-        return;
-      }
-
       if (!confirm('确定要删除这个材料吗？')) {
         return;
       }
@@ -321,22 +384,92 @@ export default {
       }
     },
 
-    async handleMaterialSaved(material) {
+    handleMaterialUpdated() {
+      this.selectedMaterial = null;
       this.showAddForm = false;
       this.editingMaterial = null;
-      await this.fetchMaterials();
+      this.fetchMaterials();
     },
 
-    async handleMaterialUpdated() {
-      this.selectedMaterial = null;
+    async handleMaterialSaved() {
+      this.hideMaterialForm();
       await this.fetchMaterials();
     },
 
     // 添加resetToListView方法，用于从App.vue中调用返回列表视图
     resetToListView() {
+      // 清空选中的材料
       this.selectedMaterial = null;
+      // 隐藏新增表单
       this.showAddForm = false;
-      this.editingMaterial = null;
+      // 重置分页
+      this.currentPage = 1;
+      // 重新获取数据确保列表是最新的
+      this.fetchMaterials();
+    },
+
+    // 排序功能
+    sortMaterials(materials) {
+      const field = this.sortBy;
+      const direction = this.sortDirection;
+      
+      materials.sort((a, b) => {
+        let valueA = a[field];
+        let valueB = b[field];
+        
+        // 特殊处理名称字段
+        if (field === '__name__') {
+          valueA = a.__name__ || a.materialDetail || '';
+          valueB = b.__name__ || b.materialDetail || '';
+        }
+        
+        // 处理布尔值字段
+        if (field === 'shared' || field === 'valid' || field === 'eligibleForPromise') {
+          valueA = a[field] ? 1 : 0;
+          valueB = b[field] ? 1 : 0;
+        }
+        
+        // 处理null或undefined值
+        if (valueA == null && valueB == null) return 0;
+        if (valueA == null) return direction === 'asc' ? -1 : 1;
+        if (valueB == null) return direction === 'asc' ? 1 : -1;
+        
+        // 比较值
+        let comparison = 0;
+        if (typeof valueA === 'string' && typeof valueB === 'string') {
+          comparison = valueA.localeCompare(valueB);
+        } else {
+          comparison = valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
+        }
+        
+        return direction === 'asc' ? comparison : -comparison;
+      });
+    },
+    
+    // 点击列标题排序
+    sort(field) {
+      if (this.sortBy === field) {
+        // 如果当前已经是这个字段，则切换排序方向
+        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        // 切换到新字段，默认降序
+        this.sortBy = field;
+        this.sortDirection = 'desc';
+      }
+      this.filterMaterials();
+    },
+    
+    // 格式化日期显示
+    formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     }
   },
   watch: {
@@ -344,6 +477,9 @@ export default {
       this.filterMaterials();
     },
     searchKeyword() {
+      this.filterMaterials();
+    },
+    filterVersion() {
       this.filterMaterials();
     }
   }
@@ -374,33 +510,56 @@ export default {
   gap: 10px;
 }
 
+/* 添加搜索和筛选区域样式 */
 .filter-section {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  gap: 15px;
   margin-bottom: 20px;
   padding: 15px;
   background-color: #f5f5f5;
   border-radius: 4px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .filter-group,
-.search-group {
+.search-group,
+.sort-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
 }
 
-.filter-group label {
-  font-weight: bold;
+.filter-group label,
+.search-group label,
+.sort-group label {
+  white-space: nowrap;
 }
 
+.filter-group input,
 .filter-group select,
-.search-group input {
+.search-group input,
+.sort-group select {
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
+  min-width: 120px;
+}
+
+.filter-group input[type="number"] {
+  min-width: 80px;
+}
+
+.search-group input {
+  min-width: 150px;
+}
+
+.loading,
+.error,
+.no-data {
+  text-align: center;
+  padding: 40px 20px;
 }
 
 .materials-table {
@@ -408,6 +567,8 @@ export default {
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 20px;
+  max-height: 600px;
+  overflow-y: auto;
 }
 
 .table-header {
@@ -421,9 +582,9 @@ export default {
   display: flex;
   border-bottom: 1px solid #eee;
   transition: background-color 0.2s;
-  cursor: pointer;
   position: relative;
   z-index: 1;
+  cursor: pointer;
 }
 
 .table-row:hover {
@@ -436,10 +597,10 @@ export default {
   border-right: 1px solid #eee;
   display: flex;
   align-items: center;
-  min-width: 0; /* 添加此属性以防止内容溢出 */
-  word-wrap: break-word; /* 允许长单词换行 */
-  word-break: break-word; /* 允许单词内换行 */
-  white-space: normal; /* 允许正常换行 */
+  min-width: 0;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .table-cell:last-child {
@@ -457,15 +618,58 @@ export default {
 .table-cell:nth-child(8) { flex: 0 0 100px; } /* 办理方式及材料信息获取方式说明列 */
 .table-cell:nth-child(9) { flex: 0 0 60px; } /* 是否适用告知承诺列 */
 .table-cell:nth-child(10) { flex: 0 0 50px; } /* 是否有效列 */
-.table-cell:nth-child(11) { flex: 0 0 90px; }/* 操作列 */
+.table-cell:nth-child(11) { flex: 0 0 90px; } /* 操作列 */
 
-/* 特殊处理需要换行的列 */
-.table-cell:nth-child(2),
-.table-cell:nth-child(4),
-.table-cell:nth-child(5),
-.table-cell:nth-child(7),
-.table-cell:nth-child(8) {
-  align-items: flex-start; /* 顶部对齐 */
+@media (max-width: 768px) {
+  .materials-table {
+    font-size: 14px;
+  }
+
+  .table-cell {
+    padding: 8px;
+  }
+
+  .filter-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-group,
+  .search-group,
+  .sort-group {
+    width: 100%;
+  }
+
+  .filter-group input,
+  .filter-group select,
+  .search-group input,
+  .sort-group select {
+    width: 100%;
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+  
+  /* 在小屏幕上调整列宽 */
+  .table-cell:nth-child(1) { flex: 0 0 30px; }
+  .table-cell:nth-child(2) { flex: 1; min-width: 100px; }
+  .table-cell:nth-child(3) { flex: 0 0 50px; }
+  .table-cell:nth-child(4) { flex: 0 0 80px; }
+  .table-cell:nth-child(5) { flex: 0 0 100px; }
+  .table-cell:nth-child(6) { flex: 0 0 50px; }
+  .table-cell:nth-child(7) { flex: 0 0 80px; }
+  .table-cell:nth-child(8) { flex: 0 0 120px; }
+  .table-cell:nth-child(9) { flex: 0 0 50px; }
+  .table-cell:nth-child(10) { flex: 0 0 50px; }
+  .table-cell:nth-child(11) { flex: 0 0 120px; }
 }
 
 .material-name {

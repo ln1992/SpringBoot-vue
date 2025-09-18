@@ -25,4 +25,11 @@ public interface MaterialRepository extends JpaRepository<Material, Long> {
 
     // 查找特定材料明细和版本号的材料
     Optional<Material> findByMaterialDetailAndVersion(String materialDetail, Long version);
+
+    /**
+     * 查询所有唯一的版本号
+     * @return 版本号列表
+     */
+    @Query("SELECT DISTINCT m.version FROM Material m WHERE m.version IS NOT NULL ORDER BY m.version")
+    List<Long> findAllVersions();
 }

@@ -7,11 +7,13 @@ import com.boylegu.springboot_vue.repository.BusinessProcessDiagramRepository;
 import com.boylegu.springboot_vue.service.BusinessProcessDiagramService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @Service
+@Transactional
 public class BusinessProcessDiagramServiceImpl extends ProcessDiagramServiceImpl<BusinessProcessDiagram, BusinessProcessDiagramRepository>
         implements BusinessProcessDiagramService {
 
@@ -75,4 +77,9 @@ public class BusinessProcessDiagramServiceImpl extends ProcessDiagramServiceImpl
         return new BusinessProcessDiagram();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> findAllDiagramVersions() {
+        return repository.findAllVersions();
+    }
 }

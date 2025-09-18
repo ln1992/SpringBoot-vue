@@ -11,6 +11,14 @@
       </div>
 
       <div class="filter-section" v-if="!filterEntityId && !hideFilters">
+        <div class="search-group">
+          <input
+            type="text"
+            v-model="searchKeyword"
+            placeholder="搜索实体名称..."
+            @input="filterRecords"
+          >
+        </div>
         <div class="filter-group">
           <label>实体类型筛选:</label>
           <select v-model="localFilterEntityType" @change="filterRecords">
@@ -30,13 +38,18 @@
             <option value="DELETE">删除</option>
           </select>
         </div>
-        <div class="search-group">
-          <input
-            type="text"
-            v-model="searchKeyword"
-            placeholder="搜索实体名称..."
-            @input="filterRecords"
-          >
+        <div class="sort-group">
+          <label>排序:</label>
+          <select v-model="sortBy" @change="fetchRecords">
+            <option value="createdTime">创建时间</option>
+            <option value="entityName">实体名称</option>
+            <option value="entityType">实体类型</option>
+            <option value="operationType">操作类型</option>
+          </select>
+          <select v-model="sortDirection" @change="fetchRecords">
+            <option value="desc">降序</option>
+            <option value="asc">升序</option>
+          </select>
         </div>
       </div>
 
@@ -56,13 +69,38 @@
       <!-- 更新记录表格 -->
       <div class="records-table" v-else>
         <div class="table-header">
-          <div class="table-cell">ID</div>
-          <div class="table-cell">实体名称</div>
+          <div class="table-cell sortable" @click="sort('createdTime')">
+            ID
+            <span v-if="sortBy === 'id'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
+          <div class="table-cell sortable" @click="sort('entityName')">
+            实体名称
+            <span v-if="sortBy === 'entityName'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
           <div class="table-cell">实体ID</div>
-          <div class="table-cell">实体类型</div>
-          <div class="table-cell">操作类型</div>
+          <div class="table-cell sortable" @click="sort('entityType')">
+            实体类型
+            <span v-if="sortBy === 'entityType'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
+          <div class="table-cell sortable" @click="sort('operationType')">
+            操作类型
+            <span v-if="sortBy === 'operationType'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
           <div class="table-cell">操作用户</div>
-          <div class="table-cell">创建时间</div>
+          <div class="table-cell sortable" @click="sort('createdTime')">
+            创建时间
+            <span v-if="sortBy === 'createdTime'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
         </div>
         <div
           class="table-row"
@@ -161,7 +199,10 @@ export default {
       // 分页相关数据
       currentPage: 1,
       pageSize: 10,
-      selectedRecord: null
+      selectedRecord: null,
+      // 排序相关数据
+      sortBy: 'createdTime',
+      sortDirection: 'desc'
     }
   },
   computed: {
@@ -203,20 +244,32 @@ export default {
       this.loading = true
       this.error = null
       try {
+        let url = '/update-records';
+        const params = {};
+        
         // 如果提供了filterEntityId，则使用专门的API端点获取记录
         if (this.filterEntityId) {
-          const response = await api.http.get(`/update-records/entity-id/${this.filterEntityId}`)
-          this.records = response.data
+          url = `/update-records/entity-id/${this.filterEntityId}`;
         } else {
-          // 否则获取所有记录
-          const response = await api.http.get('/update-records')
-          this.records = response.data
+          // 添加过滤和排序参数
+          if (this.searchKeyword) {
+            params.entityName = this.searchKeyword;
+          }
+          
+          if (this.effectiveFilterEntityType) {
+            params.entityType = this.effectiveFilterEntityType;
+          }
+          
+          if (this.filterOperationType) {
+            params.operationType = this.filterOperationType;
+          }
+          
+          params.sortBy = this.sortBy;
+          params.sortDirection = this.sortDirection;
         }
         
-        // 按创建时间倒序排列
-        this.records.sort((a, b) => {
-          return new Date(b.createdTime) - new Date(a.createdTime);
-        });
+        const response = await api.http.get(url, { params });
+        this.records = response.data;
         
         this.filterRecords()
       } catch (err) {
@@ -357,6 +410,19 @@ export default {
         'BusinessProcessDiagram': '业务经办流程图'
       };
       return labels[entityType] || entityType;
+    },
+    
+    // 排序功能
+    sort(field) {
+      if (this.sortBy === field) {
+        // 如果当前已经是这个字段，则切换排序方向
+        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        // 切换到新字段，默认降序
+        this.sortBy = field;
+        this.sortDirection = 'desc';
+      }
+      this.fetchRecords();
     }
   },
   watch: {
@@ -415,19 +481,22 @@ export default {
 }
 
 .filter-group,
-.search-group {
+.search-group,
+.sort-group {
   display: flex;
   align-items: center;
   gap: 5px;
 }
 
 .filter-group label,
-.search-group label {
+.search-group label,
+.sort-group label {
   white-space: nowrap;
 }
 
 .filter-group select,
-.search-group input {
+.search-group input,
+.sort-group select {
   padding: 6px 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -510,39 +579,64 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-top: 20px;
-  flex-wrap: wrap;
-  gap: 15px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  position: relative;
+  z-index: 1;
 }
 
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.pagination-controls button {
-  padding: 6px 12px;
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.pagination-controls button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  gap: 15px;
 }
 
 .page-size-selector {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 10px;
+}
+
+.page-size-selector label {
+  font-weight: bold;
 }
 
 .page-size-selector select {
   padding: 6px 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  font-size: 14px;
+}
+
+.pagination button {
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.pagination button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  background-color: #e6f7ff;
 }
 
 @media (max-width: 768px) {
@@ -562,12 +656,14 @@ export default {
   }
   
   .filter-group,
-  .search-group {
+  .search-group,
+  .sort-group {
     width: 100%;
   }
   
   .filter-group select,
-  .search-group input {
+  .search-group input,
+  .sort-group select {
     flex: 1;
   }
   
@@ -581,3 +677,4 @@ export default {
   }
 }
 </style>
+```

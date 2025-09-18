@@ -31,4 +31,6 @@ public interface MaterialService {
 
     // 根据ID列表获取材料映射表
     Map<Long, Material> getMaterialsMapByIds(List<Long> ids);
+
+    List<Long> findAllMaterialVersions();
 }

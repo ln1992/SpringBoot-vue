@@ -65,6 +65,28 @@ class ProcessDiagramService {
       throw new Error(`获取业务流程图失败: ${error.message}`);
     }
   }
+  
+  // 获取审批流程图所有版本
+  async getApprovalProcessDiagramVersions() {
+    try {
+      const response = await http.get(`${ENDPOINTS.APPROVAL_PROCESS_DIAGRAMS}/versions`);
+      return response.data;
+    } catch (error) {
+      console.error('获取审批流程图版本失败:', error);
+      return [];
+    }
+  }
+  
+  // 获取业务流程图所有版本
+  async getBusinessProcessDiagramVersions() {
+    try {
+      const response = await http.get(`${ENDPOINTS.BUSINESS_PROCESS_DIAGRAMS}/versions`);
+      return response.data;
+    } catch (error) {
+      console.error('获取业务流程图版本失败:', error);
+      return [];
+    }
+  }
 
   // 创建审批流程图
   async createApprovalProcessDiagram(formData) {

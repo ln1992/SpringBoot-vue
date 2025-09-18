@@ -6,12 +6,14 @@ import com.boylegu.springboot_vue.entities.ApprovalProcessDiagram;
 import com.boylegu.springboot_vue.repository.ApprovalProcessDiagramRepository;
 import com.boylegu.springboot_vue.service.ApprovalProcessDiagramService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
 
 @Service
+@Transactional
 public class ApprovalProcessDiagramServiceImpl extends ProcessDiagramServiceImpl<ApprovalProcessDiagram, ApprovalProcessDiagramRepository> 
         implements ApprovalProcessDiagramService {
 
@@ -71,5 +73,11 @@ public class ApprovalProcessDiagramServiceImpl extends ProcessDiagramServiceImpl
     @Override
     public ApprovalProcessDiagram createNewInstance() {
         return new ApprovalProcessDiagram();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> findAllDiagramVersions() {
+        return repository.findAllVersions();
     }
 }

@@ -7,6 +7,7 @@ import com.boylegu.springboot_vue.repository.MaterialRepository;
 import com.boylegu.springboot_vue.service.MaterialService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
@@ -147,5 +148,11 @@ public class MaterialServiceImpl implements MaterialService {
         List<Material> materials = materialRepository.findAllById(ids);
         return materials.stream()
                 .collect(Collectors.toMap(Material::getId, material -> material));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> findAllMaterialVersions() {
+        return materialRepository.findAllVersions();
     }
 }

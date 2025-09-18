@@ -11,6 +11,57 @@
         </div>
       </div>
 
+      <!-- 添加搜索和筛选区域 -->
+      <div class="filter-section">
+        <div class="search-group">
+          <input
+            type="text"
+            v-model="searchKeyword"
+            placeholder="搜索名称..."
+            @input="filterDiagrams"
+          >
+        </div>
+        <div class="filter-group">
+          <select v-model="filterVersion" @change="filterDiagrams">
+            <option value="">所有版本</option>
+            <option v-for="version in versions" :key="version" :value="version">
+              {{ version }}
+            </option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <select v-model="filterType" @change="filterDiagrams">
+            <option value="">类型</option>
+            <option value="PNG">PNG</option>
+            <option value="JPEG">JPEG</option>
+            <option value="JPG">JPG</option>
+            <option value="GIF">GIF</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <select v-model="filterStatus" @change="filterDiagrams">
+            <option value="all">状态</option>
+            <option value="active">已上线</option>
+            <option value="inactive">已下线</option>
+          </select>
+        </div>
+        <div class="sort-group">
+          <label>排序:</label>
+          <select v-model="sortBy" @change="sortDiagrams">
+            <option value="id">ID</option>
+            <option value="__name__">名称</option>
+            <option value="version">版本</option>
+            <option value="imageType">图片类型</option>
+            <option value="valid">状态</option>
+            <option value="createdTime">创建时间</option>
+          </select>
+          <select v-model="sortDirection" @change="sortDiagrams">
+            <option value="desc">降序</option>
+            <option value="asc">升序</option>
+          </select>
+        </div>
+      </div>
+
       <div class="loading" v-if="loading">
         <p>正在加载审批流程图数据...</p>
       </div>
@@ -20,7 +71,7 @@
         <button @click="fetchDiagrams">重试</button>
       </div>
 
-      <div class="no-data" v-else-if="paginatedDiagrams.length === 0">
+      <div class="no-data" v-else-if="filteredDiagrams.length === 0">
         <div class="no-data-content">
           <h3>暂无审批流程图数据</h3>
           <p>点击下方按钮添加您的第一个审批流程图</p>
@@ -30,12 +81,43 @@
 
       <div class="diagrams-table" v-else>
         <div class="table-header">
-          <div class="table-cell">ID</div>
-          <div class="table-cell">名称</div>
-          <div class="table-cell">版本</div>
-          <div class="table-cell">图片类型</div>
+          <div class="table-cell sortable" @click="sort('id')">
+            ID
+            <span v-if="sortBy === 'id'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
+          <div class="table-cell sortable" @click="sort('__name__')">
+            名称
+            <span v-if="sortBy === '__name__'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
+          <div class="table-cell sortable" @click="sort('version')">
+            版本
+            <span v-if="sortBy === 'version'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
+          <div class="table-cell sortable" @click="sort('imageType')">
+            图片类型
+            <span v-if="sortBy === 'imageType'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
           <div class="table-cell">预览</div>
-          <div class="table-cell">状态</div>
+          <div class="table-cell sortable" @click="sort('valid')">
+            状态
+            <span v-if="sortBy === 'valid'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
+          <div class="table-cell sortable" @click="sort('createdTime')">
+            创建时间
+            <span v-if="sortBy === 'createdTime'">
+              {{ sortDirection === 'asc' ? '↑' : '↓' }}
+            </span>
+          </div>
           <div class="table-cell">操作</div>
         </div>
 
@@ -64,6 +146,7 @@
               {{ diagram.valid ? '已上线' : '已下线' }}
             </span>
           </div>
+          <div class="table-cell">{{ formatDate(diagram.createdTime) }}</div>
           <div class="table-cell">
             <div class="action-buttons">
               <button
@@ -101,7 +184,7 @@
             @click="currentPage > 1 && (currentPage--)">
             上一页
           </button>
-          <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页 (总计 {{ diagrams.length }} 条)</span>
+          <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页 (总计 {{ filteredDiagrams.length }} 条)</span>
           <button 
             :disabled="currentPage === totalPages" 
             @click="currentPage < totalPages && (currentPage++)">
@@ -142,30 +225,43 @@ export default {
   data() {
     return {
       diagrams: [],
+      filteredDiagrams: [],
       selectedDiagram: null,
       loading: true,
       error: null,
       currentPage: 1,
-      pageSize: 10 // 每页显示10条记录
+      pageSize: 10, // 每页显示10条记录
+      // 添加搜索和筛选相关数据
+      filterStatus: 'all',
+      searchKeyword: '',
+      filterVersion: '',
+      filterType: '',
+      // 排序相关数据
+      sortBy: 'id',
+      sortDirection: 'desc',
+      // 版本数据
+      versions: []
     };
   },
   computed: {
     totalPages() {
-      return Math.ceil(this.diagrams.length / this.pageSize);
+      return Math.ceil(this.filteredDiagrams.length / this.pageSize);
     },
     paginatedDiagrams() {
       const start = (this.currentPage - 1) * this.pageSize;
       const end = start + this.pageSize;
-      return this.diagrams.slice(start, end);
+      return this.filteredDiagrams.slice(start, end);
     }
   },
   async mounted() {
+    await this.fetchVersions();
     await this.fetchDiagrams();
   },
   methods: {
     async fetchDiagrams() {
       this.loading = true;
       this.error = null;
+      this.currentPage = 1;
 
       try {
         this.diagrams = await processDiagramService.getApprovalProcessDiagrams();
@@ -179,12 +275,63 @@ export default {
           }
           return diagram;
         });
+        
+        // 初始化过滤后的数据
+        this.filterDiagrams();
       } catch (error) {
         this.error = error.message || '网络错误';
         console.error('获取审批流程图列表出错:', error);
       } finally {
         this.loading = false;
       }
+    },
+    
+    async fetchVersions() {
+      try {
+        this.versions = await processDiagramService.getApprovalProcessDiagramVersions();
+      } catch (error) {
+        console.error('获取审批流程图版本失败:', error);
+      }
+    },
+
+    // 添加过滤方法
+    filterDiagrams() {
+      let result = [...this.diagrams];
+
+      // 状态筛选
+      if (this.filterStatus !== 'all') {
+        const isValid = this.filterStatus === 'active';
+        result = result.filter(diagram => diagram.valid === isValid);
+      }
+
+      // 名称关键词搜索
+      if (this.searchKeyword) {
+        const keyword = this.searchKeyword.toLowerCase();
+        result = result.filter(diagram =>
+          (diagram.__name__ && diagram.__name__.toLowerCase().includes(keyword)) ||
+          (diagram.imageName && diagram.imageName.toLowerCase().includes(keyword))
+        );
+      }
+
+      // 版本筛选
+      if (this.filterVersion !== '') {
+        const version = parseInt(this.filterVersion);
+        if (!isNaN(version)) {
+          result = result.filter(diagram => diagram.version === version);
+        }
+      }
+
+      // 类型筛选
+      if (this.filterType) {
+        result = result.filter(diagram => diagram.imageType === this.filterType);
+      }
+
+      // 应用排序
+      this.sortDiagrams(result);
+      
+      this.filteredDiagrams = result;
+      // 重置到第一页
+      this.currentPage = 1;
     },
 
     handlePageSizeChange() {
@@ -262,6 +409,84 @@ export default {
     // 添加resetToListView方法，用于从App.vue中调用返回列表视图
     resetToListView() {
       this.selectedDiagram = null;
+    },
+    
+    // 排序功能
+    sortDiagrams(diagrams) {
+      const field = this.sortBy;
+      const direction = this.sortDirection;
+      
+      diagrams.sort((a, b) => {
+        let valueA = a[field];
+        let valueB = b[field];
+        
+        // 特殊处理名称字段
+        if (field === '__name__') {
+          valueA = a.__name__ || a.imageName || '';
+          valueB = b.__name__ || b.imageName || '';
+        }
+        
+        // 处理日期字段
+        if (field === 'createdTime') {
+          valueA = new Date(a.createdTime).getTime();
+          valueB = new Date(b.createdTime).getTime();
+        }
+        
+        // 处理null或undefined值
+        if (valueA == null && valueB == null) return 0;
+        if (valueA == null) return direction === 'asc' ? -1 : 1;
+        if (valueB == null) return direction === 'asc' ? 1 : -1;
+        
+        // 比较值
+        let comparison = 0;
+        if (typeof valueA === 'string' && typeof valueB === 'string') {
+          comparison = valueA.localeCompare(valueB);
+        } else {
+          comparison = valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
+        }
+        
+        return direction === 'asc' ? comparison : -comparison;
+      });
+    },
+    
+    // 点击列标题排序
+    sort(field) {
+      if (this.sortBy === field) {
+        // 如果当前已经是这个字段，则切换排序方向
+        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        // 切换到新字段，默认降序
+        this.sortBy = field;
+        this.sortDirection = 'desc';
+      }
+      this.filterDiagrams();
+    },
+    
+    // 格式化日期显示
+    formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+  },
+  watch: {
+    filterStatus() {
+      this.filterDiagrams();
+    },
+    searchKeyword() {
+      this.filterDiagrams();
+    },
+    filterVersion() {
+      this.filterDiagrams();
+    },
+    filterType() {
+      this.filterDiagrams();
     }
   }
 };
@@ -270,6 +495,8 @@ export default {
 <style scoped>
 .process-diagram-container {
   padding: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .header {
@@ -289,6 +516,51 @@ export default {
   gap: 10px;
 }
 
+/* 添加搜索和筛选区域样式 */
+.filter-section {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-group,
+.search-group,
+.sort-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.filter-group label,
+.search-group label,
+.sort-group label {
+  white-space: nowrap;
+}
+
+.filter-group input,
+.filter-group select,
+.search-group input,
+.sort-group select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  min-width: 120px;
+}
+
+.filter-group input[type="number"] {
+  min-width: 80px;
+}
+
+.search-group input {
+  min-width: 150px;
+}
+
 .loading,
 .error,
 .no-data {
@@ -296,20 +568,8 @@ export default {
   padding: 40px 20px;
 }
 
-.loading p,
-.error p {
-  margin: 0 0 20px 0;
-  font-size: 16px;
-}
-
 .no-data-content h3 {
   margin-top: 0;
-  color: #666;
-}
-
-.no-data-content p {
-  color: #999;
-  margin-bottom: 20px;
 }
 
 .diagrams-table {
@@ -326,45 +586,12 @@ export default {
   border-bottom: 1px solid #ddd;
 }
 
-.table-header .table-cell:nth-child(1),
-.table-row .table-cell:nth-child(1) {
-  flex: 0 0 60px;
-}
-
-.table-header .table-cell:nth-child(2),
-.table-row .table-cell:nth-child(2) {
-  flex: 1;
-}
-
-.table-header .table-cell:nth-child(3),
-.table-row .table-cell:nth-child(3) {
-  flex: 0 0 80px;
-}
-
-.table-header .table-cell:nth-child(4),
-.table-row .table-cell:nth-child(4) {
-  flex: 0 0 100px;
-}
-
-.table-header .table-cell:nth-child(5),
-.table-row .table-cell:nth-child(5) {
-  flex: 0 0 120px;
-}
-
-.table-header .table-cell:nth-child(6),
-.table-row .table-cell:nth-child(6) {
-  flex: 0 0 100px;
-}
-
-.table-header .table-cell:nth-child(7),
-.table-row .table-cell:nth-child(7) {
-  flex: 0 0 180px;
-}
-
 .table-row {
   display: flex;
   border-bottom: 1px solid #eee;
   transition: background-color 0.2s;
+  position: relative;
+  z-index: 1;
 }
 
 .table-row:hover {
@@ -377,34 +604,41 @@ export default {
   border-right: 1px solid #eee;
   display: flex;
   align-items: center;
-  min-width: 0; /* 添加此属性以防止内容溢出 */
-  word-wrap: break-word; /* 允许长单词换行 */
-  word-break: break-word; /* 允许单词内换行 */
-  white-space: normal; /* 允许正常换行 */
+  min-width: 0;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .table-cell:last-child {
   border-right: none;
 }
 
+/* 进一步优化列宽以适应屏幕显示 */
+.table-cell:nth-child(1) { flex: 0 0 60px; }   /* ID列 */
+.table-cell:nth-child(2) { flex: 1; min-width: 120px; } /* 名称列 */
+.table-cell:nth-child(3) { flex: 0 0 80px; }  /* 版本列 */
+.table-cell:nth-child(4) { flex: 0 0 100px; } /* 图片类型列 */
+.table-cell:nth-child(5) { flex: 0 0 120px; } /* 预览列 */
+.table-cell:nth-child(6) { flex: 0 0 100px; } /* 状态列 */
+.table-cell:nth-child(7) { flex: 0 0 160px; } /* 创建时间列 */
+.table-cell:nth-child(8) { flex: 0 0 160px; } /* 操作列 */
+
 .diagram-name {
   color: #007bff;
   text-decoration: underline;
   cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  z-index: 2;
+  position: relative;
 }
 
-/* 特殊处理需要换行的列 */
-.table-cell:nth-child(2),
-.table-cell:nth-child(7) {
-  align-items: flex-start; /* 顶部对齐 */
+.diagram-name:hover {
+  color: #0056b3;
 }
 
 .preview-image {
-  max-width: 100px;
-  max-height: 50px;
+  max-width: 80px;
+  max-height: 40px;
   object-fit: contain;
 }
 
@@ -438,6 +672,8 @@ button {
   cursor: pointer;
   font-size: 12px;
   transition: background-color 0.2s;
+  position: relative;
+  z-index: 2;
 }
 
 .add-btn {
@@ -456,15 +692,6 @@ button {
 
 .refresh-btn:hover {
   background-color: #138496;
-}
-
-.offline-btn {
-  background-color: #ffc107;
-  color: #212529;
-}
-
-.offline-btn:hover {
-  background-color: #e0a800;
 }
 
 .activate-btn {
@@ -490,7 +717,7 @@ button {
   color: white;
 }
 
-.delete-btn:hover:not(:disabled) {
+.delete-btn:hover {
   background-color: #c82333;
 }
 
@@ -555,18 +782,61 @@ button {
   cursor: not-allowed;
 }
 
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  background-color: #e6f7ff;
+}
+
 @media (max-width: 768px) {
   .diagrams-table {
     font-size: 14px;
   }
-  
+
   .table-cell {
     padding: 8px;
   }
-  
+
+  .filter-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-group,
+  .search-group,
+  .sort-group {
+    width: 100%;
+  }
+
+  .filter-group input,
+  .filter-group select,
+  .search-group input,
+  .sort-group select {
+    width: 100%;
+  }
+
   .pagination {
     flex-direction: column;
     gap: 15px;
   }
+
+  .pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+  
+  /* 在小屏幕上调整列宽 */
+  .table-cell:nth-child(1) { flex: 0 0 40px; }
+  .table-cell:nth-child(2) { flex: 1; min-width: 100px; }
+  .table-cell:nth-child(3) { flex: 0 0 60px; }
+  .table-cell:nth-child(4) { flex: 0 0 80px; }
+  .table-cell:nth-child(5) { flex: 0 0 100px; }
+  .table-cell:nth-child(6) { flex: 0 0 80px; }
+  .table-cell:nth-child(7) { flex: 0 0 120px; }
+  .table-cell:nth-child(8) { flex: 0 0 140px; }
 }
 </style>

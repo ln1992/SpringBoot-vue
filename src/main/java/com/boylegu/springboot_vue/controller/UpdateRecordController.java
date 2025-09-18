@@ -21,9 +21,15 @@ public class UpdateRecordController {
 
     // 获取所有更新记录
     @GetMapping
-    public ResponseEntity<List<UpdateRecord>> getAllUpdateRecords() {
+    public ResponseEntity<List<UpdateRecord>> getAllUpdateRecords(
+            @RequestParam(required = false) String entityName,
+            @RequestParam(required = false) String entityType,
+            @RequestParam(required = false) String operationType,
+            @RequestParam(required = false, defaultValue = "createdTime") String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String sortDirection) {
         try {
-            List<UpdateRecord> records = updateRecordService.findAllUpdateRecords();
+            List<UpdateRecord> records = updateRecordService.findUpdateRecordsWithFilters(
+                    entityName, entityType, operationType, sortBy, sortDirection);
             logger.info("Successfully retrieved " + records.size() + " update records");
             return ResponseEntity.ok(records);
         } catch (Exception e) {

@@ -10,7 +10,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 更新记录服务实现类
@@ -198,5 +200,64 @@ public class UpdateRecordServiceImpl implements UpdateRecordService {
     @Override
     public List<UpdateRecord> findUpdateRecordsByEntityId(Long entityId) {
         return updateRecordRepository.findByEntityId(entityId);
+    }
+    
+    /**
+     * 根据过滤条件和排序条件获取更新记录
+     */
+    @Override
+    public List<UpdateRecord> findUpdateRecordsWithFilters(String entityName, String entityType, 
+                                                         String operationType, String sortBy, String sortDirection) {
+        List<UpdateRecord> records = updateRecordRepository.findAll();
+        
+        // 应用过滤条件
+        if (entityName != null && !entityName.isEmpty()) {
+            records = records.stream()
+                    .filter(record -> record.getEntityName() != null && 
+                            record.getEntityName().toLowerCase().contains(entityName.toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+        
+        if (entityType != null && !entityType.isEmpty()) {
+            records = records.stream()
+                    .filter(record -> entityType.equals(record.getEntityType()))
+                    .collect(Collectors.toList());
+        }
+        
+        if (operationType != null && !operationType.isEmpty()) {
+            try {
+                UpdateRecord.OperationType type = UpdateRecord.OperationType.valueOf(operationType);
+                records = records.stream()
+                        .filter(record -> type.equals(record.getOperationType()))
+                        .collect(Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                // 如果操作类型无效，则不应用此过滤器
+            }
+        }
+        
+        // 应用排序条件
+        Comparator<UpdateRecord> comparator = null;
+        switch (sortBy != null ? sortBy : "createdTime") {
+            case "entityName":
+                comparator = Comparator.comparing(UpdateRecord::getEntityName, Comparator.nullsFirst(Comparator.naturalOrder()));
+                break;
+            case "entityType":
+                comparator = Comparator.comparing(UpdateRecord::getEntityType, Comparator.nullsFirst(Comparator.naturalOrder()));
+                break;
+            case "operationType":
+                comparator = Comparator.comparing(UpdateRecord::getOperationType, Comparator.nullsFirst(Comparator.naturalOrder()));
+                break;
+            case "createdTime":
+            default:
+                comparator = Comparator.comparing(UpdateRecord::getCreatedTime, Comparator.nullsFirst(Comparator.naturalOrder()));
+                break;
+        }
+        
+        // 根据排序方向应用排序
+        if ("desc".equalsIgnoreCase(sortDirection)) {
+            comparator = comparator.reversed();
+        }
+        
+        return records.stream().sorted(comparator).collect(Collectors.toList());
     }
 }

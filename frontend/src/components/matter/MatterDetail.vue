@@ -366,6 +366,11 @@ export default {
       this.$emit('back');
     },
 
+    // 返回列表界面
+    goBackToList() {
+      this.$emit('back');
+    },
+
     validateForm() {
       this.errors = {};
 
@@ -519,13 +524,8 @@ export default {
 
     // 打开API网址查看数据
     openApiUrl() {
-      if (this.form.id) {
-        // 构造API URL，假设API端点为 /api/matters/{id}
-        const apiUrl = `${window.location.origin}/api/matters/${this.form.id}`;
-        window.open(apiUrl, '_blank');
-      } else {
-        alert('事项ID不存在，无法打开API链接');
-      }
+      const url = `/api/matters/${this.form.id}`;
+      window.open(url, '_blank');
     },
 
     // 处理查看更新记录事件
@@ -552,10 +552,16 @@ export default {
   margin-bottom: 20px;
 }
 
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .header h2 {
   color: #303133;
   margin: 0;
 }
+
 
 .api-btn {
   background-color: #409eff;
@@ -695,18 +701,6 @@ export default {
   margin-left: 10px;
 }
 
-.back-btn {
-  background-color: #f0f0f0;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.back-btn:hover {
-  background-color: #e0e0e0;
-}
 
 @media (max-width: 768px) {
   .matter-detail-container {

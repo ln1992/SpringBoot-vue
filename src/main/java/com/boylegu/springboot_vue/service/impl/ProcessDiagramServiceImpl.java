@@ -3,6 +3,7 @@ package com.boylegu.springboot_vue.service.impl;
 
 import com.boylegu.springboot_vue.entities.ProcessDiagram;
 import com.boylegu.springboot_vue.service.ProcessDiagramService;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -122,5 +123,12 @@ public abstract class ProcessDiagramServiceImpl<T extends ProcessDiagram, R exte
         List<T> diagrams = repository.findAllById(ids);
         return diagrams.stream()
                 .collect(Collectors.toMap(ProcessDiagram::getId, diagram -> diagram));
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> findAllDiagramVersions() {
+        // 调用repository的findAllVersions方法
+        return ((com.boylegu.springboot_vue.repository.ProcessDiagramRepository<T>) repository).findAllVersions();
     }
 }

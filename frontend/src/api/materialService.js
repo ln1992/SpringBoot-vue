@@ -71,6 +71,17 @@ class MaterialService {
       throw new Error(`停用材料失败: ${error.message}`);
     }
   }
+  
+  // 获取材料所有版本
+  async getMaterialVersions() {
+    try {
+      const response = await http.get(`${ENDPOINTS.MATERIALS}/versions`);
+      return response.data;
+    } catch (error) {
+      console.error('获取材料版本失败:', error);
+      return [];
+    }
+  }
 }
 
 export default new MaterialService();

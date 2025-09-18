@@ -52,6 +52,19 @@ public abstract class ProcessDiagramController<T extends ProcessDiagram> {
             return ResponseEntity.status(500).build();
         }
     }
+    
+    // 获取所有版本号
+    @GetMapping("/versions")
+    public ResponseEntity<List<Long>> findAllDiagramVersions() {
+        try {
+            List<Long> versions = service.findAllDiagramVersions();
+            logger.info("Successfully retrieved " + versions.size() + " " + entityName + " versions");
+            return ResponseEntity.ok(versions);
+        } catch (Exception e) {
+            logger.severe("Error retrieving " + entityName + " versions: " + e.getMessage());
+            return ResponseEntity.status(500).build();
+        }
+    }
 
     // 创建新的流程图
     public ResponseEntity<?> createDiagram(
