@@ -33,6 +33,16 @@ public interface UpdateRecordService {
      * 记录实体删除操作
      */
     UpdateRecord logDelete(BaseEntity entity, String operator, String description);
+    
+    /**
+     * 记录批量拷贝操作
+     */
+    UpdateRecord logBatchCopy(String operator, String description, Long version);
+
+    /**
+     * 记录批量发布操作
+     */
+    UpdateRecord logBatchPublish(String operator, String description, Long version);
 
     /**
      * 获取所有更新记录

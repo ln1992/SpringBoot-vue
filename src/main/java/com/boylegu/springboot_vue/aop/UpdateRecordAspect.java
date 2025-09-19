@@ -63,6 +63,10 @@ public class UpdateRecordAspect {
                 return handleUpdateOperation(joinPoint, recordUpdate, args);
             case DELETE:
                 return handleDeleteOperation(joinPoint, recordUpdate, args);
+            case BATCH_COPY:
+                return handleBatchCopyOperation(joinPoint, recordUpdate, args);
+            case BATCH_PUBLISH:
+                return handleBatchPublishOperation(joinPoint, recordUpdate, args);
             default:
                 return joinPoint.proceed();
         }
@@ -82,6 +86,18 @@ public class UpdateRecordAspect {
             String description = buildDescription(recordUpdate, "创建");
 
             updateRecordService.logCreate(entity, operator, description);
+        } 
+        // 如果返回结果是 List，则为列表中的每个实体记录创建操作
+        else if (result instanceof List) {
+            List<?> entityList = (List<?>) result;
+            String operator = getCurrentUser();
+            String description = buildDescription(recordUpdate, "创建");
+
+            for (Object item : entityList) {
+                if (item instanceof BaseEntity) {
+                    updateRecordService.logCreate((BaseEntity) item, operator, description);
+                }
+            }
         }
 
         return result;
@@ -172,155 +188,125 @@ public class UpdateRecordAspect {
      * 处理删除操作
      */
     private Object handleDeleteOperation(ProceedingJoinPoint joinPoint, RecordUpdate recordUpdate, Object[] args) throws Throwable {
-        // 尝试获取要删除的实体
-        BaseEntity entityToDelete = extractEntityToDelete(joinPoint, args);
-
+        // 尝试获取要删除的实体信息
+        BaseEntity oldEntity = extractOldEntityFromArgs(joinPoint, args);
+        
         // 执行原方法
         Object result = joinPoint.proceed();
 
-        // 如果能获取到要删除的实体，则记录删除操作
-        if (entityToDelete != null) {
+        // 记录删除操作
+        if (oldEntity != null) {
             String operator = getCurrentUser();
             String description = buildDescription(recordUpdate, "删除");
-            updateRecordService.logDelete(entityToDelete, operator, description);
+            updateRecordService.logDelete(oldEntity, operator, description);
         }
 
         return result;
     }
-
+    
     /**
-     * 提取实体的所有字段值
+     * 处理批量拷贝操作
      */
-    private Map<String, Object> extractEntityFields(BaseEntity entity) {
-        Map<String, Object> fieldValues = new HashMap<>();
+    private Object handleBatchCopyOperation(ProceedingJoinPoint joinPoint, RecordUpdate recordUpdate, Object[] args) throws Throwable {
+        // 执行原方法
+        Object result = joinPoint.proceed();
 
-        try {
-            // 获取所有字段（包括父类字段）
-            Class<?> clazz = entity.getClass();
-            while (clazz != null) {
-                Field[] fields = clazz.getDeclaredFields();
-                for (Field field : fields) {
-                    field.setAccessible(true);
-                    fieldValues.put(field.getName(), field.get(entity));
+        // 获取最新版本号
+        Long version = getLatestVersionFromResult(result);
+        
+        // 记录批量拷贝操作
+        String operator = getCurrentUser();
+        String description = buildDescription(recordUpdate, "批量拷贝");
+        updateRecordService.logBatchCopy(operator, description, version);
+
+        return result;
+    }
+    
+    /**
+     * 处理批量发布操作
+     */
+    private Object handleBatchPublishOperation(ProceedingJoinPoint joinPoint, RecordUpdate recordUpdate, Object[] args) throws Throwable {
+        // 执行原方法
+        Object result = joinPoint.proceed();
+
+        // 获取最新版本号
+        Long version = getLatestVersionFromResult(result);
+        
+        // 记录批量发布操作
+        String operator = getCurrentUser();
+        String description = buildDescription(recordUpdate, "批量发布");
+        updateRecordService.logBatchPublish(operator, description, version);
+
+        return result;
+    }
+    
+    /**
+     * 从批量操作结果中获取最新版本号
+     */
+    private Long getLatestVersionFromResult(Object result) {
+        if (result instanceof List) {
+            List<?> entityList = (List<?>) result;
+            if (!entityList.isEmpty()) {
+                Object firstItem = entityList.get(0);
+                if (firstItem instanceof BaseEntity) {
+                    BaseEntity entity = (BaseEntity) firstItem;
+                    // 假设实体有一个获取版本号的方法，这里需要根据实际情况调整
+                    // 如果实体中没有版本号字段，可以考虑其他方式获取版本号
+                    try {
+                        // 通过反射尝试获取version字段
+                        Field versionField = entity.getClass().getDeclaredField("version");
+                        versionField.setAccessible(true);
+                        Object versionValue = versionField.get(entity);
+                        if (versionValue instanceof Long) {
+                            return (Long) versionValue;
+                        } else if (versionValue instanceof Number) {
+                            return ((Number) versionValue).longValue();
+                        }
+                    } catch (Exception e) {
+                        logger.warning("无法获取实体版本号: " + e.getMessage());
+                    }
                 }
-                clazz = clazz.getSuperclass();
-            }
-        } catch (IllegalAccessException e) {
-            logger.warning("无法访问实体字段: " + e.getMessage());
-        }
-
-        return fieldValues;
-    }
-
-    /**
-     * 根据类名确定要调用的方法名
-     */
-    private String determineMethodNameByClassName(String className) {
-        if (className.contains("Material")) {
-            return "getMaterialById";
-        } else if (className.contains("Matter")) {
-            return "getMatterById";
-        } else if (className.contains("ApprovalProcessDiagram")) {
-            return "getDiagramById";
-        } else if (className.contains("BusinessProcessDiagram")) {
-            return "getDiagramById";
-        } else {
-            // 对于其他类型，暂时返回null
-            return null;
-        }
-    }
-
-    /**
-     * 从参数中提取旧实体状态
-     */
-    private BaseEntity extractOldEntityFromArgs(ProceedingJoinPoint joinPoint, Object[] args) {
-        // 查找参数中是否有ID（通常为Long类型）
-        Long id = null;
-
-        // 获取ID参数
-        for (Object arg : args) {
-            if (arg instanceof Long) {
-                id = (Long) arg;
-                break;
             }
         }
-
-        // 如果没有找到ID，直接返回null
-        if (id == null) {
-            return null;
-        }
-
-        // 尝试通过反射调用Service的get方法获取旧实体
-        try {
-            Object target = joinPoint.getTarget();
-            String className = target.getClass().getSimpleName();
-
-            // 根据类名确定要调用的方法
-            String methodName = determineMethodNameByClassName(className);
-            
-            // 如果无法确定方法名，返回null
-            if (methodName == null) {
-                return null;
-            }
-
-            // 通过反射调用对应的方法获取旧实体
-            Method method = target.getClass().getMethod(methodName, Long.class);
-            Object result = method.invoke(target, id);
-
-            if (result instanceof BaseEntity) {
-                return (BaseEntity) result;
-            }
-        } catch (Exception e) {
-            logger.warning("无法获取旧实体: " + e.getMessage());
-            // 打印完整的堆栈跟踪以便调试
-            e.printStackTrace();
-        }
-
         return null;
     }
-
+    
     /**
-     * 从参数中提取要删除的实体
+     * 从方法参数中提取旧实体状态
      */
-    private BaseEntity extractEntityToDelete(ProceedingJoinPoint joinPoint, Object[] args) {
-        // 查找参数中是否有 BaseEntity 或其子类
-        for (Object arg : args) {
-            if (arg instanceof BaseEntity) {
-                return (BaseEntity) arg;
-            }
-        }
-
-        // 如果参数中有ID（通常为Long类型），则尝试通过反射获取实体
+    private BaseEntity extractOldEntityFromArgs(ProceedingJoinPoint joinPoint, Object[] args) {
+        // 获取目标对象
         Object target = joinPoint.getTarget();
-        for (Object arg : args) {
-            if (arg instanceof Long) {
-                Long id = (Long) arg;
-                try {
-                    // 获取目标对象的类名
-                    String className = target.getClass().getSimpleName();
-                    
-                    // 根据类名确定要调用的方法
-                    String methodName = determineMethodNameByClassName(className);
-                    
-                    // 如果无法确定方法名，返回null
-                    if (methodName == null) {
-                        return null;
-                    }
-
-                    // 通过反射调用对应的方法获取要删除的实体
-                    Method method = target.getClass().getMethod(methodName, Long.class);
-                    Object result = method.invoke(target, id);
-
-                    if (result instanceof BaseEntity) {
-                        return (BaseEntity) result;
-                    }
-                } catch (Exception e) {
-                    logger.warning("无法获取要删除的实体: " + e.getMessage());
-                    // 打印完整的堆栈跟踪以便调试
-                    e.printStackTrace();
+        
+        // 如果有参数且第一个参数是Long类型，假设为ID参数
+        if (args.length > 0 && args[0] instanceof Long) {
+            Long id = (Long) args[0];
+            
+            // 获取目标类名
+            String className = target.getClass().getSimpleName();
+            
+            try {
+                // 根据类名确定要调用的方法
+                String methodName = determineMethodNameByClassName(className);
+                
+                // 如果无法确定方法名，返回null
+                if (methodName == null) {
+                    return null;
                 }
-                return null;
+
+                // 通过反射调用对应的方法获取要删除的实体
+                Method method = target.getClass().getMethod(methodName, Long.class);
+                Object result = method.invoke(target, id);
+
+                if (result instanceof BaseEntity) {
+                    return (BaseEntity) result;
+                }
+            } catch (Exception e) {
+                logger.warning("无法获取要删除的实体: " + e.getMessage());
+                // 打印完整的堆栈跟踪以便调试
+                e.printStackTrace();
             }
+            return null;
         }
 
         return null;
@@ -368,5 +354,52 @@ public class UpdateRecordAspect {
             logger.warning("计算哈希值时出错: " + e.getMessage());
             return "hash_error";
         }
+    }
+    
+    /**
+     * 根据类名确定要调用的方法名
+     */
+    private String determineMethodNameByClassName(String className) {
+        // 根据不同的服务类确定对应的方法名
+        switch (className) {
+            case "MatterServiceImpl":
+                return "getMatterById";
+            case "MaterialServiceImpl":
+                return "getMaterialById";
+            case "ApprovalProcessDiagramServiceImpl":
+                return "getApprovalProcessDiagramById";
+            case "BusinessProcessDiagramServiceImpl":
+                return "getBusinessProcessDiagramById";
+            default:
+                return null;
+        }
+    }
+    
+    /**
+     * 提取实体字段值
+     */
+    private Map<String, Object> extractEntityFields(BaseEntity entity) {
+        Map<String, Object> fieldValues = new HashMap<>();
+        
+        // 获取所有声明的字段（包括父类字段）
+        List<Field> fields = new ArrayList<>();
+        Class<?> clazz = entity.getClass();
+        while (clazz != null) {
+            fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
+            clazz = clazz.getSuperclass();
+        }
+        
+        // 遍历字段并获取值
+        for (Field field : fields) {
+            try {
+                field.setAccessible(true);
+                Object value = field.get(entity);
+                fieldValues.put(field.getName(), value);
+            } catch (IllegalAccessException e) {
+                logger.warning("无法访问字段: " + field.getName());
+            }
+        }
+        
+        return fieldValues;
     }
 }

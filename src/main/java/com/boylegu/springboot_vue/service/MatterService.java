@@ -76,6 +76,12 @@ public interface MatterService {
      * 获取数据库中所有唯一的事项版本号
      * @return 版本号列表
      */
-    List<Long> getAllVersions();
+    List<Long> findAllVersions();
+
+    /**
+     * 获取数据库中所有最大的事项版本号
+     * @return 版本号
+     */
+    Long findMaxVersion();
 
 }

@@ -36,6 +36,8 @@
             <option value="CREATE">创建</option>
             <option value="UPDATE">更新</option>
             <option value="DELETE">删除</option>
+            <option value="BATCH_COPY">批量拷贝</option>
+            <option value="BATCH_PUBLISH">批量发布</option>
           </select>
         </div>
         <div class="sort-group">
@@ -329,7 +331,9 @@ export default {
       const labels = {
         'CREATE': '创建',
         'UPDATE': '更新',
-        'DELETE': '删除'
+        'DELETE': '删除',
+        'BATCH_COPY': '批量拷贝',
+        'BATCH_PUBLISH': '批量发布'
       }
       return labels[operationType] || operationType
     },
@@ -677,4 +681,3 @@ export default {
   }
 }
 </style>
-```

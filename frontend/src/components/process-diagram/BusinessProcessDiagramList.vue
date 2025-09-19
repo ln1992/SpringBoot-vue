@@ -616,13 +616,13 @@ export default {
 
 /* 进一步优化列宽以适应屏幕显示 */
 .table-cell:nth-child(1) { flex: 0 0 60px; }   /* ID列 */
-.table-cell:nth-child(2) { flex: 1; min-width: 120px; } /* 名称列 */
+.table-cell:nth-child(2) { flex: 2; min-width: 200px; } /* 名称列 */
 .table-cell:nth-child(3) { flex: 0 0 80px; }  /* 版本列 */
 .table-cell:nth-child(4) { flex: 0 0 100px; } /* 图片类型列 */
 .table-cell:nth-child(5) { flex: 0 0 120px; } /* 预览列 */
-.table-cell:nth-child(6) { flex: 0 0 100px; } /* 状态列 */
+.table-cell:nth-child(6) { flex: 0 0 80px; } /* 状态列 */
 .table-cell:nth-child(7) { flex: 0 0 160px; } /* 创建时间列 */
-.table-cell:nth-child(8) { flex: 0 0 160px; } /* 操作列 */
+.table-cell:nth-child(8) { flex: 0 0 140px; } /* 操作列 */
 
 .diagram-name {
   color: #007bff;

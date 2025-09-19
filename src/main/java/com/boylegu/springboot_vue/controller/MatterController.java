@@ -5,14 +5,13 @@ import com.boylegu.springboot_vue.entities.Matter;
 import com.boylegu.springboot_vue.service.MatterService;
 import com.boylegu.springboot_vue.service.MatterExportService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
+
 import javax.validation.Valid;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.validation.BindingResult;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -225,7 +224,7 @@ public class MatterController {
     @GetMapping("/versions")
     public ResponseEntity<List<Long>> getAllVersions() {
         try {
-            List<Long> versions = matterService.getAllVersions();
+            List<Long> versions = matterService.findAllVersions();
             logger.info("成功获取到 " + versions.size() + " 个版本");
             return ResponseEntity.ok(versions);
         } catch (Exception e) {

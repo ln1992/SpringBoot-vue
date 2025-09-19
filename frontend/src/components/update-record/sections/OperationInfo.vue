@@ -34,7 +34,9 @@ export default {
       const labels = {
         'CREATE': '创建',
         'UPDATE': '更新',
-        'DELETE': '删除'
+        'DELETE': '删除',
+        'BATCH_COPY': '批量拷贝',
+        'BATCH_PUBLISH': '批量发布'
       }
       return labels[operationType] || operationType
     }

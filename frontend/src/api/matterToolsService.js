@@ -35,6 +35,25 @@ class MatterToolsService {
     }
   }
 
+  // 批量拷贝事项
+  async batchCopyMatter() {
+    try {
+      const response = await http.post(`${ENDPOINTS.MATTER_TOOLS_COMPARE}/batch/copy`);
+      return response.data;
+    } catch (error) {
+      throw new Error(`批量拷贝事项失败: ${error.message}`);
+    }
+  }
+
+  // 批量发布事项
+  async batchPublishMatters() {
+    try {
+      const response = await http.post(`${ENDPOINTS.MATTER_TOOLS_COMPARE}/batch/publish`);
+      return response.data;
+    } catch (error) {
+      throw new Error(`批量发布事项失败: ${error.message}`);
+    }
+  }
 
   // 导出事项目录
   async exportMattersCatalog(version = null) {

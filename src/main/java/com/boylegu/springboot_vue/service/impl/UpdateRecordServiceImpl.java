@@ -90,6 +90,7 @@ public class UpdateRecordServiceImpl implements UpdateRecordService {
     /**
      * 记录实体更新操作（仅变更字段）
      */
+    @Override
     public UpdateRecord logUpdate(String entityType, Long entityId, String entityName,
                                 java.util.Map<String, Object> oldValues, java.util.Map<String, Object> newValues,
                                 String operator, String description) {
@@ -137,6 +138,62 @@ public class UpdateRecordServiceImpl implements UpdateRecordService {
             // 序列化旧实体作为beforeData
             String beforeData = objectMapper.writeValueAsString(entity);
             record.setBeforeData(beforeData);
+            
+            return updateRecordRepository.save(record);
+        } catch (Exception e) {
+            // 记录日志但不中断主流程
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    /**
+     * 记录批量拷贝操作
+     */
+    @Override
+    public UpdateRecord logBatchCopy(String operator, String description, Long version) {
+        try {
+            UpdateRecord record = new UpdateRecord();
+            record.setEntityType("Matter");
+            record.setEntityId(-1L);
+            record.setEntityName("批量拷贝操作");
+            record.setOperationType(UpdateRecord.OperationType.BATCH_COPY);
+            record.setOperator(operator);
+            record.setDescription(description + "，版本号：" + version);
+            
+            // 记录版本信息
+            java.util.Map<String, Object> versionInfo = new java.util.HashMap<>();
+            versionInfo.put("version", version);
+            String afterData = objectMapper.writeValueAsString(versionInfo);
+            record.setAfterData(afterData);
+            
+            return updateRecordRepository.save(record);
+        } catch (Exception e) {
+            // 记录日志但不中断主流程
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    /**
+     * 记录批量发布操作
+     */
+    @Override
+    public UpdateRecord logBatchPublish(String operator, String description, Long version) {
+        try {
+            UpdateRecord record = new UpdateRecord();
+            record.setEntityType("Matter");
+            record.setEntityId(-1L);
+            record.setEntityName("批量发布操作");
+            record.setOperationType(UpdateRecord.OperationType.BATCH_PUBLISH);
+            record.setOperator(operator);
+            record.setDescription(description + "，版本号：" + version);
+            
+            // 记录版本信息
+            java.util.Map<String, Object> versionInfo = new java.util.HashMap<>();
+            versionInfo.put("version", version);
+            String afterData = objectMapper.writeValueAsString(versionInfo);
+            record.setAfterData(afterData);
             
             return updateRecordRepository.save(record);
         } catch (Exception e) {
@@ -208,7 +265,7 @@ public class UpdateRecordServiceImpl implements UpdateRecordService {
     @Override
     public List<UpdateRecord> findUpdateRecordsWithFilters(String entityName, String entityType, 
                                                          String operationType, String sortBy, String sortDirection) {
-        List<UpdateRecord> records = updateRecordRepository.findAll();
+        List<UpdateRecord> records = findAllUpdateRecords();
         
         // 应用过滤条件
         if (entityName != null && !entityName.isEmpty()) {
@@ -220,44 +277,51 @@ public class UpdateRecordServiceImpl implements UpdateRecordService {
         
         if (entityType != null && !entityType.isEmpty()) {
             records = records.stream()
-                    .filter(record -> entityType.equals(record.getEntityType()))
+                    .filter(record -> record.getEntityType() != null && 
+                            record.getEntityType().toLowerCase().contains(entityType.toLowerCase()))
                     .collect(Collectors.toList());
         }
         
         if (operationType != null && !operationType.isEmpty()) {
-            try {
-                UpdateRecord.OperationType type = UpdateRecord.OperationType.valueOf(operationType);
-                records = records.stream()
-                        .filter(record -> type.equals(record.getOperationType()))
-                        .collect(Collectors.toList());
-            } catch (IllegalArgumentException e) {
-                // 如果操作类型无效，则不应用此过滤器
+            records = records.stream()
+                    .filter(record -> record.getOperationType() != null && 
+                            record.getOperationType().name().toLowerCase().contains(operationType.toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+        
+        // 应用排序
+        if (sortBy != null && !sortBy.isEmpty()) {
+            switch (sortBy.toLowerCase()) {
+                case "createdtime":
+                    records.sort(Comparator.comparing(UpdateRecord::getCreatedTime));
+                    break;
+                case "entityname":
+                    records.sort(Comparator.comparing(UpdateRecord::getEntityName, 
+                            Comparator.nullsFirst(Comparator.naturalOrder())));
+                    break;
+                case "entitytype":
+                    records.sort(Comparator.comparing(UpdateRecord::getEntityType, 
+                            Comparator.nullsFirst(Comparator.naturalOrder())));
+                    break;
+                case "operationtype":
+                    records.sort(Comparator.comparing(UpdateRecord::getOperationType, 
+                            Comparator.nullsFirst(Comparator.naturalOrder())));
+                    break;
+                default:
+                    // 默认按创建时间排序
+                    records.sort(Comparator.comparing(UpdateRecord::getCreatedTime));
+                    break;
             }
+            
+            // 如果是降序，则反转排序结果
+            if ("desc".equalsIgnoreCase(sortDirection)) {
+                java.util.Collections.reverse(records);
+            }
+        } else {
+            // 默认按创建时间降序排序
+            records.sort(Comparator.comparing(UpdateRecord::getCreatedTime).reversed());
         }
         
-        // 应用排序条件
-        Comparator<UpdateRecord> comparator = null;
-        switch (sortBy != null ? sortBy : "createdTime") {
-            case "entityName":
-                comparator = Comparator.comparing(UpdateRecord::getEntityName, Comparator.nullsFirst(Comparator.naturalOrder()));
-                break;
-            case "entityType":
-                comparator = Comparator.comparing(UpdateRecord::getEntityType, Comparator.nullsFirst(Comparator.naturalOrder()));
-                break;
-            case "operationType":
-                comparator = Comparator.comparing(UpdateRecord::getOperationType, Comparator.nullsFirst(Comparator.naturalOrder()));
-                break;
-            case "createdTime":
-            default:
-                comparator = Comparator.comparing(UpdateRecord::getCreatedTime, Comparator.nullsFirst(Comparator.naturalOrder()));
-                break;
-        }
-        
-        // 根据排序方向应用排序
-        if ("desc".equalsIgnoreCase(sortDirection)) {
-            comparator = comparator.reversed();
-        }
-        
-        return records.stream().sorted(comparator).collect(Collectors.toList());
+        return records;
     }
 }

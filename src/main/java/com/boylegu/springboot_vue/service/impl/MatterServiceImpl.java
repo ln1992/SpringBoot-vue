@@ -178,9 +178,15 @@ public class MatterServiceImpl implements MatterService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Long> getAllVersions() {
+    public List<Long> findAllVersions() {
         return matterRepository.findAllVersions();
     }
 
-
+    @Transactional(readOnly = true)
+    public Long findMaxVersion() {
+        List<Long> versions = findAllVersions();
+        return versions.stream()
+                .max(Long::compareTo)
+                .orElse(null);
+    }
 }

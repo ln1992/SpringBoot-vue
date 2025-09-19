@@ -3,9 +3,12 @@ package com.boylegu.springboot_vue.controller;
 
 import com.boylegu.springboot_vue.entities.Matter;
 import com.boylegu.springboot_vue.entities.MatterCompareItem;
+import com.boylegu.springboot_vue.service.MatterBatchService;
 import com.boylegu.springboot_vue.service.MatterExportService;
 import com.boylegu.springboot_vue.service.MatterService;
 import com.boylegu.springboot_vue.service.MatterVersionCompareService;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -25,12 +28,57 @@ public class MatterToolsController {
 
     @Autowired
     private MatterService matterService;
+    
+    @Autowired
+    private MatterBatchService matterBatchService;
 
     @Autowired
     private MatterExportService matterExportService;
 
     @Autowired
     private MatterVersionCompareService matterVersionCompareService;
+
+    /**
+     * 批量拷贝最新版本的事项到新版本（版本号+1）
+     * @return 拷贝后的事项列表
+     */
+    @PostMapping("/batch/copy")
+    public ResponseEntity<List<Matter>> batchCopyMatter() {
+        try {
+            logger.info("开始执行批量拷贝事项操作");
+            
+            // 调用批处理服务执行拷贝操作
+            List<Matter> copiedMatters = matterBatchService.batchCopyMatter();
+            
+            logger.info("成功提交批量拷贝事项操作，共处理 " + copiedMatters.size() + " 个事项");
+            return ResponseEntity.ok(copiedMatters);
+        } catch (Exception e) {
+            logger.severe("执行批量拷贝事项操作时发生错误: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
+    }
+    
+    /**
+     * 批量发布最新版本的所有事项
+     * @return 发布后的事项列表
+     */
+    @PostMapping("/batch/publish")
+    public ResponseEntity<List<Matter>> batchPublishMatters() {
+        try {
+            logger.info("开始执行批量发布事项操作");
+            
+            // 调用批处理服务执行发布操作
+            List<Matter> publishedMatters = matterBatchService.batchPublishMatters();
+            
+            logger.info("成功提交批量发布事项操作，共处理 " + publishedMatters.size() + " 个事项");
+            return ResponseEntity.ok(publishedMatters);
+        } catch (Exception e) {
+            logger.severe("执行批量发布事项操作时发生错误: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
+    }
 
     /**
      * 比较两个版本的事项数据

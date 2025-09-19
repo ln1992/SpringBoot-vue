@@ -83,6 +83,6 @@ public interface MatterRepository extends JpaRepository<Matter, Long> {
      * 查询所有唯一的版本号
      * @return 版本号列表
      */
-    @Query("SELECT DISTINCT m.version FROM Matter m WHERE m.version IS NOT NULL ORDER BY m.version")
+    @Query("SELECT DISTINCT m.version FROM Matter m WHERE m.version IS NOT NULL AND m.isValid = true ORDER BY m.version")
     List<Long> findAllVersions();
 }
