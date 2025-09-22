@@ -44,13 +44,6 @@
       </el-col>
     </el-row>
 
-    <el-row>
-      <el-col :span="24">
-        <footer class="footer">
-          <db-footer></db-footer>
-        </footer>
-      </el-col>
-    </el-row>
   </div>
 </template>
 
@@ -305,18 +298,8 @@ footer, div {
 .content {
   padding-top: 25px;
   padding-right: 25px;
-  padding-bottom: 125px;
+  padding-bottom: 25px;
   padding-left: 25px;
 }
 
-.footer {
-  height: 120px;
-  background-color: #324057;
-  color: #a4aebd;
-  width: 100%;
-  z-index: 1000;
-  margin-top: -120px;
-  line-height: 1;
-  font-size: 22px;
-}
 </style>
