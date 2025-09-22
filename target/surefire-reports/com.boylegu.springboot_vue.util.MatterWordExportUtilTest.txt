@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.boylegu.springboot_vue.util.MatterWordExportUtilTest
--------------------------------------------------------------------------------
-Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.378 s - in com.boylegu.springboot_vue.util.MatterWordExportUtilTest

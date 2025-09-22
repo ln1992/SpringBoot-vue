@@ -1,4 +1,4 @@
-// src/main/java/com/boylegu/springboot_vue/App.java
+// src/main/java/com/douyu/springboot_vue/App.java
 package com.douyu.springboot_vue;
 
 import org.springframework.context.annotation.Configuration;

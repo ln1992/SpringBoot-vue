@@ -1,6 +1,6 @@
 package com.douyu.springboot_vue.util;
 
-import com.boylegu.springboot_vue.entities.*;
+import com.douyu.springboot_vue.entities.*;
 import com.douyu.springboot_vue.entities.*;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
