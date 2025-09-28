@@ -6,7 +6,7 @@ class MatterToolsService {
   // 版本对比
   async compareVersions(version1, version2) {
     try {
-      const response = await http.get(ENDPOINTS.MATTER_TOOLS_COMPARE_VERSIONS, {
+      const response = await http.get(ENDPOINTS.MATTER_TOOLS.COMPARE_VERSIONS, {
         params: {
           version1: version1,
           version2: version2
@@ -27,7 +27,7 @@ class MatterToolsService {
       if (oldMatterId != null) params.oldMatterId = oldMatterId;
       if (newMatterId != null) params.newMatterId = newMatterId;
 
-      const response = await http.get(ENDPOINTS.MATTER_TOOLS_COMPARE_MATTERS, { params });
+      const response = await http.get(ENDPOINTS.MATTER_TOOLS.COMPARE_MATTERS, { params });
       return response.data;
     } catch (error) {
       console.error('API调用失败:', error);
@@ -38,7 +38,7 @@ class MatterToolsService {
   // 批量拷贝事项
   async batchCopyMatter() {
     try {
-      const response = await http.post(`${ENDPOINTS.MATTER_TOOLS_COMPARE}/batch/copy`);
+      const response = await http.post(ENDPOINTS.MATTER_TOOLS.BATCH_COPY);
       return response.data;
     } catch (error) {
       throw new Error(`批量拷贝事项失败: ${error.message}`);
@@ -48,7 +48,7 @@ class MatterToolsService {
   // 批量发布事项
   async batchPublishMatters() {
     try {
-      const response = await http.post(`${ENDPOINTS.MATTER_TOOLS_COMPARE}/batch/publish`);
+      const response = await http.post(ENDPOINTS.MATTER_TOOLS.BATCH_PUBLISH);
       return response.data;
     } catch (error) {
       throw new Error(`批量发布事项失败: ${error.message}`);
@@ -59,7 +59,7 @@ class MatterToolsService {
   async exportMattersCatalog(version = null) {
     try {
       const params = version ? { version } : {};
-      const response = await http.get(`${ENDPOINTS.MATTER_TOOLS_COMPARE}/export/catalog`, {
+      const response = await http.get(ENDPOINTS.MATTER_TOOLS.EXPORT_CATALOG, {
         params,
         responseType: 'blob'
       });
@@ -73,7 +73,7 @@ class MatterToolsService {
   async exportMattersDocuments(version = null) {
     try {
       const params = version ? { version } : {};
-      const response = await http.get(`${ENDPOINTS.MATTER_TOOLS_COMPARE}/export/documents`, {
+      const response = await http.get(ENDPOINTS.MATTER_TOOLS.EXPORT_DOCUMENTS, {
         params,
         responseType: 'blob'
       });

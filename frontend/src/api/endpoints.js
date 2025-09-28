@@ -1,30 +1,30 @@
-// src/api/endpoints.js
-// API端点配置
-
-export const ENDPOINTS = {
-  // 材料相关端点
-  MATERIALS: '/materials',
-  MATERIALS_BY_ID: (id) => `/materials/${id}`,
-  MATERIALS_ACTIVATE: (id) => `/materials/${id}/activate`,
-  MATERIALS_DEACTIVATE: (id) => `/materials/${id}/deactivate`,
-
-  // 事项相关端点
-  MATTERS: '/matters',
-  MATTERS_BY_ID: (id) => `/matters/${id}`,
-  MATTERS_ACTIVATE: (id) => `/matters/${id}/activate`,
-  MATTERS_DEACTIVATE: (id) => `/matters/${id}/deactivate`,
-  MATTERS_PUBLISH: (id) => `/matters/${id}/publish`,
-  MATTERS_UNPUBLISH: (id) => `/matters/${id}/unpublish`,
-
-  // 事项工具端点
-  MATTER_TOOLS_COMPARE: '/matters/tools',
-  MATTER_TOOLS_COMPARE_VERSIONS: '/matters/tools/compare-versions',
-  MATTER_TOOLS_COMPARE_MATTERS: '/matters/tools/compare-matters',
-
-  // 流程图相关端点
+// 定义所有API端点
+const ENDPOINTS = {
+  MATTER: {
+    BASE: '/matters'
+  },
+  MATERIAL: {
+    BASE: '/materials'
+  },
   PROCESS_DIAGRAMS: '/process-diagrams',
-  APPROVAL_PROCESS_DIAGRAMS: '/process-diagrams/approval',
-  BUSINESS_PROCESS_DIAGRAMS: '/process-diagrams/business'
+  APPROVAL_PROCESS_DIAGRAM: {
+    BASE: '/process-diagrams/approval'
+  },
+  BUSINESS_PROCESS_DIAGRAM: {
+    BASE: '/process-diagrams/business'
+  },
+  UPDATE_RECORD: {
+    BASE: '/update-records'
+  },
+  MATTER_TOOLS: {
+    BASE: '/matters/tools',
+    COMPARE_VERSIONS: '/matters/tools/compare-versions',
+    COMPARE_MATTERS: '/matters/tools/compare-matters',
+    BATCH_COPY: '/matters/tools/batch/copy',
+    BATCH_PUBLISH: '/matters/tools/batch/publish',
+    EXPORT_CATALOG: '/matters/tools/export/catalog',
+    EXPORT_DOCUMENTS: '/matters/tools/export/documents'
+  }
 };
 
-export default ENDPOINTS;
+export { ENDPOINTS };
