@@ -1,17 +1,12 @@
 // src/api/matterService.js
 import http from './http';
-import ENDPOINTS from './endpoints';
+import { ENDPOINTS } from './endpoints';
 
 class MatterService {
   // 获取所有事项
   async getAllMatters() {
     try {
-      const response = await http.get(ENDPOINTS.MATTERS, {
-        params: {
-          page: 0,
-          size: 1000 // 设置一个较大的数值以获取所有事项
-        }
-      });
+      const response = await http.get(ENDPOINTS.MATTER.BASE);
       // 如果返回的是分页数据，提取content字段
       if (response.data && response.data.content) {
         return response.data.content;
@@ -25,7 +20,7 @@ class MatterService {
   // 根据ID获取事项
   async getMatterById(id) {
     try {
-      const response = await http.get(ENDPOINTS.MATTERS_BY_ID(id));
+      const response = await http.get(`${ENDPOINTS.MATTER.BASE}/${id}`);
       return response.data;
     } catch (error) {
       throw new Error(`获取事项失败: ${error.message}`);
@@ -35,7 +30,7 @@ class MatterService {
   // 创建事项
   async createMatter(matter) {
     try {
-      const response = await http.post(ENDPOINTS.MATTERS, matter);
+      const response = await http.post(ENDPOINTS.MATTER.BASE, matter);
       return response.data;
     } catch (error) {
       throw new Error(`创建事项失败: ${error.message}`);
@@ -45,7 +40,7 @@ class MatterService {
   // 更新事项
   async updateMatter(id, matter) {
     try {
-      const response = await http.put(ENDPOINTS.MATTERS_BY_ID(id), matter);
+      const response = await http.put(`${ENDPOINTS.MATTER.BASE}/${id}`, matter);
       return response.data;
     } catch (error) {
       throw new Error(`更新事项失败: ${error.message}`);
@@ -55,7 +50,7 @@ class MatterService {
   // 删除事项
   async deleteMatter(id) {
     try {
-      const response = await http.delete(ENDPOINTS.MATTERS_BY_ID(id));
+      const response = await http.delete(`${ENDPOINTS.MATTER.BASE}/${id}`);
       return response.data;
     } catch (error) {
       throw new Error(`删除事项失败: ${error.message}`);
@@ -65,7 +60,7 @@ class MatterService {
   // 激活事项
   async activateMatter(id) {
     try {
-      const response = await http.put(ENDPOINTS.MATTERS_ACTIVATE(id));
+      const response = await http.put(`${ENDPOINTS.MATTER.BASE}/${id}/activate`);
       return response.data;
     } catch (error) {
       throw new Error(`激活事项失败: ${error.message}`);
@@ -75,7 +70,7 @@ class MatterService {
   // 停用事项
   async deactivateMatter(id) {
     try {
-      const response = await http.put(ENDPOINTS.MATTERS_DEACTIVATE(id));
+      const response = await http.put(`${ENDPOINTS.MATTER.BASE}/${id}/deactivate`);
       return response.data;
     } catch (error) {
       throw new Error(`停用事项失败: ${error.message}`);
@@ -85,7 +80,7 @@ class MatterService {
   // 发布事项
   async publishMatter(id) {
     try {
-      const response = await http.put(ENDPOINTS.MATTERS_PUBLISH(id));
+      const response = await http.put(`${ENDPOINTS.MATTER.BASE}/${id}/publish`);
       return response.data;
     } catch (error) {
       throw new Error(`发布事项失败: ${error.message}`);
@@ -95,7 +90,7 @@ class MatterService {
   // 取消发布事项
   async unpublishMatter(id) {
     try {
-      const response = await http.put(ENDPOINTS.MATTERS_UNPUBLISH(id));
+      const response = await http.put(`${ENDPOINTS.MATTER.BASE}/${id}/unpublish`);
       return response.data;
     } catch (error) {
       throw new Error(`取消发布事项失败: ${error.message}`);
@@ -105,7 +100,7 @@ class MatterService {
   // 获取所有版本号
   async getAllVersions() {
     try {
-      const response = await http.get(`${ENDPOINTS.MATTERS}/versions`);
+      const response = await http.get(`${ENDPOINTS.MATTER.BASE}/versions`);
       return response.data;
     } catch (error) {
       throw new Error(`获取版本列表失败: ${error.message}`);
