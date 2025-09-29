@@ -14,6 +14,14 @@
           <db-filterinput></db-filterinput>
           <db-table></db-table>
         </div>
+        <!-- 添加服装管理视图 -->
+        <div v-else-if="selectedMenu === 'clothing'">
+          <clothing-list ref="clothingList"></clothing-list>
+        </div>
+        <!-- 添加库存记录视图 -->
+        <div v-else-if="selectedMenu === 'clothing-stock-record'">
+          <clothing-stock-record-list ref="clothingStockRecordList"></clothing-stock-record-list>
+        </div>
         <div v-else-if="selectedMenu === 'material'">
           <material-list ref="materialList"></material-list>
         </div>
@@ -53,6 +61,10 @@ import DbSidebar from './components/DbSidebar.vue'
 import DbFilterinput from './components/DbFilterinput.vue'
 import DbTable from './components/DbTable.vue'
 import DbFooter from './components/DbFooter.vue'
+// 导入服装管理组件
+import ClothingList from './components/clothing/ClothingList.vue'
+// 导入库存记录组件
+import ClothingStockRecordList from './components/clothing-stock-record/ClothingStockRecordList.vue'
 import MaterialList from './components/material/MaterialList.vue'
 // 导入事项管理组件
 import MatterList from './components/matter/MatterList.vue'
@@ -76,9 +88,13 @@ export default {
     DbFilterinput,
     DbTable,
     DbFooter,
-    MaterialList,
+    // 注册服装管理组件
+    ClothingList,
+    // 注册库存记录组件
+    ClothingStockRecordList,
     // 注册事项管理组件
     MatterList,
+    MaterialList,
     // 注册流程图管理组件
     ApprovalProcessDiagramList,
     BusinessProcessDiagramList,
@@ -108,7 +124,7 @@ export default {
         if (matterId && !isNaN(matterId)) {
           // 如果URL包含事项ID，则切换到事项管理视图
           this.selectedMenu = 'matter';
-          
+
           // 在下一个DOM更新周期中调用事项列表组件的方法
           this.$nextTick(() => {
             // 确保事项列表组件已加载
@@ -120,12 +136,29 @@ export default {
         }
       }
     },
-    
+
     handleMenuSelect(menu) {
       this.selectedMenu = menu;
-      
+
       // 特殊处理各菜单项，确保从详情界面返回时能正确显示列表
       switch (menu) {
+
+        case 'clothing':
+          this.$nextTick(() => {
+            if (this.$refs.clothingList) {
+              this.$refs.clothingList.resetToListView();
+            }
+          });
+          break;
+
+         case 'clothing-stock-record':
+          this.$nextTick(() => {
+            if (this.$refs.clothingStockRecordList) {
+              this.$refs.clothingStockRecordList.resetToListView();
+            }
+          });
+          break;
+
         case 'material':
           this.$nextTick(() => {
             if (this.$refs.materialList) {
@@ -133,7 +166,7 @@ export default {
             }
           });
           break;
-          
+
         case 'matter':
           this.$nextTick(() => {
             if (this.$refs.matterList) {
@@ -141,7 +174,7 @@ export default {
             }
           });
           break;
-          
+
         case 'update-record':
           this.$nextTick(() => {
             if (this.$refs.updateRecordList) {
@@ -149,7 +182,7 @@ export default {
             }
           });
           break;
-          
+
         case 'approval-diagram':
           this.$nextTick(() => {
             if (this.$refs.approvalDiagramList) {
@@ -157,7 +190,7 @@ export default {
             }
           });
           break;
-          
+
         case 'business-diagram':
           this.$nextTick(() => {
             if (this.$refs.businessDiagramList) {
@@ -166,44 +199,55 @@ export default {
           });
           break;
       }
-      
+
       // 当切换菜单时，重置对应组件的状态
       this.resetComponentState(menu);
     },
-    
+
     // 重置组件状态
     resetComponentState(menu) {
+
+      // 重置服装列表视图
+      if (menu !== 'clothing' && this.$refs.clothingList) {
+        this.$refs.clothingList.resetToListView();
+      }
+
+      // 重置库存记录列表视图
+      if (menu !== 'clothing-stock-record' && this.$refs.clothingStockRecordList) {
+        this.$refs.clothingStockRecordList.resetToListView();
+      }
+
       // 重置材料列表视图
       if (menu !== 'material' && this.$refs.materialList) {
         this.$refs.materialList.resetToListView();
       }
-      
+
       // 重置事项列表视图
       if (menu !== 'matter' && this.$refs.matterList) {
         this.$refs.matterList.resetToListView();
       }
-      
+
       // 重置审批流程图列表视图
       if (menu !== 'approval-diagram' && this.$refs.approvalDiagramList) {
         this.$refs.approvalDiagramList.resetToListView();
       }
-      
+
       // 重置业务流程图列表视图
       if (menu !== 'business-diagram' && this.$refs.businessDiagramList) {
         this.$refs.businessDiagramList.resetToListView();
       }
-      
+
       // 重置更新记录列表视图
       if (menu !== 'update-record' && this.$refs.updateRecordList) {
         this.$refs.updateRecordList.resetToListView();
       }
     },
-    
+
     // 添加处理从版本对比组件导航到事项详情的事件
     handleNavigateToMatterDetail(matterId) {
       // 更新当前选中的菜单项
       this.selectedMenu = 'matter';
-      
+
       // 在下一个DOM更新周期中调用事项列表组件的方法
       this.$nextTick(() => {
         // 确保事项列表组件已加载
@@ -227,6 +271,16 @@ export default {
             case 'matter':
               if (this.$refs.matterList && typeof this.$refs.matterList.resetToListView === 'function') {
                 this.$refs.matterList.resetToListView();
+              }
+              break;
+            case 'clothing':
+              if (this.$refs.clothingList && typeof this.$refs.clothingList.resetToListView === 'function') {
+                this.$refs.clothingList.resetToListView();
+              }
+              break;
+            case 'clothing-stock-record':
+              if (this.$refs.clothingStockRecordList && typeof this.$refs.clothingStockRecordList.resetToListView === 'function') {
+                this.$refs.clothingStockRecordList.resetToListView();
               }
               break;
             case 'approval-diagram':

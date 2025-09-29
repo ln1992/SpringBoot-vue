@@ -9,6 +9,20 @@
       {{ msg }}
     </div>
     <div
+       class="menu-item"
+       :class="{ active: activeItem === 'clothing' }"
+       @click="selectItem('clothing')"
+    >
+       服装管理
+    </div>
+    <div
+       class="menu-item"
+       :class="{ active: activeItem === 'clothing-stock-record' }"
+       @click="selectItem('clothing-stock-record')"
+    >
+      库存记录
+    </div>
+    <div
       class="menu-item"
       :class="{ active: activeItem === 'matter' }"
       @click="selectItem('matter')"
