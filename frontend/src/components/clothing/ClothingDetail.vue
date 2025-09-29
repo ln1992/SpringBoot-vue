@@ -72,6 +72,47 @@
                 </div>
               </div>
 
+              <!-- 尺码信息移到创建时间和更新时间之前 -->
+              <div class="detail-section">
+                <div class="stock-table">
+                  <div class="stock-table-row header">
+                    <div class="stock-table-cell">尺码</div>
+                    <div class="stock-table-cell">S</div>
+                    <div class="stock-table-cell">M</div>
+                    <div class="stock-table-cell">L</div>
+                  </div>
+                  <div class="stock-table-row">
+                    <div class="stock-table-cell">总入库数</div>
+                    <div class="stock-table-cell">{{ getTotalQuantityBySize('S') }}</div>
+                    <div class="stock-table-cell">{{ getTotalQuantityBySize('M') }}</div>
+                    <div class="stock-table-cell">{{ getTotalQuantityBySize('L') }}</div>
+                  </div>
+                  <div class="stock-table-row">
+                    <div class="stock-table-cell">当前库存</div>
+                    <div class="stock-table-cell">{{ getCurrentStockBySize('S') }}</div>
+                    <div class="stock-table-cell">{{ getCurrentStockBySize('M') }}</div>
+                    <div class="stock-table-cell">{{ getCurrentStockBySize('L') }}</div>
+                  </div>
+                  <div class="stock-table-row">
+                    <div class="stock-table-cell">已出库数</div>
+                    <div class="stock-table-cell">{{ getOutboundQuantityBySize('S') }}</div>
+                    <div class="stock-table-cell">{{ getOutboundQuantityBySize('M') }}</div>
+                    <div class="stock-table-cell">{{ getOutboundQuantityBySize('L') }}</div>
+                  </div>
+                </div>
+
+                <!-- 操作按钮放在同一行 -->
+                <div class="form-actions inline">
+                  <button class="stock-btn inbound-btn" @click="showStockOperation('inbound')">入库</button>
+                  <button class="stock-btn outbound-btn" @click="showStockOperation('outbound')">出库</button>
+                  <button v-if="clothing.valid" class="offline-btn" @click="toggleClothingStatus(false)">下线</button>
+                  <template v-else>
+                    <button class="online-btn" @click="toggleClothingStatus(true)">上线</button>
+                    <button class="delete-btn" @click="deleteClothing">删除</button>
+                  </template>
+                </div>
+              </div>
+
               <!-- 第三行：创建时间和更新时间 -->
               <div class="detail-row-group">
                 <div class="detail-row">
@@ -82,46 +123,6 @@
                   <span class="detail-label">更新时间:</span>
                   <span class="detail-value">{{ formatDate(clothing.updateTime) }}</span>
                 </div>
-              </div>
-            </div>
-
-            <div class="detail-section">
-              <div class="stock-table">
-                <div class="stock-table-row header">
-                  <div class="stock-table-cell">尺码</div>
-                  <div class="stock-table-cell">S</div>
-                  <div class="stock-table-cell">M</div>
-                  <div class="stock-table-cell">L</div>
-                </div>
-                <div class="stock-table-row">
-                  <div class="stock-table-cell">总入库数</div>
-                  <div class="stock-table-cell">{{ getTotalQuantityBySize('S') }}</div>
-                  <div class="stock-table-cell">{{ getTotalQuantityBySize('M') }}</div>
-                  <div class="stock-table-cell">{{ getTotalQuantityBySize('L') }}</div>
-                </div>
-                <div class="stock-table-row">
-                  <div class="stock-table-cell">当前库存</div>
-                  <div class="stock-table-cell">{{ getCurrentStockBySize('S') }}</div>
-                  <div class="stock-table-cell">{{ getCurrentStockBySize('M') }}</div>
-                  <div class="stock-table-cell">{{ getCurrentStockBySize('L') }}</div>
-                </div>
-                <div class="stock-table-row">
-                  <div class="stock-table-cell">已出库数</div>
-                  <div class="stock-table-cell">{{ getOutboundQuantityBySize('S') }}</div>
-                  <div class="stock-table-cell">{{ getOutboundQuantityBySize('M') }}</div>
-                  <div class="stock-table-cell">{{ getOutboundQuantityBySize('L') }}</div>
-                </div>
-              </div>
-
-              <!-- 操作按钮放在同一行 -->
-              <div class="form-actions inline">
-                <button class="stock-btn inbound-btn" @click="showStockOperation('inbound')">入库</button>
-                <button class="stock-btn outbound-btn" @click="showStockOperation('outbound')">出库</button>
-                <button v-if="clothing.valid" class="offline-btn" @click="toggleClothingStatus(false)">下线</button>
-                <template v-else>
-                  <button class="online-btn" @click="toggleClothingStatus(true)">上线</button>
-                  <button class="delete-btn" @click="deleteClothing">删除</button>
-                </template>
               </div>
             </div>
           </div>
@@ -874,3 +875,5 @@ export default {
   }
 }
 </style>
+
+```

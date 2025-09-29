@@ -196,14 +196,14 @@
 
     <!-- 服装详情界面 -->
     <ClothingDetail
-      v-else-if="selectedClothing && !showAddForm"
+      v-if="selectedClothing && !showAddForm"
       :clothing="selectedClothing"
-      @back="goBackToList"
+      @back="resetToListView"
       @clothing-updated="handleClothingUpdated"
     />
 
-    <!-- 新增/编辑服装表单 -->
-    <div class="clothing-form-container" v-else-if="showAddForm">
+    <!-- 新增服装表单 -->
+    <div v-else-if="showAddForm">
       <div class="header">
         <button class="back-btn" @click="goBackToList">← 返回</button>
         <h2>{{ isEditMode ? '编辑服装' : '新增服装' }}</h2>
@@ -385,8 +385,8 @@ export default {
       return Array.from(brandSet);
     }
   },
-  mounted() {
-    this.fetchClothings();
+  async mounted() {
+    await this.fetchClothings();
   },
   methods: {
     async fetchClothings() {
@@ -398,52 +398,68 @@ export default {
         const response = await clothingService.getAll();
         this.clothings = response.data || [];
         this.filterClothings();
-      } catch (err) {
-        this.error = err.message || '获取服装数据失败';
-        console.error('获取服装数据失败:', err);
+      } catch (error) {
+        this.error = error.message || '网络错误';
+        console.error('获取服装列表出错:', error);
       } finally {
         this.loading = false;
       }
     },
 
     filterClothings() {
-      let filtered = [...this.clothings];
+      let result = [...this.clothings];
 
-      // 搜索过滤
+      // 品牌筛选
+      if (this.filterBrand) {
+        result = result.filter(clothing => clothing.brand === this.filterBrand);
+      }
+
+      // 关键词搜索
       if (this.searchKeyword) {
         const keyword = this.searchKeyword.toLowerCase();
-        filtered = filtered.filter(clothing =>
+        result = result.filter(clothing =>
           (clothing.name && clothing.name.toLowerCase().includes(keyword)) ||
           (clothing.brand && clothing.brand.toLowerCase().includes(keyword))
         );
       }
 
-      // 品牌过滤
-      if (this.filterBrand) {
-        filtered = filtered.filter(clothing =>
-          clothing.brand === this.filterBrand
-        );
-      }
+      // 应用排序
+      this.sortClothings(result);
 
-      // 排序
-      this.sortClothings(filtered);
-
-      this.filteredClothings = filtered;
+      this.filteredClothings = result;
+      // 重置到第一页
       this.currentPage = 1;
     },
 
-    sortClothings(clothings) {
+    handlePageSizeChange() {
+      // 当页面大小改变时，重置到第一页
+      this.currentPage = 1;
+    },
+
+    sortClothings(records) {
       const field = this.sortBy;
       const direction = this.sortDirection;
 
-      clothings.sort((a, b) => {
+      records.sort((a, b) => {
         let valueA = a[field];
         let valueB = b[field];
 
         // 处理价格字段
         if (field === 'price') {
-          valueA = valueA || 0;
-          valueB = valueB || 0;
+          valueA = parseFloat(a.price) || 0;
+          valueB = parseFloat(b.price) || 0;
+        }
+
+        // 处理状态字段
+        if (field === 'valid') {
+          valueA = a.valid ? 1 : 0;
+          valueB = b.valid ? 1 : 0;
+        }
+
+        // 处理日期字段
+        if (field === 'createdTime') {
+          valueA = new Date(a.createdTime).getTime();
+          valueB = new Date(b.createdTime).getTime();
         }
 
         // 处理null或undefined值
@@ -656,14 +672,13 @@ export default {
       } finally {
         this.stockSubmitting = false;
       }
-    }
-  },
-  watch: {
-    searchKeyword() {
-      this.filterClothings();
     },
-    filterBrand() {
-      this.filterClothings();
+
+    resetToListView() {
+      this.selectedClothing = null;
+      this.showAddForm = false;
+      // 重新获取列表数据
+      this.fetchClothings();
     }
   }
 };
@@ -836,10 +851,17 @@ export default {
 .button-row {
   display: flex;
   gap: 5px;
-  flex-wrap: wrap;
 }
 
-button {
+.online-btn,
+.offline-btn,
+.delete-btn,
+.save-btn,
+.cancel-btn,
+.stock-btn,
+.add-btn,
+.refresh-btn,
+.back-btn {
   padding: 6px 12px;
   border: none;
   border-radius: 4px;
@@ -850,22 +872,38 @@ button {
   z-index: 2;
 }
 
-.add-btn {
-  background-color: #28a745;
+.save-btn {
+  background-color: #007bff;
   color: white;
 }
 
-.add-btn:hover {
-  background-color: #218838;
+.save-btn:hover {
+  background-color: #0056b3;
 }
 
-.refresh-btn {
-  background-color: #17a2b8;
+.save-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.cancel-btn,
+.back-btn {
+  background-color: #6c757d;
   color: white;
 }
 
-.refresh-btn:hover {
-  background-color: #138496;
+.cancel-btn:hover,
+.back-btn:hover {
+  background-color: #5a6268;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: #c82333;
 }
 
 .online-btn {
@@ -886,23 +924,8 @@ button {
   background-color: #e0a800;
 }
 
-.delete-btn {
-  background-color: #dc3545;
-  color: white;
-}
-
-.delete-btn:hover {
-  background-color: #c82333;
-}
-
-.delete-btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-}
-
-/* 库存操作按钮样式 */
 .stock-btn {
-  padding: 6px 10px;
+  padding: 4px 8px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -930,11 +953,27 @@ button {
   background-color: #e05252;
 }
 
+.add-btn,
+.refresh-btn {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.add-btn:hover,
+.refresh-btn:hover {
+  background-color: #138496;
+}
+
+/* 表单样式 */
+.clothing-form-content {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 .form-section {
   margin-bottom: 20px;
-  padding: 20px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
 }
 
 .form-group {
@@ -944,14 +983,14 @@ button {
 .form-group label {
   display: block;
   margin-bottom: 5px;
-  color: #606266;
   font-weight: bold;
+  color: #333;
 }
 
 .form-group input {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #dcdfe6;
+  border: 1px solid #ddd;
   border-radius: 4px;
   box-sizing: border-box;
 }
@@ -962,49 +1001,67 @@ button {
   justify-content: flex-end;
 }
 
-.save-btn {
-  background-color: #007bff;
-  color: white;
-}
-
-.save-btn:hover {
-  background-color: #0056b3;
-}
-
-.save-btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-}
-
-.cancel-btn {
-  background-color: #6c757d;
-  color: white;
-}
-
-.cancel-btn:hover {
-  background-color: #5a6268;
-}
-
-.back-btn {
-  background-color: #909399;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.back-btn:hover {
-  background-color: #5a6268;
-}
-
 .error-message {
   color: #dc3545;
   font-size: 12px;
   margin-top: 5px;
 }
 
+/* 模态框样式 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 4px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #dcdfe6;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #303133;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #909399;
+}
+
+.close-btn:hover {
+  color: #212529;
+  background-color: #f8f9fa;
+  border-radius: 50%;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+/* 分页控件样式 */
 .pagination {
   display: flex;
   justify-content: space-between;
@@ -1070,79 +1127,6 @@ button {
   background-color: #e6f7ff;
 }
 
-/* 模态框样式 */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background-color: white;
-  border-radius: 4px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #dcdfe6;
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: #303133;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #909399;
-}
-
-.close-btn:hover {
-  color: #212529;
-  background-color: #f8f9fa;
-  border-radius: 50%;
-}
-
-.modal-body {
-  padding: 20px;
-}
-
-.modal-body .form-group {
-  margin-bottom: 15px;
-}
-
-.modal-body .form-group label {
-  display: block;
-  margin-bottom: 5px;
-  color: #606266;
-}
-
-.modal-body .form-group input,
-.modal-body .form-group select {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
 @media (max-width: 768px) {
   .clothings-table {
     font-size: 14px;
@@ -1193,3 +1177,5 @@ button {
   .table-cell:nth-child(9) { flex: 0 0 180px; }
 }
 </style>
+
+```

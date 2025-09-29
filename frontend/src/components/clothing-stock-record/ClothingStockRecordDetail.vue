@@ -28,17 +28,17 @@
         <div class="detail-section">
           <h3>基本信息</h3>
           <div class="detail-content">
-            <!-- 第一行：id，服装id，服装名称 -->
-            <div class="detail-row-group">
-              <div class="detail-row">
+            <!-- 第一行：id，服装id，服装名称，尺寸 -->
+            <div class="detail-row">
+              <div class="detail-item">
                 <span class="detail-label">ID:</span>
                 <span class="detail-value">{{ stockRecord.id }}</span>
               </div>
-              <div class="detail-row">
+              <div class="detail-item">
                 <span class="detail-label">服装ID:</span>
                 <span class="detail-value">{{ stockRecord.clothingId }}</span>
               </div>
-              <div class="detail-row">
+              <div class="detail-item">
                 <span class="detail-label">服装名称:</span>
                 <span class="detail-value">
                   <a
@@ -51,15 +51,15 @@
                   <span v-else>{{ stockRecord.clothingName || '-' }}</span>
                 </span>
               </div>
-            </div>
-
-            <!-- 第二行：尺寸，操作类型 -->
-            <div class="detail-row-group">
-              <div class="detail-row">
+              <div class="detail-item">
                 <span class="detail-label">尺寸:</span>
                 <span class="detail-value">{{ stockRecord.size }}</span>
               </div>
-              <div class="detail-row">
+            </div>
+
+            <!-- 第二行：操作类型，数量，操作前库存，操作后库存 -->
+            <div class="detail-row">
+              <div class="detail-item">
                 <span class="detail-label">操作类型:</span>
                 <span class="detail-value">
                   <span :class="['operation-type',
@@ -68,39 +68,31 @@
                   </span>
                 </span>
               </div>
-            </div>
-
-            <!-- 第三行：数量，操作前后库存 -->
-            <div class="detail-row-group">
-              <div class="detail-row">
+              <div class="detail-item">
                 <span class="detail-label">数量:</span>
                 <span class="detail-value">{{ stockRecord.quantity }}</span>
               </div>
-              <div class="detail-row">
+              <div class="detail-item">
                 <span class="detail-label">操作前库存:</span>
                 <span class="detail-value">{{ stockRecord.previousStock !== null ? stockRecord.previousStock : '-' }}</span>
               </div>
-              <div class="detail-row">
+              <div class="detail-item">
                 <span class="detail-label">操作后库存:</span>
                 <span class="detail-value">{{ stockRecord.currentStock !== null ? stockRecord.currentStock : '-' }}</span>
               </div>
             </div>
 
-            <!-- 第四行：两个时间 -->
-            <div class="detail-row-group">
-              <div class="detail-row">
+            <!-- 第三行：创建时间，更新时间，操作员 -->
+            <div class="detail-row">
+              <div class="detail-item">
                 <span class="detail-label">创建时间:</span>
                 <span class="detail-value">{{ formatDate(stockRecord.createdTime) }}</span>
               </div>
-              <div class="detail-row">
+              <div class="detail-item">
                 <span class="detail-label">更新时间:</span>
                 <span class="detail-value">{{ formatDate(stockRecord.updateTime) }}</span>
               </div>
-            </div>
-
-            <!-- 第五行：操作员 -->
-            <div class="detail-row-group">
-              <div class="detail-row">
+              <div class="detail-item">
                 <span class="detail-label">操作员:</span>
                 <span class="detail-value">{{ stockRecord.operator || '-' }}</span>
               </div>
@@ -290,26 +282,27 @@ export default {
   gap: 15px;
 }
 
-.detail-row-group {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 15px;
-}
-
 .detail-row {
   display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
   padding: 10px 0;
   border-bottom: 1px solid #f5f7fa;
 }
 
+.detail-item {
+  flex: 1;
+  min-width: 200px;
+}
+
 .detail-label {
-  flex: 0 0 120px;
   font-weight: bold;
   color: #606266;
+  display: inline-block;
+  min-width: 100px;
 }
 
 .detail-value {
-  flex: 1;
   color: #303133;
 }
 
@@ -404,16 +397,16 @@ export default {
     gap: 10px;
   }
 
-  .detail-row-group {
-    grid-template-columns: 1fr;
-  }
-
   .detail-row {
     flex-direction: column;
   }
 
+  .detail-item {
+    min-width: auto;
+  }
+
   .detail-label {
-    flex: 0 0 auto;
+    display: inline-block;
     margin-bottom: 5px;
   }
 }

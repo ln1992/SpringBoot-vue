@@ -11,7 +11,7 @@
       </div>
 
       <!-- 添加搜索和筛选区域 -->
-      <div class="filter-section">
+      <div class="filter-section" v-if="!hideFilters">
         <div class="search-group">
           <input
             type="text"
@@ -125,7 +125,7 @@
       </div>
 
       <!-- 分页控件 -->
-      <div class="pagination" v-if="paginatedStockRecords.length > 0">
+      <div class="pagination" v-if="paginatedStockRecords.length > 0 && !hidePagination">
         <div class="pagination-controls">
           <button
             :disabled="currentPage === 1"
@@ -168,6 +168,24 @@ export default {
   name: 'ClothingStockRecordList',
   components: {
     ClothingStockRecordDetail
+  },
+  props: {
+    filterClothingId: {
+      type: Number,
+      default: null
+    },
+    hideActions: {
+      type: Boolean,
+      default: false
+    },
+    hideFilters: {
+      type: Boolean,
+      default: false
+    },
+    hidePagination: {
+      type: Boolean,
+      default: false
+    }
   },
   data() {
     return {
@@ -223,6 +241,11 @@ export default {
     // 添加过滤方法
     filterStockRecords() {
       let result = [...this.stockRecords];
+
+      // 根据服装ID筛选（如果提供了filterClothingId）
+      if (this.filterClothingId !== null) {
+        result = result.filter(record => record.clothingId === this.filterClothingId);
+      }
 
       // 操作类型筛选
       if (this.filterOperationType) {
@@ -619,3 +642,5 @@ button {
   .table-cell:nth-child(10) { flex: 0 0 80px; }
 }
 </style>
+
+```
