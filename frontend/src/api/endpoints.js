@@ -1,5 +1,11 @@
 // 定义所有API端点
 const ENDPOINTS = {
+  CLOTHING: {
+    BASE: '/clothings'
+  },
+  CLOTHING_STOCK_RECORD: {
+    BASE: '/clothing-stock-records'
+  },
   MATTER: {
     BASE: '/matters'
   },

@@ -144,7 +144,7 @@ public class Clothing extends BaseEntity {
      * 出库数量 = 总入库数量 - 当前库存数量
      */
     @JsonIgnore
-    public Map<Size, Long> getOutboundQuantityMap() {
+    public Map<Size, Long> getOutboundQuantityBySize() {
         Map<Size, Long> outboundMap = new HashMap<>();
         for (Size size : Size.values()) {
             Long total = this.totalQuantityBySize.getOrDefault(size, 0L);

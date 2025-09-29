@@ -1,4 +1,6 @@
 // API 层入口文件
+import clothingService from './clothingService';
+import clothingStockRecordService from './clothingStockRecordService';
 import materialService from './materialService';
 import matterService from './matterService';
 import processDiagramService from './processDiagramService';
@@ -11,11 +13,15 @@ export {
   matterService,
   processDiagramService,
   matterToolsService,
+  clothingService,
+  clothingStockRecordService,
   http,
   ENDPOINTS
 };
 
 export default {
+  clothingService,
+  clothingStockRecordService,
   materialService,
   matterService,
   processDiagramService,
