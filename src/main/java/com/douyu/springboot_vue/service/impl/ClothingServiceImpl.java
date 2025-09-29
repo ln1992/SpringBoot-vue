@@ -83,6 +83,7 @@ public class ClothingServiceImpl implements ClothingService {
             // 创建库存记录
             ClothingStockRecord record = new ClothingStockRecord(
                     savedClothing.getId(),
+                    savedClothing.getName(), // 添加服装名称
                     size,
                     ClothingStockRecord.StockOperationType.INBOUND,
                     quantity,
@@ -117,6 +118,7 @@ public class ClothingServiceImpl implements ClothingService {
                 // 创建库存记录
                 ClothingStockRecord record = new ClothingStockRecord(
                         savedClothing.getId(),
+                        savedClothing.getName(), // 添加服装名称
                         size,
                         ClothingStockRecord.StockOperationType.OUTBOUND,
                         quantity,
@@ -168,6 +170,7 @@ public class ClothingServiceImpl implements ClothingService {
                     // 创建库存记录
                     ClothingStockRecord record = new ClothingStockRecord(
                             savedClothing.getId(),
+                            savedClothing.getName(), // 添加服装名称
                             size,
                             ClothingStockRecord.StockOperationType.INBOUND,
                             quantity,
@@ -230,6 +233,7 @@ public class ClothingServiceImpl implements ClothingService {
                     // 创建库存记录
                     ClothingStockRecord record = new ClothingStockRecord(
                             savedClothing.getId(),
+                            savedClothing.getName(), // 添加服装名称
                             size,
                             ClothingStockRecord.StockOperationType.OUTBOUND,
                             quantity,

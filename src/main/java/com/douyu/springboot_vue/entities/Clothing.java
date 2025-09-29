@@ -61,6 +61,14 @@ public class Clothing extends BaseEntity {
         this.price = price;
         this.valid = true;
     }
+
+    public void updateName() {
+        if (this.name != null) {
+            this.set__name__(this.name);
+        } else {
+            this.set__name__(null);
+        }
+    }
     
     // getter和setter方法
     public String getName() {
