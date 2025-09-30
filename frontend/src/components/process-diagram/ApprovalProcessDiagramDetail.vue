@@ -335,6 +335,38 @@ export default {
       alert('流程图数据拷贝成功');
     },
 
+    // 获取图片MIME类型
+    getImageMimeType(imageType) {
+      switch (imageType) {
+        case 'JPEG':
+          return 'image/jpeg';
+        case 'PNG':
+          return 'image/png';
+        case 'GIF':
+          return 'image/gif';
+        case 'BMP':
+          return 'image/bmp';
+        default:
+          return 'image/png';
+      }
+    },
+    
+    // 获取文件扩展名
+    getFileExtension(imageType) {
+      switch (imageType) {
+        case 'JPEG':
+          return '.jpg';
+        case 'PNG':
+          return '.png';
+        case 'GIF':
+          return '.gif';
+        case 'BMP':
+          return '.bmp';
+        default:
+          return '.png';
+      }
+    },
+
     onImageChange(event) {
       const file = event.target.files[0];
       if (file) {
@@ -373,7 +405,8 @@ export default {
         try {
           const response = await fetch(this.form.imageDataUrl);
           const blob = await response.blob();
-          formData.append('imageFile', blob, 'copied_image.' + (this.form.imageType === 'PNG' ? 'png' : 'jpg'));
+          const fileExtension = this.getFileExtension(this.form.imageType);
+          formData.append('imageFile', blob, 'copied_image' + fileExtension);
         } catch (error) {
           console.error('从imageDataUrl创建文件时出错:', error);
         }

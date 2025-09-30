@@ -360,12 +360,13 @@ export default {
       // 添加文件（如果有的话）
       if (fileInput && fileInput.files[0]) {
         formData.append('imageFile', fileInput.files[0]);
-      } else if (this.form.imageData && !this.isEditMode) {
+      } else if (this.form.imageDataUrl && !this.isEditMode) {
         // 如果没有新文件但有拷贝的图像数据（新增模式），创建一个Blob并添加到表单中
         try {
           const response = await fetch(this.form.imageDataUrl);
           const blob = await response.blob();
-          formData.append('imageFile', blob, 'copied_image.' + (this.form.imageType === 'PNG' ? 'png' : 'jpg'));
+          const fileExtension = this.getFileExtension(this.form.imageType);
+          formData.append('imageFile', blob, 'copied_image' + fileExtension);
         } catch (error) {
           console.error('从imageDataUrl创建文件时出错:', error);
         }
@@ -408,7 +409,39 @@ export default {
     // 添加 resetToListView 方法，用于从 App.vue 中调用返回列表视图
     resetToListView() {
       this.$emit('back');
-    }
+    },
+
+    // 获取图片MIME类型
+    getImageMimeType(imageType) {
+      switch (imageType) {
+        case 'JPEG':
+          return 'image/jpeg';
+        case 'PNG':
+          return 'image/png';
+        case 'GIF':
+          return 'image/gif';
+        case 'BMP':
+          return 'image/bmp';
+        default:
+          return 'image/png';
+      }
+    },
+    
+    // 获取文件扩展名
+    getFileExtension(imageType) {
+      switch (imageType) {
+        case 'JPEG':
+          return '.jpg';
+        case 'PNG':
+          return '.png';
+        case 'GIF':
+          return '.gif';
+        case 'BMP':
+          return '.bmp';
+        default:
+          return '.png';
+      }
+    },
   }
 };
 </script>
