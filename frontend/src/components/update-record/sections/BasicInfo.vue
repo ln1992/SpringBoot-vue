@@ -6,11 +6,11 @@
         <label class="form-label">ID:</label>
         <div class="form-value">{{ record.id }}</div>
       </div>
-      
+
       <div class="form-group">
         <label class="form-label">实体名称:</label>
-        <div 
-          class="form-value entity-name" 
+        <div
+          class="form-value entity-name"
           v-if="record.entityName"
           @click="openEntityDetail"
         >
@@ -18,12 +18,12 @@
         </div>
         <div class="form-value" v-else>-</div>
       </div>
-      
+
       <div class="form-group">
         <label class="form-label">实体ID:</label>
         <div class="form-value">{{ record.entityId }}</div>
       </div>
-      
+
       <div class="form-group">
         <label class="form-label">实体类型:</label>
         <div class="form-value">{{ record.entityType }}</div>
@@ -53,15 +53,14 @@ export default {
           url = `#/materials/${this.record.entityId}`;
           break;
         case 'ApprovalProcessDiagram':
-        case 'BusinessProcessDiagram':
-          url = `#/process-diagrams/${this.record.entityId}`;
+          url = `#/approval-diagrams/${this.record.entityId}`;
           break;
-        default:
-          // 如果不支持的实体类型，显示警告信息
-          alert(`不支持的实体类型: ${this.record.entityType}`);
-          return;
+        case 'BusinessProcessDiagram':
+          url = `#/business-diagrams/${this.record.entityId}`;
+          break;
       }
-      
+
+
       // 在新窗口中打开实体详情页面
       window.open(url, '_blank');
     }
@@ -125,11 +124,11 @@ export default {
   .info-row {
     flex-direction: column;
   }
-  
+
   .form-group {
     flex-direction: column;
   }
-  
+
   .form-label {
     width: auto;
     margin-bottom: 5px;

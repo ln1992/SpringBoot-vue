@@ -77,10 +77,26 @@
 <script>
 export default {
   name: 'db-sidebar',
+  props: {
+    // 接收父组件传递的当前选中菜单
+    activeMenu: {
+      type: String,
+      default: 'dashboard'
+    }
+  },
   data() {
     return {
       msg: '仪表盘',
       activeItem: 'dashboard'
+    }
+  },
+  watch: {
+    // 监听activeMenu变化，同步更新activeItem
+    activeMenu: {
+      handler(newVal) {
+        this.activeItem = newVal;
+      },
+      immediate: true
     }
   },
   methods: {
