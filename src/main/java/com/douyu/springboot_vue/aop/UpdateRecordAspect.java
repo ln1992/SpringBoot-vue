@@ -26,19 +26,18 @@ public class UpdateRecordAspect {
 
     private static final Logger logger = Logger.getLogger(UpdateRecordAspect.class.getName());
 
+    // 静态 ObjectMapper 实例，避免重复创建
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     @Autowired
     private UpdateRecordService updateRecordService;
 
-    // 定义需要忽略的字段列表
-    private static final Set<String> IGNORED_FIELDS = new HashSet<>(Arrays.asList(
-            "updateTime"
-    ));
-
+    // 定义需要哈希处理的字段列表
     private static final Set<String> HASH_FIELDS = new HashSet<>(Arrays.asList(
             "imageData",
-            "imageUrl"
+            "imageUrl",
+            "cachedImageDataUrl"
     ));
-
 
     /**
      * 环围通知，处理带有 @RecordUpdate 注解的方法
@@ -76,26 +75,39 @@ public class UpdateRecordAspect {
      * 处理创建操作
      */
     private Object handleCreateOperation(ProceedingJoinPoint joinPoint, RecordUpdate recordUpdate, Object[] args) throws Throwable {
-        // 执行原方法
         Object result = joinPoint.proceed();
 
-        // 如果返回结果是 BaseEntity 或其子类，则记录创建操作
         if (result instanceof BaseEntity) {
             BaseEntity entity = (BaseEntity) result;
             String operator = getCurrentUser();
             String description = buildDescription(recordUpdate, "创建");
+            Map<String, Object> processedFields = processEntityFieldsForLogging(entity);
 
-            updateRecordService.logCreate(entity, operator, description);
-        } 
-        // 如果返回结果是 List，则为列表中的每个实体记录创建操作
-        else if (result instanceof List) {
+            updateRecordService.logCreate(
+                    entity.getClass().getSimpleName(),
+                    entity.getId(),
+                    entity.get__name__(),
+                    operator,
+                    description,
+                    serializeToJsonStr(processedFields)
+            );
+        } else if (result instanceof List) {
             List<?> entityList = (List<?>) result;
             String operator = getCurrentUser();
             String description = buildDescription(recordUpdate, "创建");
 
             for (Object item : entityList) {
                 if (item instanceof BaseEntity) {
-                    updateRecordService.logCreate((BaseEntity) item, operator, description);
+                    BaseEntity entity = (BaseEntity) item;
+                    Map<String, Object> processedFields = processEntityFieldsForLogging(entity);
+                    updateRecordService.logCreate(
+                            entity.getClass().getSimpleName(),
+                            entity.getId(),
+                            entity.get__name__(),
+                            operator,
+                            description,
+                            serializeToJsonStr(processedFields)
+                    );
                 }
             }
         }
@@ -113,7 +125,7 @@ public class UpdateRecordAspect {
         // 如果成功获取到旧实体，创建其副本用于记录
         Map<String, Object> oldValues = null;
         if (oldEntity != null) {
-            oldValues = extractEntityFields(oldEntity);
+            oldValues = processEntityFieldsForLogging(oldEntity);
         }
 
         try {
@@ -127,7 +139,7 @@ public class UpdateRecordAspect {
                 String description = buildDescription(recordUpdate, "更新");
 
                 // 获取新实体字段值
-                Map<String, Object> newValues = extractEntityFields(newEntity);
+                Map<String, Object> newValues = processEntityFieldsForLogging(newEntity);
 
                 // 比较并获取变更字段
                 Map<String, Object> changedOldValues = new HashMap<>();
@@ -140,18 +152,9 @@ public class UpdateRecordAspect {
                         Object oldValue = oldValues.get(fieldName);
 
                         // 比较新旧值，只记录发生变化的字段
-                        if (!IGNORED_FIELDS.contains(fieldName) && !ObjectCompareUtils.objectEqual(oldValue, newValue)) {
-                            if (HASH_FIELDS.contains(fieldName)) {
-                                logger.info("检查字段变更: " + fieldName);
-                                logger.info("旧值: " + oldValue + " (类型: " + (oldValue != null ? oldValue.getClass().getName() : "null") + ")");
-                                logger.info("新值: " + newValue + " (类型: " + (newValue != null ? newValue.getClass().getName() : "null") + ")");
-
-                                changedOldValues.put(fieldName, computeHash(oldValue) );
-                                changedNewValues.put(fieldName, computeHash(newValue) );
-                            } else {
-                                changedOldValues.put(fieldName, oldValue);
-                                changedNewValues.put(fieldName, newValue);
-                            }
+                        if (!ObjectCompareUtils.objectEqual(oldValue, newValue)) {
+                            changedOldValues.put(fieldName, oldValue);
+                            changedNewValues.put(fieldName, newValue);
                         }
                     }
                 } else {
@@ -166,8 +169,8 @@ public class UpdateRecordAspect {
                             newEntity.getClass().getSimpleName(),
                             newEntity.getId(),
                             newEntity.get__name__(),
-                            changedOldValues,
-                            changedNewValues,
+                            serializeToJsonStr(changedOldValues),
+                            serializeToJsonStr(changedNewValues),
                             operator,
                             description
                     );
@@ -190,20 +193,33 @@ public class UpdateRecordAspect {
     private Object handleDeleteOperation(ProceedingJoinPoint joinPoint, RecordUpdate recordUpdate, Object[] args) throws Throwable {
         // 尝试获取要删除的实体信息
         BaseEntity oldEntity = extractOldEntityFromArgs(joinPoint, args);
-        
+
+        // 处理旧实体字段用于日志记录
+        Map<String, Object> processedOldFields = null;
+        if (oldEntity != null) {
+            processedOldFields = processEntityFieldsForLogging(oldEntity);
+        }
+
         // 执行原方法
         Object result = joinPoint.proceed();
 
         // 记录删除操作
-        if (oldEntity != null) {
+        if (oldEntity != null && processedOldFields != null) {
             String operator = getCurrentUser();
             String description = buildDescription(recordUpdate, "删除");
-            updateRecordService.logDelete(oldEntity, operator, description);
+            updateRecordService.logDelete(
+                    oldEntity.getClass().getSimpleName(),
+                    oldEntity.getId(),
+                    oldEntity.get__name__(),
+                    operator,
+                    description,
+                    serializeToJsonStr(processedOldFields)
+            );
         }
 
         return result;
     }
-    
+
     /**
      * 处理批量拷贝操作
      */
@@ -213,7 +229,7 @@ public class UpdateRecordAspect {
 
         // 获取最新版本号
         Long version = getLatestVersionFromResult(result);
-        
+
         // 记录批量拷贝操作
         String operator = getCurrentUser();
         String description = buildDescription(recordUpdate, "批量拷贝");
@@ -221,7 +237,7 @@ public class UpdateRecordAspect {
 
         return result;
     }
-    
+
     /**
      * 处理批量发布操作
      */
@@ -231,7 +247,7 @@ public class UpdateRecordAspect {
 
         // 获取最新版本号
         Long version = getLatestVersionFromResult(result);
-        
+
         // 记录批量发布操作
         String operator = getCurrentUser();
         String description = buildDescription(recordUpdate, "批量发布");
@@ -239,7 +255,7 @@ public class UpdateRecordAspect {
 
         return result;
     }
-    
+
     /**
      * 从批量操作结果中获取最新版本号
      */
@@ -270,25 +286,25 @@ public class UpdateRecordAspect {
         }
         return null;
     }
-    
+
     /**
      * 从方法参数中提取旧实体状态
      */
     private BaseEntity extractOldEntityFromArgs(ProceedingJoinPoint joinPoint, Object[] args) {
         // 获取目标对象
         Object target = joinPoint.getTarget();
-        
+
         // 如果有参数且第一个参数是Long类型，假设为ID参数
         if (args.length > 0 && args[0] instanceof Long) {
             Long id = (Long) args[0];
-            
+
             // 获取目标类名
             String className = target.getClass().getSimpleName();
-            
+
             try {
                 // 根据类名确定要调用的方法
                 String methodName = determineMethodNameByClassName(className);
-                
+
                 // 如果无法确定方法名，返回null
                 if (methodName == null) {
                     return null;
@@ -336,6 +352,9 @@ public class UpdateRecordAspect {
         return "system";
     }
 
+    /**
+     * 计算对象的哈希值
+     */
     private String computeHash(Object entity) {
         try {
             String input = Optional.ofNullable(entity).map(Object::toString).orElse("");
@@ -355,7 +374,7 @@ public class UpdateRecordAspect {
             return "hash_error";
         }
     }
-    
+
     /**
      * 根据类名确定要调用的方法名
      */
@@ -367,20 +386,20 @@ public class UpdateRecordAspect {
             case "MaterialServiceImpl":
                 return "getMaterialById";
             case "ApprovalProcessDiagramServiceImpl":
-                return "getApprovalProcessDiagramById";
+                return "getDiagramById";
             case "BusinessProcessDiagramServiceImpl":
-                return "getBusinessProcessDiagramById";
+                return "getDiagramById";
             default:
                 return null;
         }
     }
-    
+
     /**
-     * 提取实体字段值
+     * 处理实体字段用于日志记录，应用哈希和过滤规则
      */
-    private Map<String, Object> extractEntityFields(BaseEntity entity) {
+    private Map<String, Object> processEntityFieldsForLogging(BaseEntity entity) {
         Map<String, Object> fieldValues = new HashMap<>();
-        
+
         // 获取所有声明的字段（包括父类字段）
         List<Field> fields = new ArrayList<>();
         Class<?> clazz = entity.getClass();
@@ -388,18 +407,40 @@ public class UpdateRecordAspect {
             fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
             clazz = clazz.getSuperclass();
         }
-        
+
         // 遍历字段并获取值
         for (Field field : fields) {
             try {
                 field.setAccessible(true);
                 Object value = field.get(entity);
-                fieldValues.put(field.getName(), value);
+
+                // 对需要哈希处理的字段进行哈希处理
+                if (HASH_FIELDS.contains(field.getName())) {
+                    fieldValues.put(field.getName(), computeHash(value));
+                } else {
+                    fieldValues.put(field.getName(), value);
+                }
             } catch (IllegalAccessException e) {
                 logger.warning("无法访问字段: " + field.getName());
             }
         }
-        
+
         return fieldValues;
+    }
+
+    /**
+     * 序列化对象为JSON字符串
+     */
+    private String serializeToJsonStr(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (Exception e) {
+            logger.warning("序列化对象时出错: " + e.getMessage());
+            return obj.toString();
+        }
     }
 }

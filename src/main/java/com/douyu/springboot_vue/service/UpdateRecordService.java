@@ -15,25 +15,22 @@ public interface UpdateRecordService {
     /**
      * 记录实体创建操作
      */
-    UpdateRecord logCreate(BaseEntity entity, String operator, String description);
+    UpdateRecord logCreate(String entityType, Long entityId, String entityName,
+                           String operator, String description, String afterData);
 
     /**
-     * 记录实体更新操作（完整实体）
-     */
-    UpdateRecord logUpdate(BaseEntity oldEntity, BaseEntity newEntity, String operator, String description);
-
-    /**
-     * 记录实体更新操作（仅变更字段）
+     * 记录实体更新操作
      */
     UpdateRecord logUpdate(String entityType, Long entityId, String entityName,
-                           Map<String, Object> oldValues, Map<String, Object> newValues,
+                           String beforeData, String afterData,
                            String operator, String description);
 
     /**
      * 记录实体删除操作
      */
-    UpdateRecord logDelete(BaseEntity entity, String operator, String description);
-    
+    UpdateRecord logDelete(String entityType, Long entityId, String entityName,
+                           String operator, String description, String beforeData);
+
     /**
      * 记录批量拷贝操作
      */
@@ -73,15 +70,15 @@ public interface UpdateRecordService {
      * 根据操作用户获取更新记录
      */
     List<UpdateRecord> findUpdateRecordsByOperator(String operator);
-    
+
     /**
      * 根据实体ID获取更新记录
      */
     List<UpdateRecord> findUpdateRecordsByEntityId(Long entityId);
-    
+
     /**
      * 根据过滤条件和排序条件获取更新记录
      */
-    List<UpdateRecord> findUpdateRecordsWithFilters(String entityName, String entityType, 
-                                                   String operationType, String sortBy, String sortDirection);
+    List<UpdateRecord> findUpdateRecordsWithFilters(String entityName, String entityType,
+                                                    String operationType, String sortBy, String sortDirection);
 }
