@@ -407,6 +407,19 @@ export default {
       // 重新获取数据确保列表是最新的
       this.fetchMaterials();
     },
+    
+    // 添加显示指定材料详情的方法
+    async showMaterialDetail(materialId) {
+      try {
+        // 获取材料详情
+        const material = await materialService.getMaterialById(materialId);
+        // 设置为选中的材料，触发详情视图
+        this.selectedMaterial = material;
+      } catch (error) {
+        console.error('获取材料详情失败:', error);
+        alert('获取材料详情失败: ' + (error.message || '未知错误'));
+      }
+    },
 
     // 排序功能
     sortMaterials(materials) {

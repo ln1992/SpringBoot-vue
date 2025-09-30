@@ -3,19 +3,32 @@
   <div class="update-record-detail-container">
     <div class="header">
       <h2>更新记录详情</h2>
-      <button class="api-btn" @click="openApiUrl" title="查看API数据">API</button>
+      <div class="header-actions">
+        <button class="api-btn" @click="openApiUrl" title="查看API数据">API</button>
+        <button
+          v-if="canNavigateToEntity(record.entityType, record.entityId)"
+          class="navigate-btn"
+          @click="navigateToEntity(record.entityType, record.entityId)"
+          title="跳转到相关实体">
+          跳转到实体
+        </button>
+      </div>
     </div>
 
     <div class="update-record-detail-content">
       <form @submit.prevent="handleSubmit">
         <BasicInfo
-          :record="record" />
+          :record="record"
+          @navigate-to-entity="navigateToEntity" />
 
         <OperationInfo
           :record="record" />
 
         <DataInfo
-          :record="record" />
+          :record="record"
+          @navigate-to-material-detail="navigateToMaterialDetail"
+          @navigate-to-approval-diagram-detail="navigateToApprovalDiagramDetail"
+          @navigate-to-business-diagram-detail="navigateToBusinessDiagramDetail" />
 
         <TimeInfo
           :record="record" />
@@ -65,8 +78,64 @@ export default {
         const apiUrl = `${window.location.origin}/api/update-records/${this.record.id}`;
         window.open(apiUrl, '_blank');
       } else {
-        alert('记录ID不存在，无法打开API链接');
+        this.$message({
+          message: '记录ID不存在，无法打开API链接',
+          type: 'warning'
+        });
       }
+    },
+
+    // 判断是否可以跳转到实体
+    canNavigateToEntity(entityType, entityId) {
+      return entityType && entityId && !isNaN(entityId);
+    },
+
+    // 跳转到实体详情
+    navigateToEntity(entityType, entityId) {
+      if (!this.canNavigateToEntity(entityType, entityId)) {
+        return;
+      }
+
+      const entityIdNum = parseInt(entityId);
+
+      switch (entityType) {
+        case 'Material':
+          // 跳转到材料详情
+          this.$router.push({ name: 'MaterialDetail', params: { id: entityIdNum } });
+          break;
+        case 'Matter':
+          // 跳转到事项详情
+          this.$router.push({ name: 'MatterDetail', params: { id: entityIdNum } });
+          break;
+        case 'ApprovalProcessDiagram':
+          // 跳转到审批流程图详情
+          this.$router.push({ name: 'ApprovalDiagramDetail', params: { id: entityIdNum } });
+          break;
+        case 'BusinessProcessDiagram':
+          // 跳转到业务流程图详情
+          this.$router.push({ name: 'BusinessDiagramDetail', params: { id: entityIdNum } });
+          break;
+        default:
+          this.$message({
+            message: '不支持的实体类型',
+            type: 'warning'
+          });
+      }
+    },
+
+    // 跳转到材料详情
+    navigateToMaterialDetail(materialId) {
+      this.$router.push({ name: 'MaterialDetail', params: { id: materialId } });
+    },
+
+    // 跳转到审批流程图详情
+    navigateToApprovalDiagramDetail(diagramId) {
+      this.$router.push({ name: 'ApprovalDiagramDetail', params: { id: diagramId } });
+    },
+
+    // 跳转到业务流程图详情
+    navigateToBusinessDiagramDetail(diagramId) {
+      this.$router.push({ name: 'BusinessDiagramDetail', params: { id: diagramId } });
     }
   }
 }
@@ -93,7 +162,12 @@ export default {
   margin: 0;
 }
 
-.api-btn {
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.api-btn, .navigate-btn {
   background-color: #409eff;
   color: white;
   border: none;
@@ -103,7 +177,7 @@ export default {
   font-size: 14px;
 }
 
-.api-btn:hover {
+.api-btn:hover, .navigate-btn:hover {
   background-color: #337ecc;
 }
 
@@ -125,6 +199,11 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 </style>

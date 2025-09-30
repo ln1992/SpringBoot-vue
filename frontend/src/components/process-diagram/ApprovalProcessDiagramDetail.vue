@@ -411,6 +411,11 @@ export default {
     // 处理查看更新记录事件
     handleViewRecord(record) {
       this.selectedUpdateRecord = record;
+    },
+
+    // 添加 resetToListView 方法，用于从 App.vue 中调用返回列表视图
+    resetToListView() {
+      this.$emit('back');
     }
   }
 };

@@ -1,4 +1,4 @@
-<!-- src/components/UpdateRecord/UpdateRecordList.vue -->
+<!-- src/components/update-record/UpdateRecordList.vue -->
 <template>
   <div class="update-record-list-container">
     <!-- 更新记录列表界面 -->
@@ -71,7 +71,7 @@
       <!-- 更新记录表格 -->
       <div class="records-table" v-else>
         <div class="table-header">
-          <div class="table-cell sortable" @click="sort('createdTime')">
+          <div class="table-cell sortable" @click="sort('id')">
             ID
             <span v-if="sortBy === 'id'">
               {{ sortDirection === 'asc' ? '↑' : '↓' }}
@@ -110,7 +110,10 @@
           :key="record.id"
         >
           <div class="table-cell record-id" @click="selectRecord(record)">{{ record.id }}</div>
-          <div class="table-cell" @click="selectRecord(record)">
+          <div
+            class="table-cell entity-name"
+            @click="selectRecord(record)"
+          >
             {{ record.entityName || '-' }}
           </div>
           <div class="table-cell">{{ record.entityId }}</div>
@@ -124,14 +127,14 @@
       <!-- 分页控件 -->
       <div class="pagination" v-if="paginatedRecords.length > 0 && !hidePagination">
         <div class="pagination-controls">
-          <button 
-            :disabled="currentPage === 1" 
+          <button
+            :disabled="currentPage === 1"
             @click="currentPage > 1 && (currentPage--)">
             上一页
           </button>
           <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页 (总计 {{ filteredRecords.length }} 条)</span>
-          <button 
-            :disabled="currentPage === totalPages" 
+          <button
+            :disabled="currentPage === totalPages"
             @click="currentPage < totalPages && (currentPage++)">
             下一页
           </button>
@@ -149,7 +152,7 @@
     </div>
 
     <!-- 更新记录详情界面 -->
-    <UpdateRecordDetail 
+    <UpdateRecordDetail
       v-else-if="selectedRecord"
       :record="selectedRecord"
       @back="goBackToList"
@@ -228,195 +231,124 @@ export default {
     this.fetchRecords()
   },
   methods: {
-    // 查看记录详情，在当前页面中显示
-    selectRecord(record) {
-      console.log('点击记录:', record);
-      this.selectedRecord = record;
-      console.log('设置selectedRecord后:', this.selectedRecord);
-    },
-
-    // 返回列表视图
-    goBackToList() {
-      this.selectedRecord = null;
-      // 如果当前组件嵌套在其他组件中，同时通知父组件
-      this.$emit('back-to-list');
-    },
-
     async fetchRecords() {
-      this.loading = true
-      this.error = null
+      this.loading = true;
+      this.error = null;
       try {
-        let url = '/update-records';
-        const params = {};
-        
-        // 如果提供了filterEntityId，则使用专门的API端点获取记录
-        if (this.filterEntityId) {
-          url = `/update-records/entity-id/${this.filterEntityId}`;
-        } else {
-          // 添加过滤和排序参数
-          if (this.searchKeyword) {
-            params.entityName = this.searchKeyword;
-          }
-          
-          if (this.effectiveFilterEntityType) {
-            params.entityType = this.effectiveFilterEntityType;
-          }
-          
-          if (this.filterOperationType) {
-            params.operationType = this.filterOperationType;
-          }
-          
-          params.sortBy = this.sortBy;
-          params.sortDirection = this.sortDirection;
-        }
-        
-        const response = await api.http.get(url, { params });
-        this.records = response.data;
-        
-        this.filterRecords()
-      } catch (err) {
-        console.error('获取更新记录失败:', err)
-        this.error = err.message || '获取更新记录失败'
+        const response = await api.updateRecordService.getAllUpdateRecords();
+        this.records = response.data || response;
+        this.filterRecords();
+      } catch (error) {
+        console.error('获取更新记录失败:', error);
+        this.error = error.message || '网络错误';
+        this.records = [];
+        this.filteredRecords = [];
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 
     filterRecords() {
-      this.filteredRecords = this.records.filter(record => {
-        // 实体类型筛选 - 支持新的流程图类型
-        if (this.effectiveFilterEntityType) {
-          // 特殊处理流程图类型
-          if (this.effectiveFilterEntityType === 'ApprovalProcessDiagram' && record.entityType !== 'ApprovalProcessDiagram') {
-            return false;
-          }
-          if (this.effectiveFilterEntityType === 'BusinessProcessDiagram' && record.entityType !== 'BusinessProcessDiagram') {
-            return false;
-          }
-          // 处理其他类型
-          if (this.effectiveFilterEntityType !== 'ApprovalProcessDiagram' && 
-              this.effectiveFilterEntityType !== 'BusinessProcessDiagram' && 
-              record.entityType !== this.effectiveFilterEntityType) {
-            return false;
-          }
-        }
+      let result = [...this.records];
 
-        // 实体ID筛选
-        if (this.filterEntityId && record.entityId !== this.filterEntityId) {
-          return false;
-        }
-
-        // 操作类型筛选
-        if (this.filterOperationType && record.operationType !== this.filterOperationType) {
-          return false;
-        }
-
-        // 关键词搜索
-        if (this.searchKeyword && !this.filterEntityId) {
-          const keyword = this.searchKeyword.toLowerCase();
-          const entityName = (record.entityName || '').toLowerCase();
-          if (!entityName.includes(keyword)) {
-            return false;
-          }
-        }
-
-        return true;
-      });
-
-      // 重置到第一页
-      this.currentPage = 1;
-    },
-
-    getOperationTypeLabel(operationType) {
-      const labels = {
-        'CREATE': '创建',
-        'UPDATE': '更新',
-        'DELETE': '删除',
-        'BATCH_COPY': '批量拷贝',
-        'BATCH_PUBLISH': '批量发布'
-      }
-      return labels[operationType] || operationType
-    },
-
-    formatDate(dateString) {
-      if (!dateString) return '-'
-      const date = new Date(dateString)
-      return date.toLocaleString('zh-CN')
-    },
-
-    // 删除记录
-    async deleteRecord(id) {
-      if (!confirm('确定要删除这条更新记录吗？此操作不可恢复。')) {
-        return;
+      // 应用实体类型筛选
+      if (this.localFilterEntityType) {
+        result = result.filter(record => record.entityType === this.localFilterEntityType);
       }
 
-      try {
-        await api.http.delete(`/update-records/${id}`);
-        // 删除成功后刷新列表
-        await this.fetchRecords();
-        alert('删除成功');
-      } catch (err) {
-        console.error('删除记录失败:', err);
-        if (err.response) {
-          if (err.response.status === 404) {
-            alert('记录不存在');
-          } else if (err.response.status === 500) {
-            alert('服务器内部错误，请稍后重试');
+      // 应用操作类型筛选
+      if (this.filterOperationType) {
+        result = result.filter(record => record.operationType === this.filterOperationType);
+      }
+
+      // 应用搜索关键词
+      if (this.searchKeyword) {
+        const keyword = this.searchKeyword.toLowerCase();
+        result = result.filter(record =>
+          (record.entityName && record.entityName.toLowerCase().includes(keyword)) ||
+          (record.description && record.description.toLowerCase().includes(keyword))
+        );
+      }
+
+      // 应用实体ID筛选
+      if (this.filterEntityId) {
+        result = result.filter(record => record.entityId == this.filterEntityId);
+      }
+
+      // 应用排序
+      if (this.sortBy && this.sortDirection) {
+        result.sort((a, b) => {
+          let valueA = a[this.sortBy];
+          let valueB = b[this.sortBy];
+
+          // 处理日期字段
+          if (this.sortBy === 'createdTime') {
+            valueA = new Date(valueA).getTime();
+            valueB = new Date(valueB).getTime();
+          }
+
+          // 处理null值
+          if (valueA == null && valueB == null) return 0;
+          if (valueA == null) return this.sortDirection === 'asc' ? -1 : 1;
+          if (valueB == null) return this.sortDirection === 'asc' ? 1 : -1;
+
+          // 比较值
+          let comparison = 0;
+          if (typeof valueA === 'string' && typeof valueB === 'string') {
+            comparison = valueA.localeCompare(valueB);
           } else {
-            var message = '未知错误';
-            if (err.response.data && err.response.data.message) {
-              message = err.response.data.message;
-            } else if (err.response.statusText) {
-              message = err.response.statusText;
-            }
-            alert('删除失败: ' + message);
+            comparison = valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
           }
-        } else {
-          alert('删除失败: 网络错误或服务器无响应');
-        }
+
+          return this.sortDirection === 'asc' ? comparison : -comparison;
+        });
       }
+
+      this.filteredRecords = result;
+      this.currentPage = 1; // 重置到第一页
     },
 
-    // 上一页
-    prevPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--
-        window.scrollTo(0, 0)
-      }
+    selectRecord(record) {
+      this.selectedRecord = record;
     },
 
-    // 下一页
-    nextPage() {
-      if (this.currentPage < this.totalPages) {
-        this.currentPage++
-        window.scrollTo(0, 0)
-      }
-    },
-
-    // 改变每页显示数量
-    handlePageSizeChange() {
-      // 重置到第一页
-      this.currentPage = 1
-      // 滚动到顶部
-      window.scrollTo(0, 0)
-    },
-
-    // 添加resetToListView方法，用于从App.vue中调用返回列表视图
-    resetToListView() {
+    goBackToList() {
       this.selectedRecord = null;
     },
-    
-    getEntityTypeLabel(entityType) {
-      const labels = {
+
+    getEntityTypeLabel(type) {
+      const typeMap = {
         'Material': '材料',
         'Matter': '事项',
         'ApprovalProcessDiagram': '审批流程图',
         'BusinessProcessDiagram': '业务经办流程图'
       };
-      return labels[entityType] || entityType;
+      return typeMap[type] || type;
     },
-    
-    // 排序功能
+
+    getOperationTypeLabel(type) {
+      const typeMap = {
+        'CREATE': '创建',
+        'UPDATE': '更新',
+        'DELETE': '删除',
+        'BATCH_COPY': '批量拷贝',
+        'BATCH_PUBLISH': '批量发布'
+      };
+      return typeMap[type] || type;
+    },
+
+    formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    },
+
     sort(field) {
       if (this.sortBy === field) {
         // 如果当前已经是这个字段，则切换排序方向
@@ -426,22 +358,20 @@ export default {
         this.sortBy = field;
         this.sortDirection = 'desc';
       }
+      this.filterRecords();
+    },
+
+    handlePageSizeChange() {
+      this.currentPage = 1;
+      this.filterRecords();
+    },
+
+    resetToListView() {
+      this.selectedRecord = null;
       this.fetchRecords();
     }
-  },
-  watch: {
-    filterEntityType: {
-      handler() {
-        this.filterRecords();
-      }
-    },
-    filterEntityId: {
-      handler() {
-        this.filterRecords();
-      }
-    }
   }
-}
+};
 </script>
 
 <style scoped>
@@ -569,9 +499,8 @@ export default {
 }
 
 .entity-name {
-  color: #1890ff;
+  color: #333;
   cursor: pointer;
-  text-decoration: underline;
 }
 
 .entity-name:hover {
@@ -647,34 +576,34 @@ export default {
   .update-record-list-container {
     padding: 10px;
   }
-  
+
   .header {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
-  
+
   .filter-section {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .filter-group,
   .search-group,
   .sort-group {
     width: 100%;
   }
-  
+
   .filter-group select,
   .search-group input,
   .sort-group select {
     flex: 1;
   }
-  
+
   .pagination {
     flex-direction: column;
   }
-  
+
   .table-cell {
     padding: 8px 10px;
     font-size: 14px;

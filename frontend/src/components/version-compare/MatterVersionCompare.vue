@@ -144,7 +144,7 @@
                   class="field-item"
                 >
                   <span class="field-label">{{ getFieldLabel(field) }}:</span>
-                  <span class="field-value">{{ formatFieldValue(field, value) }}</span>
+                  <span class="field-value" v-html="formatFieldValue(field, value)"></span>
                 </div>
                 <div v-if="isEmpty(getDetailData('old'))" class="no-diff">
                   无差异字段
@@ -175,7 +175,7 @@
                   class="field-item"
                 >
                   <span class="field-label">{{ getFieldLabel(field) }}:</span>
-                  <span class="field-value">{{ formatFieldValue(field, value) }}</span>
+                  <span class="field-value" v-html="formatFieldValue(field, value)"></span>
                 </div>
                 <div v-if="isEmpty(getDetailData('new'))" class="no-diff">
                   无差异字段
@@ -241,6 +241,17 @@ export default {
   async mounted() {
     await this.loadAvailableVersions();
     this.autoSelectLatestVersions();
+
+    // 添加全局方法，供innerHTML中的onclick使用
+    window.goToMaterialDetail = this.goToMaterialDetail.bind(this);
+    window.goToApprovalDiagramDetail = this.goToApprovalDiagramDetail.bind(this);
+    window.goToBusinessDiagramDetail = this.goToBusinessDiagramDetail.bind(this);
+  },
+  beforeDestroy() {
+    // 清理全局方法
+    delete window.goToMaterialDetail;
+    delete window.goToApprovalDiagramDetail;
+    delete window.goToBusinessDiagramDetail;
   },
 
   methods: {
@@ -277,7 +288,7 @@ export default {
         const versions = await MatterService.getAllVersions();
 
         // 确保版本号是数字类型并按降序排列
-        const numericVersions = versions
+        var numericVersions = versions
           .map(function(v) { return typeof v === 'string' ? parseFloat(v) : v; })
           .filter(function(v) { return !isNaN(v); });
 
@@ -293,11 +304,11 @@ export default {
 
     autoSelectLatestVersions() {
       if (this.availableVersions.length >= 2) {
-        const numericVersions = this.availableVersions
+        var numericVersions = this.availableVersions
           .map(function(v) { return parseFloat(v); })
           .filter(function(v) { return !isNaN(v); });
 
-        const sortedVersions = numericVersions.sort(function(a, b) { return b - a; });
+        var sortedVersions = numericVersions.sort(function(a, b) { return b - a; });
 
         if (sortedVersions.length >= 2) {
           this.oldVersion = sortedVersions[1];
@@ -328,14 +339,14 @@ export default {
         this.detailData = null;
 
         console.log('开始对比版本 ' + this.oldVersion + ' 和 ' + this.newVersion);
-        const startTime = performance.now();
+        var startTime = performance.now();
 
-        const result = await MatterToolsService.compareVersions(
+        var result = await MatterToolsService.compareVersions(
           parseInt(this.oldVersion),
           parseInt(this.newVersion)
         );
 
-        const endTime = performance.now();
+        var endTime = performance.now();
         console.log('API调用耗时: ' + (endTime - startTime) + ' 毫秒');
 
         // 确保结果是数组格式
@@ -379,7 +390,7 @@ export default {
 
         console.log('获取详细对比信息: oldMatterId=' + item.oldMatterId + ', newMatterId=' + item.newMatterId);
 
-        const detailResult = await MatterToolsService.compareMatters(
+        var detailResult = await MatterToolsService.compareMatters(
           item.oldMatterId,
           item.newMatterId
         );
@@ -402,7 +413,34 @@ export default {
     goToMatterDetail(matterId) {
       if (matterId && matterId !== '无') {
         // 在新窗口中打开事项详情页面
-        const url = `#/matters/${matterId}`;
+        var url = window.location.origin + window.location.pathname + '#/matters/' + matterId;
+        window.open(url, '_blank');
+      }
+    },
+
+    // 新增方法：跳转到材料详情
+    goToMaterialDetail(materialId) {
+      if (materialId) {
+        // 在新窗口中打开材料详情页面
+        var url = window.location.origin + window.location.pathname + '#/materials/' + materialId;
+        window.open(url, '_blank');
+      }
+    },
+
+    // 新增方法：跳转到审批流程图详情
+    goToApprovalDiagramDetail(diagramId) {
+      if (diagramId) {
+        // 在新窗口中打开审批流程图详情页面
+        var url = window.location.origin + window.location.pathname + '#/approval-diagrams/' + diagramId;
+        window.open(url, '_blank');
+      }
+    },
+
+    // 新增方法：跳转到业务流程图详情（修复URL路径）
+    goToBusinessDiagramDetail(diagramId) {
+      if (diagramId) {
+        // 修复URL路径，从approval-diagrams改为business-diagrams
+        var url = window.location.origin + window.location.pathname + '#/business-diagrams/' + diagramId;
         window.open(url, '_blank');
       }
     },
@@ -416,28 +454,28 @@ export default {
     getStatusText(status) {
       if (!status) return '未知';
 
-      const statusMap = {
+      var statusMap = {
         'ADDED': '新增',
         'DELETED': '删除',
         'MODIFIED': '修改',
         'UNCHANGED': '未变更'
       };
 
-      const upperStatus = String(status).toUpperCase();
+      var upperStatus = String(status).toUpperCase();
       return statusMap[upperStatus] || status;
     },
 
     getStatusClass(status) {
       if (!status) return 'status-unknown';
 
-      const classMap = {
+      var classMap = {
         'ADDED': 'status-added',
         'DELETED': 'status-deleted',
         'MODIFIED': 'status-modified',
         'UNCHANGED': 'status-unchanged'
       };
 
-      const upperStatus = String(status).toUpperCase();
+      var upperStatus = String(status).toUpperCase();
       return classMap[upperStatus] || 'status-unknown';
     },
 
@@ -446,7 +484,7 @@ export default {
     },
 
     getFieldLabel(field) {
-      const fieldLabels = {
+      var fieldLabels = {
         'mainItemCode': '主项编码',
         'subItemCode': '子项编码',
         'grandchildItemCode': '孙项编码',
@@ -476,6 +514,51 @@ export default {
 
       if (field === 'valid' || field === 'publish') {
         return value ? '是' : '否';
+      }
+
+      // 特殊处理审批层级字段
+      if (field === 'approvalLevel') {
+        var approvalLevels = {
+          'PROVINCIAL': '省级',
+          'PROVINCIAL_MUNICIPAL': '省市两级',
+          'PROVINCIAL_MUNICIPAL_COUNTY': '省市县三级',
+          'MUNICIPAL': '设区的市',
+          'MUNICIPAL_COUNTY': '市县两级',
+          'COUNTY': '县级'
+        };
+        return approvalLevels[value] || value;
+      }
+
+      // 特殊处理省厅对口指导处室字段
+      if (field === 'provincialDepartmentOffice') {
+        var provincialOffices = {
+          'PROVINCIAL_DEPARTMENT_POLICY_REGULATIONS': '厅政策法规处',
+          'PROVINCIAL_DEPARTMENT_ADMINISTRATIVE_APPROVAL': '厅行政审批处',
+          'PROVINCIAL_DEPARTMENT_TRANSPORTATION_MANAGEMENT': '厅运输管理处',
+          'PROVINCIAL_PORT_CENTER_CONSTRUCTION': '省港航中心建设处',
+          'PROVINCIAL_PORT_CENTER_MANAGEMENT': '省港航中心管理处',
+          'PROVINCIAL_HIGHWAY_CENTER_CONSTRUCTION': '省公路中心建设处',
+          'PROVINCIAL_HIGHWAY_CENTER_MAINTENANCE': '省公路中心养护处'
+        };
+        return provincialOffices[value] || value;
+      }
+
+      // 特殊处理materialIds字段，添加跳转链接
+      if (field === 'materialIds' && Array.isArray(value) && value.length > 0) {
+        var materialLinks = value.map(function(id) {
+          // 为每个材料ID创建跳转链接
+          return '<a href="javascript:void(0)" onclick="window.goToMaterialDetail(' + id + ')">' + id + '</a>';
+        });
+        return materialLinks.join(', ');
+      }
+
+      // 特殊处理流程图ID字段
+      if (field === 'approvalProcessDiagramId' && value) {
+        return '<a href="javascript:void(0)" onclick="window.goToApprovalDiagramDetail(' + value + ')">' + value + '</a>';
+      }
+
+      if (field === 'businessProcessDiagramId' && value) {
+        return '<a href="javascript:void(0)" onclick="window.goToBusinessDiagramDetail(' + value + ')">' + value + '</a>';
       }
 
       return String(value);

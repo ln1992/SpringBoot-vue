@@ -179,14 +179,14 @@
       <!-- 分页控件 -->
       <div class="pagination" v-if="paginatedDiagrams.length > 0">
         <div class="pagination-controls">
-          <button 
-            :disabled="currentPage === 1" 
+          <button
+            :disabled="currentPage === 1"
             @click="currentPage > 1 && (currentPage--)">
             上一页
           </button>
           <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页 (总计 {{ filteredDiagrams.length }} 条)</span>
-          <button 
-            :disabled="currentPage === totalPages" 
+          <button
+            :disabled="currentPage === totalPages"
             @click="currentPage < totalPages && (currentPage++)">
             下一页
           </button>
@@ -275,7 +275,7 @@ export default {
           }
           return diagram;
         });
-        
+
         // 初始化过滤后的数据
         this.filterDiagrams();
       } catch (error) {
@@ -285,7 +285,7 @@ export default {
         this.loading = false;
       }
     },
-    
+
     async fetchVersions() {
       try {
         this.versions = await processDiagramService.getApprovalProcessDiagramVersions();
@@ -328,7 +328,7 @@ export default {
 
       // 应用排序
       this.sortDiagrams(result);
-      
+
       this.filteredDiagrams = result;
       // 重置到第一页
       this.currentPage = 1;
@@ -381,7 +381,7 @@ export default {
     async deleteDiagram(diagramId) {
       // 查找要删除的流程图
       const diagram = this.diagrams.find(d => d.id === diagramId);
-      
+
       // 检查流程图是否已下线，只有已下线的流程图才能删除
       if (diagram && diagram.valid) {
         alert('只能删除已下线的审批流程图，请先下线该流程图再删除。');
@@ -410,33 +410,58 @@ export default {
     resetToListView() {
       this.selectedDiagram = null;
     },
-    
+
+    // 增强显示指定流程图详情的方法
+    async showDiagramDetail(diagramId) {
+      if (!diagramId) return;
+
+      try {
+        console.log('尝试获取审批流程图详情，ID:', diagramId);
+        // 获取流程图详情
+        const diagram = await processDiagramService.getApprovalProcessDiagramById(diagramId);
+        console.log('获取到的审批流程图详情:', diagram);
+        // 设置为选中的流程图，触发详情视图
+        this.selectedDiagram = diagram;
+
+        // 为流程图添加数据URL以便预览
+        if (diagram.imageData) {
+          // 创建数据URL用于图片预览
+          const imageData = new Uint8Array(diagram.imageData.data);
+          const blob = new Blob([imageData], { type: this.getImageMimeType(diagram.imageType) });
+          diagram.imageDataUrl = URL.createObjectURL(blob);
+        }
+      } catch (error) {
+        console.error('获取审批流程图详情失败:', error);
+        alert('获取审批流程图详情失败: ' + (error.message || '未知错误'));
+      }
+    },
+
     // 排序功能
     sortDiagrams(diagrams) {
       const field = this.sortBy;
       const direction = this.sortDirection;
-      
+
       diagrams.sort((a, b) => {
         let valueA = a[field];
         let valueB = b[field];
-        
+
         // 特殊处理名称字段
         if (field === '__name__') {
           valueA = a.__name__ || a.imageName || '';
           valueB = b.__name__ || b.imageName || '';
         }
-        
+
         // 处理日期字段
         if (field === 'createdTime') {
           valueA = new Date(a.createdTime).getTime();
           valueB = new Date(b.createdTime).getTime();
         }
-        
+
         // 处理null或undefined值
         if (valueA == null && valueB == null) return 0;
         if (valueA == null) return direction === 'asc' ? -1 : 1;
         if (valueB == null) return direction === 'asc' ? 1 : -1;
-        
+
         // 比较值
         let comparison = 0;
         if (typeof valueA === 'string' && typeof valueB === 'string') {
@@ -444,11 +469,11 @@ export default {
         } else {
           comparison = valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
         }
-        
+
         return direction === 'asc' ? comparison : -comparison;
       });
     },
-    
+
     // 点击列标题排序
     sort(field) {
       if (this.sortBy === field) {
@@ -461,7 +486,7 @@ export default {
       }
       this.filterDiagrams();
     },
-    
+
     // 格式化日期显示
     formatDate(dateString) {
       if (!dateString) return '';
@@ -828,7 +853,7 @@ button {
     justify-content: center;
     text-align: center;
   }
-  
+
   /* 在小屏幕上调整列宽 */
   .table-cell:nth-child(1) { flex: 0 0 40px; }
   .table-cell:nth-child(2) { flex: 1; min-width: 100px; }

@@ -708,6 +708,19 @@ export default {
       this.currentPage = 1;
       // 重新获取数据确保列表是最新的
       this.fetchMatters();
+    },
+    
+    // 添加显示指定事项详情的方法
+    async showMatterDetail(matterId) {
+      try {
+        // 获取事项详情
+        const matter = await matterService.getMatterById(matterId);
+        // 设置为选中的事项，触发详情视图
+        this.selectedMatter = matter;
+      } catch (error) {
+        console.error('获取事项详情失败:', error);
+        alert('获取事项详情失败: ' + (error.message || '未知错误'));
+      }
     }
   },
   watch: {
