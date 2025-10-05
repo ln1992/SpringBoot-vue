@@ -5,6 +5,7 @@ import com.douyu.springboot_vue.aop.annotation.RecordUpdate;
 import com.douyu.springboot_vue.entities.BaseEntity;
 import com.douyu.springboot_vue.service.UpdateRecordService;
 import com.douyu.springboot_vue.util.ObjectCompareUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
