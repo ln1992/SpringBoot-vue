@@ -1,5 +1,6 @@
 package com.douyu.springboot_vue.service.impl;
 
+import com.douyu.springboot_vue.aop.annotation.RecordUpdate;
 import com.douyu.springboot_vue.entities.Clothing;
 import com.douyu.springboot_vue.entities.ClothingStockRecord;
 import com.douyu.springboot_vue.repository.ClothingRepository;
@@ -30,6 +31,19 @@ public class ClothingServiceImpl implements ClothingService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.CREATE, description = "创建服装")
+    public Clothing createClothing(Clothing clothing) {
+        return clothingRepository.save(clothing);
+    }
+
+    @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "更新服装")
+    public Clothing updateClothing(Long id, Clothing clothing) {
+        clothing.setId(id);
+        return clothingRepository.save(clothing);
+    }
+
+    @Override
     public List<Clothing> getAllClothings() {
         return clothingRepository.findAll();
     }
@@ -40,16 +54,13 @@ public class ClothingServiceImpl implements ClothingService {
     }
 
     @Override
-    public Clothing saveClothing(Clothing clothing) {
-        return clothingRepository.save(clothing);
-    }
-
-    @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.DELETE, description = "删除服装")
     public void deleteClothing(Long id) {
         clothingRepository.deleteById(id);
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "上线服装")
     public void activateClothing(Long id) {
         Optional<Clothing> clothingOpt = clothingRepository.findById(id);
         if (clothingOpt.isPresent()) {
@@ -60,6 +71,7 @@ public class ClothingServiceImpl implements ClothingService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "下线服装")
     public void deactivateClothing(Long id) {
         Optional<Clothing> clothingOpt = clothingRepository.findById(id);
         if (clothingOpt.isPresent()) {
@@ -70,6 +82,7 @@ public class ClothingServiceImpl implements ClothingService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "服装入库")
     public boolean inboundClothing(Long clothingId, Clothing.Size size, Long quantity, String operator) {
         Optional<Clothing> clothingOpt = clothingRepository.findById(clothingId);
         if (clothingOpt.isPresent()) {
@@ -105,6 +118,7 @@ public class ClothingServiceImpl implements ClothingService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "服装出库")
     public boolean outboundClothing(Long clothingId, Clothing.Size size, Long quantity, String operator) {
         Optional<Clothing> clothingOpt = clothingRepository.findById(clothingId);
         if (clothingOpt.isPresent()) {
@@ -140,6 +154,7 @@ public class ClothingServiceImpl implements ClothingService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "服装批量入库")
     public boolean inboundClothingBatch(Long clothingId, Map<Clothing.Size, Long> sizeQuantities, String operator) {
         Optional<Clothing> clothingOpt = clothingRepository.findById(clothingId);
         if (clothingOpt.isPresent()) {
@@ -194,6 +209,7 @@ public class ClothingServiceImpl implements ClothingService {
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "服装批量出库")
     public boolean outboundClothingBatch(Long clothingId, Map<Clothing.Size, Long> sizeQuantities, String operator) {
         Optional<Clothing> clothingOpt = clothingRepository.findById(clothingId);
         if (clothingOpt.isPresent()) {

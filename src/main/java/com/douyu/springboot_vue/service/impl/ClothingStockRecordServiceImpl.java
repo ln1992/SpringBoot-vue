@@ -1,5 +1,6 @@
 package com.douyu.springboot_vue.service.impl;
 
+import com.douyu.springboot_vue.aop.annotation.RecordUpdate;
 import com.douyu.springboot_vue.entities.ClothingStockRecord;
 import com.douyu.springboot_vue.repository.ClothingStockRecordRepository;
 import com.douyu.springboot_vue.service.ClothingStockRecordService;
@@ -33,11 +34,13 @@ public class ClothingStockRecordServiceImpl implements ClothingStockRecordServic
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.CREATE, description = "创建库存记录")
     public ClothingStockRecord saveStockRecord(ClothingStockRecord stockRecord) {
         return clothingStockRecordRepository.save(stockRecord);
     }
 
     @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.DELETE, description = "删除库存记录")
     public void deleteStockRecord(Long id) {
         clothingStockRecordRepository.deleteById(id);
     }

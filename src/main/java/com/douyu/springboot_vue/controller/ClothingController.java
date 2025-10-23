@@ -82,7 +82,7 @@ public class ClothingController {
     @PostMapping
     public ResponseEntity<?> createClothing(@RequestBody Clothing clothing) {
         try {
-            Clothing savedClothing = clothingService.saveClothing(clothing);
+            Clothing savedClothing = clothingService.createClothing(clothing);
             return new ResponseEntity<>(savedClothing, HttpStatus.CREATED);
         } catch (Exception e) {
             e.printStackTrace();
@@ -105,8 +105,7 @@ public class ClothingController {
             Optional<Clothing> existingClothing = clothingService.getClothingById(id);
             if (existingClothing.isPresent()) {
                 try {
-                    clothing.setId(id);
-                    Clothing updatedClothing = clothingService.saveClothing(clothing);
+                    Clothing updatedClothing = clothingService.updateClothing(id, clothing);
                     return new ResponseEntity<>(updatedClothing, HttpStatus.OK);
                 } catch (Exception e) {
                     Map<String, Object> response = new HashMap<>();

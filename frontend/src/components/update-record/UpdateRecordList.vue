@@ -230,6 +230,18 @@ export default {
   mounted() {
     this.fetchRecords()
   },
+  watch: {
+    filterEntityType: {
+      handler() {
+        this.filterRecords();
+      }
+    },
+    filterEntityId: {
+      handler() {
+        this.filterRecords();
+      }
+    }
+  },
   methods: {
     async fetchRecords() {
       this.loading = true;
@@ -252,8 +264,8 @@ export default {
       let result = [...this.records];
 
       // 应用实体类型筛选
-      if (this.localFilterEntityType) {
-        result = result.filter(record => record.entityType === this.localFilterEntityType);
+      if (this.effectiveFilterEntityType) {
+        result = result.filter(record => record.entityType === this.effectiveFilterEntityType);
       }
 
       // 应用操作类型筛选

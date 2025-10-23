@@ -60,6 +60,12 @@ public class Clothing extends BaseEntity {
         this.brand = brand;
         this.price = price;
         this.valid = true;
+        updateName(); // 自动更新名称
+    }
+
+    public void setName(String name) {
+        this.name = name;
+        updateName(); // 自动更新名称
     }
 
     public void updateName() {
@@ -73,10 +79,6 @@ public class Clothing extends BaseEntity {
     // getter和setter方法
     public String getName() {
         return name;
-    }
-    
-    public void setName(String name) {
-        this.name = name;
     }
     
     public String getBrand() {

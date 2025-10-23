@@ -30,7 +30,6 @@ public class UpdateRecordAspect {
     // 静态 ObjectMapper 实例，避免重复创建
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Autowired
     private UpdateRecordService updateRecordService;
 
     // 定义需要哈希处理的字段列表
@@ -39,6 +38,11 @@ public class UpdateRecordAspect {
             "imageUrl",
             "cachedImageDataUrl"
     ));
+
+    @Autowired
+    public UpdateRecordAspect(UpdateRecordService updateRecordService) {
+        this.updateRecordService = updateRecordService;
+    }
 
     /**
      * 环围通知，处理带有 @RecordUpdate 注解的方法
@@ -390,6 +394,10 @@ public class UpdateRecordAspect {
                 return "getDiagramById";
             case "BusinessProcessDiagramServiceImpl":
                 return "getDiagramById";
+            case "ClothingServiceImpl":
+                return "getClothingById";
+            case "ClothingStockRecordServiceImpl":
+                return "getStockRecordById";
             default:
                 return null;
         }

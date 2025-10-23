@@ -24,11 +24,19 @@ public interface ClothingService {
     Optional<Clothing> getClothingById(Long id);
 
     /**
-     * 保存服装
+     * 创建服装
      * @param clothing 服装对象
-     * @return 保存后的服装对象
+     * @return 创建后的服装对象
      */
-    Clothing saveClothing(Clothing clothing);
+    Clothing createClothing(Clothing clothing);
+
+    /**
+     * 更新服装
+     * @param id 服装ID
+     * @param clothing 服装对象
+     * @return 更新后的服装对象
+     */
+    Clothing updateClothing(Long id, Clothing clothing);
 
     /**
      * 删除服装
