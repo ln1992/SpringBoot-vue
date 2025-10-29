@@ -63,6 +63,12 @@
                   </span>
                 </div>
                 <div class="detail-row">
+                  <span class="detail-label">安全库存:</span>
+                  <span class="detail-value">
+                    <input v-model.number="editForm.safetyStock" type="number" min="0" class="edit-input" />
+                  </span>
+                </div>
+                <div class="detail-row">
                   <span class="detail-label">状态:</span>
                   <span class="detail-value">
                     <span :class="['status-badge', clothing.valid ? 'status-active' : 'status-inactive']">
@@ -875,5 +881,3 @@ export default {
   }
 }
 </style>
-
-```

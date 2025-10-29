@@ -31,6 +31,10 @@ public class Clothing extends BaseEntity {
     @Column(name = "valid")
     private Boolean valid = true;
     
+    // 安全库存
+    @Column(name = "safety_stock")
+    private Long safetyStock = 10L;
+    
     // 各尺寸总入库数量 (S, M, L)
     @ElementCollection
     @CollectionTable(name = "clothing_total_quantity", joinColumns = @JoinColumn(name = "clothing_id"))
@@ -96,6 +100,14 @@ public class Clothing extends BaseEntity {
     public void setPrice(Double price) {
         this.price = price;
     }
+    
+    public Long getSafetyStock() {
+        return safetyStock;
+    }
+    
+    public void setSafetyStock(Long safetyStock) {
+        this.safetyStock = safetyStock;
+    }
 
     public Map<Size, Long> getTotalQuantityBySize() {
         return totalQuantityBySize;
@@ -146,6 +158,20 @@ public class Clothing extends BaseEntity {
     // 获取特定尺寸的当前库存数量
     public Long getCurrentStockBySize(Size size) {
         return this.currentStockBySize.getOrDefault(size, 0L);
+    }
+
+    // 获取所有尺寸的当前数量总和
+    @JsonIgnore
+    @Transient
+    public Long getTotalQuantity() {
+        return this.totalQuantityBySize.values().stream().mapToLong(Long::longValue).sum();
+    }
+    
+    // 获取所有尺寸的当前库存总和
+    @JsonIgnore
+    @Transient
+    public Long getCurrentStock() {
+        return this.currentStockBySize.values().stream().mapToLong(Long::longValue).sum();
     }
 
 
@@ -212,6 +238,7 @@ public class Clothing extends BaseEntity {
                 ", brand='" + brand + '\'' +
                 ", price=" + price +
                 ", valid=" + valid +
+                ", safetyStock=" + safetyStock +
                 ", totalQuantityBySize=" + totalQuantityBySize +
                 ", currentStockBySize=" + currentStockBySize +
                 '}';
