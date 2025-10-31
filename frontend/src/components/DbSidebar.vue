@@ -24,6 +24,13 @@
     </div>
     <div
       class="menu-item"
+      :class="{ active: activeItem === 'clothing-reports' }"
+      @click="selectItem('clothing-reports')"
+    >
+      报表中心
+    </div>
+    <div
+      class="menu-item"
       :class="{ active: activeItem === 'matter' }"
       @click="selectItem('matter')"
     >

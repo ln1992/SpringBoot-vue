@@ -43,6 +43,10 @@
         <div v-else-if="selectedMenu === 'update-record'">
           <update-record-list ref="updateRecordList"></update-record-list>
         </div>
+        <!-- 添加报表中心视图 -->
+        <div v-else-if="selectedMenu === 'clothing-reports'">
+          <clothing-report ref="clothingReport"></clothing-report>
+        </div>
         <!-- 添加版本对比视图 -->
         <div v-else-if="selectedMenu === 'matter-version-compare'">
           <matter-version-compare></matter-version-compare>
@@ -75,6 +79,8 @@ import ApprovalProcessDiagramList from './components/process-diagram/ApprovalPro
 import BusinessProcessDiagramList from './components/process-diagram/BusinessProcessDiagramList.vue'
 // 导入更新记录组件
 import UpdateRecordList from './components/update-record/UpdateRecordList.vue'
+// 导入报表中心组件
+import ClothingReport from './components/clothing-report/ClothingReport.vue'
 // 导入版本对比组件
 import MatterVersionCompare from './components/version-compare/MatterVersionCompare.vue'
 // 导入管理员面板组件
@@ -102,6 +108,8 @@ export default {
     BusinessProcessDiagramList,
     // 注册更新记录组件
     UpdateRecordList,
+    // 注册报表中心组件
+    ClothingReport,
     // 注册版本对比组件
     MatterVersionCompare,
     // 注册管理员面板组件
@@ -298,6 +306,14 @@ export default {
           this.$nextTick(() => {
             if (this.$refs.businessDiagramList) {
               this.$refs.businessDiagramList.resetToListView();
+            }
+          });
+          break;
+          
+        case 'reports':
+          this.$nextTick(() => {
+            if (this.$refs.clothingReport) {
+              // 报表中心不需要特殊处理
             }
           });
           break;

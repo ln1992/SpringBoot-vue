@@ -22,6 +22,13 @@ const ENDPOINTS = {
   UPDATE_RECORD: {
     BASE: '/update-records'
   },
+  CLOTHING_REPORTS: {
+    BASE: '/clothing-reports',
+    INVENTORY_SUMMARY: '/clothing-reports/inventory-summary',
+    LOW_STOCK: '/clothing-reports/low-stock',
+    INBOUND_OUTBOUND: '/clothing-reports/inbound-outbound',
+    STOCK_VALUE: '/clothing-reports/stock-value'
+  },
   MATTER_TOOLS: {
     BASE: '/matters/tools',
     COMPARE_VERSIONS: '/matters/tools/compare-versions',
