@@ -59,6 +59,7 @@ public class ClothingStockRecord extends BaseEntity {
         this.previousStock = previousStock;
         this.currentStock = currentStock;
         this.operator = operator;
+        this.setValid(true);
     }
 
     // getter和setter方法

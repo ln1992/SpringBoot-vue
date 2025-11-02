@@ -87,6 +87,9 @@ public class ClothingServiceImpl implements ClothingService {
         Optional<Clothing> clothingOpt = clothingRepository.findById(clothingId);
         if (clothingOpt.isPresent()) {
             Clothing clothing = clothingOpt.get();
+            // 记录操作前的库存量
+            Long previousStock = clothing.getCurrentStockBySize(size);
+            
             // 执行入库操作
             clothing.inbound(size, quantity, operator);
 
@@ -100,7 +103,7 @@ public class ClothingServiceImpl implements ClothingService {
                     size,
                     ClothingStockRecord.StockOperationType.INBOUND,
                     quantity,
-                    clothing.getCurrentStockBySize(size) - quantity,
+                    previousStock,
                     clothing.getCurrentStockBySize(size),
                     operator
             );
@@ -123,6 +126,9 @@ public class ClothingServiceImpl implements ClothingService {
         Optional<Clothing> clothingOpt = clothingRepository.findById(clothingId);
         if (clothingOpt.isPresent()) {
             Clothing clothing = clothingOpt.get();
+            // 记录操作前的库存量
+            Long previousStock = clothing.getCurrentStockBySize(size);
+            
             // 执行出库操作
             boolean success = clothing.outbound(size, quantity, operator);
             if (success) {
@@ -136,7 +142,7 @@ public class ClothingServiceImpl implements ClothingService {
                         size,
                         ClothingStockRecord.StockOperationType.OUTBOUND,
                         quantity,
-                        clothing.getCurrentStockBySize(size) + quantity,
+                        previousStock,
                         clothing.getCurrentStockBySize(size),
                         operator
                 );
@@ -300,5 +306,77 @@ public class ClothingServiceImpl implements ClothingService {
             return clothing.getOutboundQuantityBySize(size);
         }
         return 0L;
+    }
+
+    @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "根据库存记录恢复库存")
+    public boolean restoreStockFromRecords(Long clothingId) {
+        Optional<Clothing> clothingOpt = clothingRepository.findById(clothingId);
+        if (!clothingOpt.isPresent()) {
+            return false;
+        }
+
+        Clothing clothing = clothingOpt.get();
+        
+        // 获取该服装的所有库存记录
+        List<ClothingStockRecord> records = clothingStockRecordRepository.findByClothingId(clothingId);
+        
+        // 初始化各尺码的库存为0
+        Map<Clothing.Size, Long> restoredStock = new HashMap<>();
+        for (Clothing.Size size : Clothing.Size.values()) {
+            restoredStock.put(size, 0L);
+        }
+        
+        // 根据记录重新计算各尺码的当前库存
+        for (ClothingStockRecord record : records) {
+            Clothing.Size size;
+            try {
+                size = Clothing.Size.valueOfCode(record.getSize());
+            } catch (IllegalArgumentException e) {
+                // 如果尺寸代码无效，跳过该记录
+                continue;
+            }
+            
+            Long currentStock = restoredStock.get(size);
+            if (record.getOperationType() == ClothingStockRecord.StockOperationType.INBOUND) {
+                // 入库操作，增加库存
+                restoredStock.put(size, currentStock + record.getQuantity());
+            } else if (record.getOperationType() == ClothingStockRecord.StockOperationType.OUTBOUND) {
+                // 出库操作，减少库存
+                restoredStock.put(size, currentStock - record.getQuantity());
+            }
+        }
+        
+        // 更新服装的当前库存
+        clothing.setCurrentStockBySize(restoredStock);
+        
+        // 同时更新总入库数量（重新计算各尺码的总入库数量）
+        Map<Clothing.Size, Long> totalQuantityBySize = new HashMap<>();
+        for (Clothing.Size size : Clothing.Size.values()) {
+            totalQuantityBySize.put(size, 0L);
+        }
+        
+        // 根据记录重新计算各尺码的总入库数量
+        for (ClothingStockRecord record : records) {
+            Clothing.Size size;
+            try {
+                size = Clothing.Size.valueOfCode(record.getSize());
+            } catch (IllegalArgumentException e) {
+                // 如果尺寸代码无效，跳过该记录
+                continue;
+            }
+            
+            // 只有入库记录才计入总入库数量
+            if (record.getOperationType() == ClothingStockRecord.StockOperationType.INBOUND) {
+                Long currentTotal = totalQuantityBySize.get(size);
+                totalQuantityBySize.put(size, currentTotal + record.getQuantity());
+            }
+        }
+        clothing.setTotalQuantityBySize(totalQuantityBySize);
+        
+        // 保存更新后的服装信息
+        clothingRepository.save(clothing);
+        
+        return true;
     }
 }

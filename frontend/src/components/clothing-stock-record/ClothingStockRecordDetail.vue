@@ -69,6 +69,14 @@
                 </span>
               </div>
               <div class="detail-item">
+                <span class="detail-label">状态:</span>
+                <span class="detail-value">
+                  <span :class="['status-badge', stockRecord.valid ? 'status-active' : 'status-inactive']">
+                    {{ stockRecord.valid ? '已上线' : '已下线' }}
+                  </span>
+                </span>
+              </div>
+              <div class="detail-item">
                 <span class="detail-label">数量:</span>
                 <span class="detail-value">{{ stockRecord.quantity }}</span>
               </div>
@@ -99,8 +107,29 @@
             </div>
           </div>
 
-          <!-- 返回按钮放在右下角 -->
+          <!-- 操作按钮 -->
           <div class="form-actions">
+            <button 
+              v-if="stockRecord.valid" 
+              class="offline-btn" 
+              @click="deactivateStockRecord" 
+              :disabled="isDeactivating">
+              {{ isDeactivating ? '处理中...' : '下线记录' }}
+            </button>
+            <button 
+              v-else
+              class="online-btn" 
+              @click="activateStockRecord" 
+              :disabled="isActivating">
+              {{ isActivating ? '上线中...' : '上线记录' }}
+            </button>
+            <button 
+              v-if="!stockRecord.valid"
+              class="delete-btn" 
+              @click="deleteStockRecord" 
+              :disabled="isDeleting">
+              {{ isDeleting ? '删除中...' : '删除记录' }}
+            </button>
             <button class="back-btn-form" @click="goBack">返回</button>
           </div>
         </div>
@@ -153,7 +182,10 @@ export default {
   data() {
     return {
       activeTab: 'detail',
-      selectedUpdateRecord: null
+      selectedUpdateRecord: null,
+      isDeactivating: false,
+      isActivating: false,
+      isDeleting: false
     };
   },
   methods: {
@@ -195,6 +227,110 @@ export default {
         // 打开新窗口跳转到服装详情页面
         const clothingUrl = `#/clothing/${this.stockRecord.clothingId}`;
         window.open(clothingUrl, '_blank');
+      }
+    },
+
+    // 下线库存记录
+    async deactivateStockRecord() {
+      if (!confirm(`确定要下线这条库存记录吗？`)) {
+        return;
+      }
+
+      this.isDeactivating = true;
+      try {
+        // 导入库存记录服务
+        const { default: stockRecordService } = await import('../../api/clothingStockRecordService');
+        
+        // 调用下线接口
+        const response = await stockRecordService.deactivate(this.stockRecord.id);
+        
+        if (response.data && response.data.success) {
+          // 更新当前记录状态
+          this.$emit('stock-record-updated', response.data.data);
+          alert('库存记录下线成功');
+        } else {
+          throw new Error((response.data && response.data.message) || '下线失败');
+        }
+      } catch (error) {
+        console.error('下线库存记录失败:', error);
+        let errorMessage = '下线库存记录失败';
+        if (error.response && error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        alert(errorMessage);
+      } finally {
+        this.isDeactivating = false;
+      }
+    },
+
+    // 删除已下线的库存记录
+    async deleteStockRecord() {
+      if (!confirm(`确定要删除这条已下线的库存记录吗？此操作不可恢复！`)) {
+        return;
+      }
+
+      this.isDeleting = true;
+      try {
+        // 导入库存记录服务
+        const { default: stockRecordService } = await import('../../api/clothingStockRecordService');
+        
+        // 调用删除接口
+        const response = await stockRecordService.deleteDeactivated(this.stockRecord.id);
+        
+        if (response.data && response.data.success) {
+          alert('已下线的库存记录删除成功');
+          this.$emit('back');
+        } else {
+          throw new Error((response.data && response.data.message) || '删除失败');
+        }
+      } catch (error) {
+        console.error('删除库存记录失败:', error);
+        let errorMessage = '删除库存记录失败';
+        if (error.response && error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        alert(errorMessage);
+      } finally {
+        this.isDeleting = false;
+      }
+    },
+
+    // 上线库存记录
+    async activateStockRecord() {
+      if (!confirm(`确定要上线这条库存记录吗？`)) {
+        return;
+      }
+
+      this.isActivating = true;
+      try {
+        // 导入库存记录服务
+        const { default: stockRecordService } = await import('../../api/clothingStockRecordService');
+        
+        // 调用上线接口
+        const response = await stockRecordService.activate(this.stockRecord.id);
+        
+        if (response.data && response.data.success) {
+          // 更新当前记录状态
+          this.$emit('stock-record-updated', response.data.data);
+          alert('库存记录上线成功');
+        } else {
+          throw new Error((response.data && response.data.message) || '上线失败');
+        }
+      } catch (error) {
+        console.error('上线库存记录失败:', error);
+        let errorMessage = '上线库存记录失败';
+        if (error.response && error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        alert(errorMessage);
+      } finally {
+        this.isActivating = false;
       }
     }
   }
@@ -323,6 +459,24 @@ export default {
   color: #f56c6c;
 }
 
+/* 状态徽章样式 */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-active {
+  background-color: #f0f9eb;
+  color: #67c23a;
+}
+
+.status-inactive {
+  background-color: #fef0f0;
+  color: #f56c6c;
+}
+
 /* 服装名称链接样式 */
 .clothing-link {
   color: #409eff;
@@ -338,6 +492,7 @@ export default {
 .form-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
   margin-top: 30px;
   padding-top: 20px;
   border-top: 1px solid #eee;
@@ -359,6 +514,38 @@ export default {
 
 .back-btn-form:hover {
   background-color: #5a6268;
+}
+
+.offline-btn, .delete-btn {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.offline-btn:hover:not(:disabled), .delete-btn:hover:not(:disabled), .online-btn:hover:not(:disabled) {
+  background-color: #e0a800;
+}
+
+.offline-btn:disabled, .delete-btn:disabled, .online-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.online-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.online-btn:hover:not(:disabled) {
+  background-color: #218838;
 }
 
 /* 更新记录详情样式 */
@@ -411,3 +598,4 @@ export default {
   }
 }
 </style>
+</file>

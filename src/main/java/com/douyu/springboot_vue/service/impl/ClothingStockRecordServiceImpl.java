@@ -49,4 +49,28 @@ public class ClothingStockRecordServiceImpl implements ClothingStockRecordServic
     public List<ClothingStockRecord> getStockRecordsByClothingId(Long clothingId) {
         return clothingStockRecordRepository.findByClothingId(clothingId);
     }
+
+    @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "上线库存记录")
+    public Optional<ClothingStockRecord> activateStockRecord(Long id) {
+        Optional<ClothingStockRecord> stockRecordOpt = clothingStockRecordRepository.findById(id);
+        if (stockRecordOpt.isPresent()) {
+            ClothingStockRecord stockRecord = stockRecordOpt.get();
+            stockRecord.setValid(true);
+            return Optional.of(clothingStockRecordRepository.save(stockRecord));
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    @RecordUpdate(operation = RecordUpdate.OperationType.UPDATE, description = "下线库存记录")
+    public Optional<ClothingStockRecord> deactivateStockRecord(Long id) {
+        Optional<ClothingStockRecord> stockRecordOpt = clothingStockRecordRepository.findById(id);
+        if (stockRecordOpt.isPresent()) {
+            ClothingStockRecord stockRecord = stockRecordOpt.get();
+            stockRecord.setValid(false);
+            return Optional.of(clothingStockRecordRepository.save(stockRecord));
+        }
+        return Optional.empty();
+    }
 }

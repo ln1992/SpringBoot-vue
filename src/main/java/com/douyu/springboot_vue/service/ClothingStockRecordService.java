@@ -40,4 +40,18 @@ public interface ClothingStockRecordService {
      * @return 库存记录列表
      */
     List<ClothingStockRecord> getStockRecordsByClothingId(Long clothingId);
+
+    /**
+     * 上线库存记录
+     * @param id 库存记录ID
+     * @return 更新后的库存记录对象（如果存在）
+     */
+    Optional<ClothingStockRecord> activateStockRecord(Long id);
+
+    /**
+     * 下线库存记录
+     * @param id 库存记录ID
+     * @return 更新后的库存记录对象（如果存在）
+     */
+    Optional<ClothingStockRecord> deactivateStockRecord(Long id);
 }

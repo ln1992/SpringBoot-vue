@@ -241,6 +241,16 @@
                 step="0.01"
               />
             </div>
+
+            <div class="form-group">
+              <label for="safetyStock">最低库存预警</label>
+              <input
+                id="safetyStock"
+                v-model.number="form.safetyStock"
+                type="number"
+                min="0"
+              />
+            </div>
           </div>
 
           <div class="form-section">
@@ -344,7 +354,8 @@ export default {
         id: null,
         name: '',
         brand: '',
-        price: null
+        price: null,
+        safetyStock: 10
       },
       errors: {},
       submitting: false,
@@ -502,7 +513,8 @@ export default {
         id: null,
         name: '',
         brand: '',
-        price: null
+        price: null,
+        safetyStock: 10
       };
       this.errors = {};
     },

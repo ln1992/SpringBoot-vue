@@ -98,6 +98,7 @@
             </span>
           </div>
           <div class="table-cell">操作员</div>
+          <div class="table-cell">状态</div>
         </div>
 
         <div
@@ -121,6 +122,11 @@
           <div class="table-cell">{{ record.currentStock !== null ? record.currentStock : '-' }}</div>
           <div class="table-cell">{{ formatDate(record.createdTime) }}</div>
           <div class="table-cell">{{ record.operator || '-' }}</div>
+          <div class="table-cell">
+            <span :class="['status-badge', record.valid ? 'status-active' : 'status-inactive']">
+              {{ record.valid ? '已上线' : '已下线' }}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -156,6 +162,7 @@
       v-else-if="selectedStockRecord"
       :stock-record="selectedStockRecord"
       @back="selectedStockRecord = null"
+      @stock-record-updated="handleStockRecordUpdated"
     />
   </div>
 </template>
@@ -345,6 +352,17 @@ export default {
       const minutes = String(date.getMinutes()).padStart(2, '0');
       const seconds = String(date.getSeconds()).padStart(2, '0');
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    },
+
+    // 处理库存记录更新
+    handleStockRecordUpdated(updatedStockRecord) {
+      this.selectedStockRecord = updatedStockRecord;
+      // 更新列表中的记录
+      const index = this.stockRecords.findIndex(record => record.id === updatedStockRecord.id);
+      if (index !== -1) {
+        this.stockRecords.splice(index, 1, updatedStockRecord);
+        this.filterStockRecords();
+      }
     }
   },
   watch: {
@@ -487,7 +505,8 @@ export default {
 .table-cell:nth-child(7) { flex: 0 0 60px; } /* 操作前库存列 */
 .table-cell:nth-child(8) { flex: 0 0 60px; } /* 操作后库存列 */
 .table-cell:nth-child(9) { flex: 0 0 160px; } /* 创建时间列 */
-.table-cell:nth-child(10) { flex: 0 0 100px; } /* 操作员列 */
+.table-cell:nth-child(10) { flex: 0 0 60px; } /* 操作员列 */
+.table-cell:nth-child(11) { flex: 0 0 80px; } /* 状态列 */
 
 .operation-type {
   padding: 4px 8px;

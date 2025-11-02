@@ -7,7 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -103,6 +105,106 @@ public class ClothingStockRecordController {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    /**
+     * 下线库存记录
+     * @param id 库存记录ID
+     * @return 操作结果
+     */
+    @PutMapping("/{id}/deactivate")
+    public ResponseEntity<?> deactivateStockRecord(@PathVariable Long id) {
+        try {
+            Optional<ClothingStockRecord> result = clothingStockRecordService.deactivateStockRecord(id);
+            if (result.isPresent()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "库存记录下线成功");
+                response.put("data", result.get());
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "未找到ID为 " + id + " 的库存记录");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "下线库存记录失败: " + e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * 上线库存记录
+     * @param id 库存记录ID
+     * @return 操作结果
+     */
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<?> activateStockRecord(@PathVariable Long id) {
+        try {
+            Optional<ClothingStockRecord> result = clothingStockRecordService.activateStockRecord(id);
+            if (result.isPresent()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "库存记录上线成功");
+                response.put("data", result.get());
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "未找到ID为 " + id + " 的库存记录");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "上线库存记录失败: " + e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * 删除已下线的库存记录
+     * @param id 库存记录ID
+     * @return 操作结果
+     */
+    @DeleteMapping("/{id}/delete-deactivated")
+    public ResponseEntity<?> deleteDeactivatedStockRecord(@PathVariable Long id) {
+        try {
+            Optional<ClothingStockRecord> existingStockRecord = clothingStockRecordService.getStockRecordById(id);
+            if (existingStockRecord.isPresent()) {
+                ClothingStockRecord stockRecord = existingStockRecord.get();
+                // 检查记录是否已下线
+                if (stockRecord.getValid()) {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("message", "不能删除已上线的库存记录，请先下线再删除");
+                    return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                }
+                
+                // 删除记录
+                clothingStockRecordService.deleteStockRecord(id);
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "已下线的库存记录删除成功");
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "未找到ID为 " + id + " 的库存记录");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "删除库存记录失败: " + e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

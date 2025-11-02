@@ -387,4 +387,33 @@ public class ClothingController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    
+    /**
+     * 根据库存记录恢复库存
+     * @param id 服装ID
+     * @return 操作结果
+     */
+    @PostMapping("/{id}/restore-stock")
+    public ResponseEntity<?> restoreStockFromRecords(@PathVariable Long id) {
+        try {
+            boolean success = clothingService.restoreStockFromRecords(id);
+            
+            Map<String, Object> response = new HashMap<>();
+            if (success) {
+                response.put("success", true);
+                response.put("message", "库存恢复成功");
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                response.put("success", false);
+                response.put("message", "库存恢复失败，服装不存在");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "库存恢复失败: " + e.getMessage());
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

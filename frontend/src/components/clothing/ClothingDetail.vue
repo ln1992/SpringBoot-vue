@@ -63,7 +63,7 @@
                   </span>
                 </div>
                 <div class="detail-row">
-                  <span class="detail-label">安全库存:</span>
+                  <span class="detail-label">最低库存预警:</span>
                   <span class="detail-value">
                     <input v-model.number="editForm.safetyStock" type="number" min="0" class="edit-input" />
                   </span>
@@ -111,6 +111,7 @@
                 <div class="form-actions inline">
                   <button class="stock-btn inbound-btn" @click="showStockOperation('inbound')">入库</button>
                   <button class="stock-btn outbound-btn" @click="showStockOperation('outbound')">出库</button>
+                  <button class="restore-btn" @click="restoreStock">恢复（根据记录）</button>
                   <button v-if="clothing.valid" class="offline-btn" @click="toggleClothingStatus(false)">下线</button>
                   <template v-else>
                     <button class="online-btn" @click="toggleClothingStatus(true)">上线</button>
@@ -285,6 +286,7 @@ export default {
         name: '',
         brand: '',
         price: null,
+        safetyStock: 10,
         valid: true
       },
 
@@ -376,6 +378,33 @@ export default {
       } catch (err) {
         console.error('删除服装失败:', err);
         alert('删除失败: ' + (err.message || '未知错误'));
+      }
+    },
+
+    async restoreStock() {
+      if (!confirm('确定要根据库存记录恢复各尺码的库存数量吗？')) {
+        return;
+      }
+
+      try {
+        const response = await clothingService.restoreStock(this.clothing.id);
+        if (response.status === 200) {
+          // 重新获取最新的服装信息
+          const updatedResponse = await clothingService.getById(this.clothing.id);
+          if (updatedResponse.status === 200) {
+            this.$emit('clothing-updated', updatedResponse.data);
+            alert('库存恢复成功');
+          }
+        }
+      } catch (err) {
+        console.error('库存恢复失败:', err);
+        let errorMessage = '未知错误';
+        if (err.response && err.response.data && err.response.data.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+        alert('库存恢复失败: ' + errorMessage);
       }
     },
 
@@ -836,6 +865,16 @@ export default {
 
 .detail-header .back-btn:hover {
   background-color: #e0e0e0;
+}
+
+/* 恢复按钮样式 */
+.restore-btn {
+  background-color: #409eff;
+  color: white;
+}
+
+.restore-btn:hover {
+  background-color: #337ecc;
 }
 
 @media (max-width: 768px) {

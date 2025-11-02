@@ -70,6 +70,11 @@ const clothingService = {
       quantity: parseInt(outboundData.quantity, 10)
     };
     return http.post(`${ENDPOINTS.CLOTHING.BASE}/${id}/outbound`, data);
+  },
+
+  // 根据库存记录恢复库存
+  restoreStock: (id) => {
+    return http.post(`${ENDPOINTS.CLOTHING.BASE}/${id}/restore-stock`);
   }
 
 };

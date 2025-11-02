@@ -118,4 +118,11 @@ public interface ClothingService {
      */
     Long getOutboundQuantityBySize(Long clothingId, Clothing.Size size);
 
+    /**
+     * 根据库存记录恢复服装各尺码的库存
+     * @param clothingId 服装ID
+     * @return 操作是否成功
+     */
+    boolean restoreStockFromRecords(Long clothingId);
+
 }
