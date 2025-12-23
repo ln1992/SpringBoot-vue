@@ -24,6 +24,14 @@ export const clothingReportService = {
   // 库存价值报表
   getStockValueReport(params) {
     return http.get(ENDPOINTS.CLOTHING_REPORTS.STOCK_VALUE, { params: params })
+  },
+  
+  // 月度统计报表
+  getMonthlyStatsReport(clothingName, startDate, endDate) {
+    const params = { clothingName };
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    return http.get(ENDPOINTS.CLOTHING_REPORTS.MONTHLY_STATS, { params })
   }
 }
 

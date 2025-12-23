@@ -21,6 +21,12 @@
         库存记录
       </button>
       <button
+        :class="{ active: activeTab === 'chart' }"
+        @click="activeTab = 'chart'"
+      >
+        图表统计
+      </button>
+      <button
         :class="{ active: activeTab === 'updates' }"
         @click="activeTab = 'updates'"
       >
@@ -167,6 +173,11 @@
         </div>
       </div>
 
+      <!-- 图表统计 Tab -->
+      <div v-show="activeTab === 'chart'">
+        <ClothingMonthlyChart :clothing-name="clothing.name" />
+      </div>
+
       <!-- 更新记录 Tab -->
       <div v-show="activeTab === 'updates'">
         <!-- 只在未选择记录时显示列表 -->
@@ -253,6 +264,7 @@
 import { clothingService } from '../../api';
 import ClothingStockRecordList from '../clothing-stock-record/ClothingStockRecordList.vue';
 import ClothingStockRecordDetail from '../clothing-stock-record/ClothingStockRecordDetail.vue';
+import ClothingMonthlyChart from './ClothingMonthlyChart.vue';
 import UpdateRecordList from '../update-record/UpdateRecordList.vue';
 import UpdateRecordDetail from '../update-record/UpdateRecordDetail.vue';
 
@@ -261,6 +273,7 @@ export default {
   components: {
     ClothingStockRecordList,
     ClothingStockRecordDetail,
+    ClothingMonthlyChart,
     UpdateRecordList,
     UpdateRecordDetail
   },

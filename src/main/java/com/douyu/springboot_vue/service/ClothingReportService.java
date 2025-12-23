@@ -38,4 +38,13 @@ public interface ClothingReportService {
      * @return 出入库统计报表数据
      */
     Map<String, Object> getInboundOutboundReport(Date startDate, Date endDate);
+    
+    /**
+     * 获取指定服装的月度统计报表
+     * @param clothingName 服装名称
+     * @param startDate 开始时间
+     * @param endDate 结束时间
+     * @return 月度统计报表数据
+     */
+    List<Map<String, Object>> getMonthlyStatsReport(String clothingName, Date startDate, Date endDate);
 }

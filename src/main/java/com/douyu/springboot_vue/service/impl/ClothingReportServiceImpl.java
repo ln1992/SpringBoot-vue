@@ -8,6 +8,9 @@ import com.douyu.springboot_vue.service.ClothingReportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -150,6 +153,85 @@ public class ClothingReportServiceImpl implements ClothingReportService {
         }
         
         result.put("details", detailMap.values());
+        
+        return result;
+    }
+    
+    @Override
+    public List<Map<String, Object>> getMonthlyStatsReport(String clothingName, Date startDate, Date endDate) {
+        // 如果没有提供时间范围，则使用默认范围（最近一年）
+        if (startDate == null) {
+            startDate = new Date(System.currentTimeMillis() - 365L * 24 * 60 * 60 * 1000); // 默认一年前
+        }
+        if (endDate == null) {
+            endDate = new Date(); // 默认当前时间
+        }
+        
+        List<Object[]> stats = null;
+        try {
+            stats = clothingStockRecordRepository.findMonthlyStatsByClothingName(
+                    clothingName, startDate, endDate);
+        } catch (Exception e) {
+            System.err.println("查询月度统计报表时发生错误: " + e.getMessage());
+            e.printStackTrace();
+            throw e; // 重新抛出异常，让Controller处理
+        }
+        
+        // 创建一个包含所有月份的映射
+        Map<String, Map<String, Object>> monthlyStatsMap = new HashMap<>();
+        
+        // 生成指定时间范围内的所有月份
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(startDate);
+        cal.set(Calendar.DAY_OF_MONTH, 1); // 设置为月份第一天
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        
+        Calendar endCal = Calendar.getInstance();
+        endCal.setTime(endDate);
+        endCal.set(Calendar.DAY_OF_MONTH, 1); // 设置为月份第一天
+        
+        // 初始化所有月份的数据为0
+        while (!cal.after(endCal)) {
+            String month = String.format("%04d-%02d", cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1);
+            Map<String, Object> monthStat = new HashMap<>();
+            monthStat.put("month", month);
+            monthStat.put("inbound", 0L);
+            monthStat.put("outbound", 0L);
+            monthlyStatsMap.put(month, monthStat);
+            
+            cal.add(Calendar.MONTH, 1); // 下一个月
+        }
+        
+        // 用实际查询结果填充数据
+        for (Object[] stat : stats) {
+            if (stat == null || stat.length < 3) {
+                System.err.println("跳过无效的统计记录: " + stat);
+                continue;
+            }
+            
+            String month = stat[0] != null ? stat[0].toString() : "未知";
+            String operationType = stat[1] != null ? stat[1].toString() : "未知";
+            // 安全地处理数量值，转换为Long类型
+            Long quantity = stat[2] != null ? 
+                (stat[2] instanceof Long ? (Long) stat[2] : Long.valueOf(((Number) stat[2]).longValue())) : 0L;
+            
+            // 更新对应月份的数据
+            Map<String, Object> monthStat = monthlyStatsMap.get(month);
+            if (monthStat != null) {
+                if ("INBOUND".equals(operationType)) {
+                    monthStat.put("inbound", (Long) monthStat.get("inbound") + quantity);
+                } else if ("OUTBOUND".equals(operationType)) {
+                    monthStat.put("outbound", (Long) monthStat.get("outbound") + quantity);
+                }
+            }
+        }
+        
+        // 按月份排序返回
+        List<Map<String, Object>> result = new ArrayList<>(monthlyStatsMap.values());
+        result.sort((a, b) -> ((String) a.get("month")).compareTo((String) b.get("month")));
         
         return result;
     }

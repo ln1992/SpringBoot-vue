@@ -64,4 +64,21 @@ public class ClothingReportController {
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
     }
+    
+    // 月度统计报表
+    @GetMapping("/monthly-stats")
+    public ResponseEntity<List<Map<String, Object>>> getMonthlyStatsReport(
+            @RequestParam String clothingName,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Date startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Date endDate) {
+        try {
+            List<Map<String, Object>> result = clothingReportService.getMonthlyStatsReport(clothingName, startDate, endDate);
+            logger.info("Successfully generated monthly stats report for " + clothingName);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.severe("Error generating monthly stats report: " + e.getMessage());
+            e.printStackTrace(); // 打印堆栈跟踪以帮助调试
+            return ResponseEntity.status(500).body(List.of(Map.of("error", e.getMessage(), "message", "生成月度统计报表时发生错误")));
+        }
+    }
 }

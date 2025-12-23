@@ -14,7 +14,8 @@ import {
     FormItem,
     Input,
     Dialog,
-    Option
+    Option,
+    DatePicker
 } from 'element-ui'
 import App from './App.vue'
 import 'element-ui/lib/theme-default/index.css'
@@ -41,6 +42,7 @@ Vue.use(FormItem);
 Vue.use(Input);
 Vue.use(Dialog);
 Vue.use(Option);
+Vue.use(DatePicker);
 
 locale.use(lang);
 

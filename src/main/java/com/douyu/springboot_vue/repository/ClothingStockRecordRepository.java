@@ -62,4 +62,21 @@ public interface ClothingStockRecordRepository extends JpaRepository<ClothingSto
            "GROUP BY csr.clothingName")
     List<Object[]> findOutboundStats(@Param("startDate") Date startDate, 
                                     @Param("endDate") Date endDate);
+    
+    /**
+     * 查询指定服装在指定时间范围内的按月统计信息
+     * @param clothingName 服装名称
+     * @param startDate 开始时间
+     * @param endDate 结束时间
+     * @return 按月统计的入库和出库信息
+     */
+    @Query(value = "SELECT DATE_FORMAT(created_time, '%Y-%m') as month, " +
+           "operation_type, SUM(quantity) FROM clothing_stock_record " +
+           "WHERE clothing_name = :clothingName AND created_time BETWEEN :startDate AND :endDate " +
+           "GROUP BY month, operation_type " +
+           "ORDER BY month",
+           nativeQuery = true)
+    List<Object[]> findMonthlyStatsByClothingName(@Param("clothingName") String clothingName,
+                                                  @Param("startDate") Date startDate,
+                                                  @Param("endDate") Date endDate);
 }
