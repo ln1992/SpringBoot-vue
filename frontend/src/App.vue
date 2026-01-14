@@ -7,6 +7,7 @@
         <!-- 传递 selectedMenu 给 DbSidebar -->
         <db-sidebar
           :active-menu="selectedMenu"
+          :dashboard-label="dashboardLabel"
           @menu-selected="handleMenuSelect"
           :key="sidebarKey"
         ></db-sidebar>
@@ -24,37 +25,48 @@
         <div v-else-if="selectedMenu === 'clothing-stock-record'">
           <clothing-stock-record-list ref="clothingStockRecordList"></clothing-stock-record-list>
         </div>
-        <div v-else-if="selectedMenu === 'material'">
-          <material-list ref="materialList"></material-list>
-        </div>
-        <!-- 添加事项管理视图 -->
-        <div v-else-if="selectedMenu === 'matter'">
-          <matter-list ref="matterList"></matter-list>
-        </div>
-        <!-- 添加审批流程图视图 -->
-        <div v-else-if="selectedMenu === 'approval-diagram'">
-          <approval-process-diagram-list ref="approvalDiagramList"></approval-process-diagram-list>
-        </div>
-        <!-- 添加业务流程图视图 -->
-        <div v-else-if="selectedMenu === 'business-diagram'">
-          <business-process-diagram-list ref="businessDiagramList"></business-process-diagram-list>
-        </div>
-        <!-- 添加更新记录视图 -->
-        <div v-else-if="selectedMenu === 'update-record'">
-          <update-record-list ref="updateRecordList"></update-record-list>
-        </div>
-        <!-- 添加报表中心视图 -->
         <div v-else-if="selectedMenu === 'clothing-reports'">
           <clothing-report ref="clothingReport"></clothing-report>
         </div>
-        <!-- 添加版本对比视图 -->
+        <div v-else-if="selectedMenu === 'update-record'">
+          <update-record-list ref="updateRecordList"></update-record-list>
+        </div>
+        <!-- 事项管理及以下内容暂时隐藏 -->
+        <!--
+        <div v-else-if="selectedMenu === 'matter'">
+          <matter-list ref="matterList"></matter-list>
+        </div>
+        <div v-else-if="selectedMenu === 'approval-diagram'">
+          <approval-process-diagram-list ref="approvalDiagramList"></approval-process-diagram-list>
+        </div>
+        <div v-else-if="selectedMenu === 'business-diagram'">
+          <business-process-diagram-list ref="businessDiagramList"></business-process-diagram-list>
+        </div>
+        -->
+        <div v-else-if="selectedMenu === 'update-record'">
+          <update-record-list ref="updateRecordList"></update-record-list>
+        </div>
+        <!--
+        <div v-else-if="selectedMenu === 'matter'">
+          <matter-list ref="matterList"></matter-list>
+        </div>
+        <div v-else-if="selectedMenu === 'material'">
+          <material-list ref="materialList"></material-list>
+        </div>
+        <div v-else-if="selectedMenu === 'approval-diagram'">
+          <approval-process-diagram-list ref="approvalDiagramList"></approval-process-diagram-list>
+        </div>
+        <div v-else-if="selectedMenu === 'business-diagram'">
+          <business-process-diagram-list ref="businessDiagramList"></business-process-diagram-list>
+        </div>
+
         <div v-else-if="selectedMenu === 'matter-version-compare'">
           <matter-version-compare></matter-version-compare>
         </div>
-        <!-- 添加管理员面板视图 -->
         <div v-else-if="selectedMenu === 'admin'">
           <admin-panel></admin-panel>
         </div>
+        -->
       </el-col>
     </el-row>
 
@@ -113,12 +125,18 @@ export default {
     // 注册版本对比组件
     MatterVersionCompare,
     // 注册管理员面板组件
-    AdminPanel
+    AdminPanel,
   },
   data() {
     return {
-      selectedMenu: 'dashboard', // 默认显示dashboard
+      selectedMenu: 'dashboard', // 默认显示仪表盘(现为员工管理)
       sidebarKey: 0 // 用于强制刷新sidebar组件
+    }
+  },
+  computed: {
+    // 计算属性，用于动态显示侧边栏标题
+    dashboardLabel() {
+      return '员工管理'; // 将仪表盘名称改为员工管理
     }
   },
   mounted() {
@@ -126,6 +144,7 @@ export default {
     this.handleUrlParams();
   },
   methods: {
+
     // 添加处理流程图详情显示的新方法
     async handleDiagramDetail(menu, diagramId) {
       const showDetail = (componentRef) => {
@@ -309,7 +328,7 @@ export default {
             }
           });
           break;
-          
+
         case 'reports':
           this.$nextTick(() => {
             if (this.$refs.clothingReport) {
@@ -377,6 +396,7 @@ export default {
                 this.$refs.matterList.resetToListView();
               }
               break;
+
             case 'clothing':
               if (this.$refs.clothingList && typeof this.$refs.clothingList.resetToListView === 'function') {
                 this.$refs.clothingList.resetToListView();

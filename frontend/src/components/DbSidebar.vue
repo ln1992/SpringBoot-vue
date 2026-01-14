@@ -6,7 +6,7 @@
       :class="{ active: activeItem === 'dashboard' }"
       @click="selectItem('dashboard')"
     >
-      {{ msg }}
+      {{ dashboardLabel }}
     </div>
     <div
        class="menu-item"
@@ -29,6 +29,15 @@
     >
       报表中心
     </div>
+    <div
+      class="menu-item"
+      :class="{ active: activeItem === 'update-record' }"
+      @click="selectItem('update-record')"
+    >
+      更新记录
+    </div>
+    <!-- 事项管理及以下内容暂时隐藏 -->
+    <!--
     <div
       class="menu-item"
       :class="{ active: activeItem === 'matter' }"
@@ -59,13 +68,6 @@
     </div>
     <div
       class="menu-item"
-      :class="{ active: activeItem === 'update-record' }"
-      @click="selectItem('update-record')"
-    >
-      更新记录
-    </div>
-    <div
-      class="menu-item"
       :class="{ active: activeItem === 'matter-version-compare' }"
       @click="selectItem('matter-version-compare')"
     >
@@ -78,6 +80,7 @@
     >
       管理员
     </div>
+    -->
   </div>
 </template>
 
@@ -89,11 +92,16 @@ export default {
     activeMenu: {
       type: String,
       default: 'dashboard'
+    },
+    // 接收父组件传递的仪表盘标签
+    dashboardLabel: {
+      type: String,
+      default: '员工管理'
     }
   },
   data() {
     return {
-      msg: '仪表盘',
+      msg: '员工管理',
       activeItem: 'dashboard'
     }
   },
